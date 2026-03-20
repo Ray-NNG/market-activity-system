@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 50px;
+      text-align: center;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 30px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+    #message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background: #d1fae5;
+      color: #047857;
+    }
+    .error {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 登录测试</h2>
+    <p>请输入密码（默认: admin123）</p>
+    <input type="password" id="login-pwd" placeholder="输入密码" onkeydown="if(event.key==='Enter')testDoLogin()">
+    <button onclick="testDoLogin()">登录</button>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    // 从 localStorage 读取密码
+    let LOGIN_PASSWORD = localStorage.getItem('mcm_password') || 'admin123';
+
+    console.log('当前密码:', LOGIN_PASSWORD);
+    console.log('doLogin 函数是否定义:', typeof testDoLogin);
+
+    function testDoLogin() {
+      const val = document.getElementById('login-pwd').value;
+      const msgEl = document.getElementById('message');
+
+      console.log('输入的密码:', val);
+      console.log('验证结果:', val === LOGIN_PASSWORD);
+
+      if (val === LOGIN_PASSWORD) {
+        msgEl.textContent = '✅ 登录成功！密码正确';
+        msgEl.className = 'success';
+        msgEl.style.display = 'block';
+      } else {
+        msgEl.textContent = '❌ 登录失败！密码错误';
+        msgEl.className = 'error';
+        msgEl.style.display = 'block';
+      }
+    }
+
+    // 暴露到全局
+    window.testDoLogin = testDoLogin;
+
+    console.log('页面加载完成，testDoLogin 已暴露到 window');
+  </script>
+</body>
+</html>
