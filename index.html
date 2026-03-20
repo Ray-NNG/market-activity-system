@@ -2536,11 +2536,29 @@ let calYear, calMonth;
   const key = 'mcm_auth_ts';
   const SESSION_HOURS = 8;
   const saved = localStorage.getItem(key);
-  if(saved && (Date.now() - parseInt(saved)) < SESSION_HOURS * 3600000) {
-    document.getElementById('login-overlay').style.display = 'none';
+
+  // 检查 URL 参数，如果有 auth 参数则跳过登录
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasAuth = urlParams.has('auth');
+
+  if ((saved && (Date.now() - parseInt(saved)) < SESSION_HOURS * 3600000) || hasAuth) {
+    // 更新会话时间戳
+    localStorage.setItem(key, Date.now().toString());
+
+    // 隐藏登录遮罩
+    const overlay = document.getElementById('login-overlay');
+    if(overlay) {
+      overlay.style.display = 'none';
+    }
+
+    // 清除 URL 参数
+    if(hasAuth) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
     return;
   }
-  document.getElementById('login-pwd').focus();
+  const pwdInput = document.getElementById('login-pwd');
+  if(pwdInput) pwdInput.focus();
 })();
 
 // ===== 修改密码功能 =====
