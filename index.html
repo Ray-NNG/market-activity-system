@@ -2507,10 +2507,6 @@ let calYear, calMonth;
 })();
 
 function doLogin() {
- window.doLogin = doLogin;
-window.togglePwdView = togglePwdView;
-window.openChangePasswordModal = openChangePasswordModal;
-window.saveNewPassword = saveNewPassword;
   const val = document.getElementById('login-pwd').value;
   const errEl = document.getElementById('login-error');
   if(val === LOGIN_PASSWORD) {
@@ -2574,6 +2570,12 @@ function saveNewPassword() {
   closeModal('modal-change-password');
   alert('✅ 密码修改成功！');
 }
+
+// ===== 暴露全局函数（供 HTML onclick 调用）=====
+window.doLogin = doLogin;
+window.togglePwdView = togglePwdView;
+window.openChangePasswordModal = openChangePasswordModal;
+window.saveNewPassword = saveNewPassword;
 
 // ===== 日历渲染 =====
 function getCalendarEvents() {
