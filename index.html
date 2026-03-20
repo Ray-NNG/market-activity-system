@@ -2570,6 +2570,14 @@ function saveNewPassword() {
   alert('✅ 密码修改成功！');
 }
 
+// ===== 立即暴露全局函数（供 HTML onclick 调用）=====
+// 必须在所有函数定义完成后立即执行
+window.doLogin = doLogin;
+window.togglePwdView = togglePwdView;
+window.openChangePasswordModal = openChangePasswordModal;
+window.saveNewPassword = saveNewPassword;
+console.log('✅ 全局函数已暴露: doLogin, togglePwdView, openChangePasswordModal, saveNewPassword');
+
 // ===== 日历渲染 =====
 function getCalendarEvents() {
   const events = {}; // { 'YYYY-MM-DD': [{title, type}] }
@@ -2924,12 +2932,6 @@ document.addEventListener('click', e => {
     hideSearchDropdown();
   }
 });
-
-// ===== 暴露全局函数（供 HTML onclick 调用）=====
-window.doLogin = doLogin;
-window.togglePwdView = togglePwdView;
-window.openChangePasswordModal = openChangePasswordModal;
-window.saveNewPassword = saveNewPassword;
 </script>
 </body>
 </html>
