@@ -1052,26 +1052,42 @@ const JSONBIN_BIN_ID = '69bd20d6b7ec241ddc86e1c2';
 const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
 
 // ===== jsonbin.io 数据操作 =====
+let currentBinVersion = null;
+
 async function getJsonBinData() {
   const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}/latest`, {
     headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
   });
   if (!res.ok) throw new Error('获取数据失败');
   const data = await res.json();
+  // 保存当前版本号
+  currentBinVersion = data.meta.version;
   return data.record || { activities: [], files: {} };
 }
 
 async function saveJsonBinData(data) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Master-Key': JSONBIN_MASTER_KEY
+  };
+  // 如果有版本号，添加版本头
+  if (currentBinVersion) {
+    headers['X-Bin-Version'] = currentBinVersion;
+  }
+
   const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Master-Key': JSONBIN_MASTER_KEY
-    },
+    headers: headers,
     body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error('保存失败');
-  return await res.json();
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`保存失败: ${errText}`);
+  }
+  const result = await res.json();
+  // 更新版本号
+  currentBinVersion = result.meta.version;
+  return result;
 }
 
 // ===== 文件存储（localStorage，Base64）=====
@@ -1132,7 +1148,6 @@ let currentDetailId = null;
 
 // ===== 数据模型（从 jsonbin.io 加载）=====
 let activities = [];
-let fileStore = {};
 
 // 初始化：从 jsonbin.io 加载数据
 async function initData() {
