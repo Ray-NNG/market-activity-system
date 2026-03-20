@@ -550,6 +550,34 @@
   </div>
 </div>
 
+<!-- 修改密码弹窗 -->
+<div id="modal-change-password" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>🔒 修改密码</h3>
+      <button class="modal-close" onclick="closeModal('modal-change-password')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px">
+        <label class="form-label">当前密码</label>
+        <input class="form-input" type="password" id="current-pwd" placeholder="请输入当前密码">
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="form-label">新密码</label>
+        <input class="form-input" type="password" id="new-pwd" placeholder="请输入新密码">
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="form-label">确认新密码</label>
+        <input class="form-input" type="password" id="confirm-pwd" placeholder="请再次输入新密码">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-change-password')">取消</button>
+      <button class="btn btn-primary" onclick="saveNewPassword()">保存</button>
+    </div>
+  </div>
+</div>
+
 
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -606,6 +634,7 @@
         <button class="search-clear" id="search-clear-btn" onclick="clearSearch()">×</button>
         <div class="search-dropdown" id="search-dropdown"></div>
       </div>
+      <button class="btn btn-outline btn-sm" onclick="openChangePasswordModal()">🔒 修改密码</button>
       <button class="btn btn-primary" onclick="openNewActivity()">＋ 新建活动</button>
     </div>
   </div>
@@ -2444,7 +2473,7 @@ ${a.risks.length?'风险情况：'+a.risks.map(r=>r.text).join('；'):''}
 }
 
 // ===== 登录功能 =====
-const LOGIN_PASSWORD = 'admin123'; // ← 在此修改密码
+let LOGIN_PASSWORD = localStorage.getItem('mcm_password') || 'admin123'; // 从本地存储读取密码
 let calYear, calMonth;
 
 (function initLogin() {
@@ -2482,6 +2511,45 @@ function togglePwdView() {
   const eye = document.getElementById('pwd-eye');
   if(inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
   else { inp.type = 'password'; eye.textContent = '👁'; }
+}
+
+// ===== 修改密码功能 =====
+function openChangePasswordModal() {
+  document.getElementById('current-pwd').value = '';
+  document.getElementById('new-pwd').value = '';
+  document.getElementById('confirm-pwd').value = '';
+  showModal('modal-change-password');
+}
+
+function saveNewPassword() {
+  const currentPwd = document.getElementById('current-pwd').value;
+  const newPwd = document.getElementById('new-pwd').value;
+  const confirmPwd = document.getElementById('confirm-pwd').value;
+
+  if(currentPwd !== LOGIN_PASSWORD) {
+    alert('❌ 当前密码错误');
+    return;
+  }
+
+  if(!newPwd || newPwd.length < 4) {
+    alert('❌ 新密码长度至少 4 位');
+    return;
+  }
+
+  if(newPwd !== confirmPwd) {
+    alert('❌ 两次输入的新密码不一致');
+    return;
+  }
+
+  // 保存新密码
+  LOGIN_PASSWORD = newPwd;
+  localStorage.setItem('mcm_password', newPwd);
+
+  // 更新登录页提示
+  document.querySelector('.login-hint').textContent = `💡 当前密码：${newPwd}`;
+
+  closeModal('modal-change-password');
+  alert('✅ 密码修改成功！');
 }
 
 // ===== 日历渲染 =====
