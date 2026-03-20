@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>最小测试</title>
+  <style>
+    button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+    #output { padding: 20px; border: 2px solid #ccc; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>新建活动功能测试</h1>
+
+  <button onclick="openNewActivity()">方法1: onclick="openNewActivity()"</button>
+  <button id="btn2">方法2: addEventListener</button>
+  <button id="btn3">方法3: jQuery-style click (native)</button>
+
+  <div id="output"></div>
+
+  <script>
+    console.log('脚本开始加载...');
+
+    // 全局变量
+    let budgetItemCount = 0;
+    let activities = [];
+
+    // 辅助函数
+    function showModal(id) {
+      console.log('showModal 被调用, id:', id);
+      document.getElementById('output').innerHTML += `<p style="color: green">✅ showModal('${id}') 调用成功</p>`;
+    }
+
+    function initBudgetItems() {
+      console.log('initBudgetItems 被调用');
+      document.getElementById('output').innerHTML += '<p style="color: green">✅ initBudgetItems() 调用成功</p>';
+    }
+
+    // 主要函数
+    function openNewActivity() {
+      console.log('openNewActivity 被调用');
+      initBudgetItems();
+      showModal('modal-new');
+      document.getElementById('output').innerHTML += '<p style="color: blue; font-weight: bold">🎉 openNewActivity() 完整流程执行成功!</p>';
+    }
+
+    // 检查函数是否定义
+    window.onload = function() {
+      console.log('页面加载完成');
+      console.log('typeof openNewActivity:', typeof openNewActivity);
+      console.log('window.openNewActivity:', window.openNewActivity);
+
+      document.getElementById('output').innerHTML += '<hr>';
+      document.getElementById('output').innerHTML += '<p><strong>页面加载完成 - 函数检查:</strong></p>';
+      document.getElementById('output').innerHTML += `<p>typeof openNewActivity: ${typeof openNewActivity}</p>`;
+      document.getElementById('output').innerHTML += `<p>typeof showModal: ${typeof showModal}</p>`;
+      document.getElementById('output').innerHTML += `<p>typeof initBudgetItems: ${typeof initBudgetItems}</p>`;
+
+      // 方法2: addEventListener
+      document.getElementById('btn2').addEventListener('click', function() {
+        console.log('按钮2被点击 (addEventListener)');
+        if (typeof openNewActivity === 'function') {
+          openNewActivity();
+        } else {
+          alert('openNewActivity 不是函数!');
+        }
+      });
+
+      // 方法3: 另一种方式
+      document.getElementById('btn3').onclick = function() {
+        console.log('按钮3被点击 (onclick)');
+        if (typeof openNewActivity === 'function') {
+          openNewActivity();
+        } else {
+          alert('openNewActivity 不是函数!');
+        }
+      };
+
+      console.log('所有事件监听器已绑定');
+    };
+
+    // 捕获未处理的错误
+    window.onerror = function(message, source, lineno, colno, error) {
+      console.error('全局错误:', message, 'at line', lineno);
+      document.getElementById('output').innerHTML += `<p style="color: red">❌ 错误: ${message} (line ${lineno})</p>`;
+      return false;
+    };
+
+    console.log('脚本加载完成');
+  </script>
+</body>
+</html>
