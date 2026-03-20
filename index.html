@@ -2805,6 +2805,11 @@ function getCurrentPage() {
   return p ? p.id.replace('page-','') : 'dashboard';
 }
 
+// ===== 全局错误处理 =====
+window.addEventListener('error', function(e) {
+  console.error('全局错误:', e.message, 'at', e.filename, 'line', e.lineno);
+});
+
 // ===== INIT =====
 const _today = new Date();
 calYear = _today.getFullYear();
