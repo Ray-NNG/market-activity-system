@@ -540,11 +540,10 @@
     <div class="login-title">活动管理系统</div>
     <div class="login-sub">Market Campaign Manager · 请输入访问密码</div>
     <div class="login-input-wrap">
-      <input class="login-input" type="password" id="login-pwd" placeholder="请输入密码"
-        onkeydown="if(event.key==='Enter')doLogin()">
+      <input class="login-input" type="password" id="login-pwd" placeholder="请输入密码">
       <button class="login-toggle" onclick="togglePwdView()" id="pwd-eye">👁</button>
     </div>
-    <button class="login-btn" onclick="doLogin()">进入系统</button>
+    <button class="login-btn" onclick="attemptLogin()">进入系统</button>
     <div class="login-error" id="login-error"></div>
   </div>
 </div>
@@ -1046,7 +1045,46 @@
 </div>
 
 <script>
+// ===== 登录功能（必须在最前面）=====
+let LOGIN_PASSWORD = localStorage.getItem('mcm_password') || 'admin123';
+
+// 登录函数 - 立即定义并暴露
+window.attemptLogin = function() {
+  const val = document.getElementById('login-pwd').value;
+  const errEl = document.getElementById('login-error');
+  if(val === LOGIN_PASSWORD) {
+    localStorage.setItem('mcm_auth_ts', Date.now().toString());
+    const overlay = document.getElementById('login-overlay');
+    overlay.style.transition = 'opacity .4s';
+    overlay.style.opacity = '0';
+    setTimeout(() => overlay.style.display = 'none', 400);
+    errEl.textContent = '';
+  } else {
+    errEl.textContent = '❌ 密码错误，请重新输入';
+    const input = document.getElementById('login-pwd');
+    input.style.borderColor = 'var(--danger)';
+    input.value = '';
+    setTimeout(() => { input.style.borderColor = ''; input.focus(); }, 600);
+  }
+};
+
+// 按下回车键登录
+document.addEventListener('keydown', function(e) {
+  if(e.key === 'Enter' && e.target.id === 'login-pwd') {
+    window.attemptLogin();
+  }
+});
+
+// 显示/隐藏密码
+window.togglePwdView = function() {
+  const inp = document.getElementById('login-pwd');
+  const eye = document.getElementById('pwd-eye');
+  if(inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
+  else { inp.type = 'password'; eye.textContent = '👁'; }
+};
+
 // ===== jsonbin.io 配置 =====
+
 const JSONBIN_MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
 const JSONBIN_BIN_ID = '69bd20d6b7ec241ddc86e1c2';
 const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
@@ -2505,41 +2543,15 @@ let calYear, calMonth;
   document.getElementById('login-pwd').focus();
 })();
 
-function doLogin() {
-  const val = document.getElementById('login-pwd').value;
-  const errEl = document.getElementById('login-error');
-  if(val === LOGIN_PASSWORD) {
-    localStorage.setItem('mcm_auth_ts', Date.now().toString());
-    const overlay = document.getElementById('login-overlay');
-    overlay.style.transition = 'opacity .4s';
-    overlay.style.opacity = '0';
-    setTimeout(() => overlay.style.display = 'none', 400);
-    errEl.textContent = '';
-  } else {
-    errEl.textContent = '❌ 密码错误，请重新输入';
-    const input = document.getElementById('login-pwd');
-    input.style.borderColor = 'var(--danger)';
-    input.value = '';
-    setTimeout(() => { input.style.borderColor = ''; input.focus(); }, 600);
-  }
-}
-
-function togglePwdView() {
-  const inp = document.getElementById('login-pwd');
-  const eye = document.getElementById('pwd-eye');
-  if(inp.type === 'password') { inp.type = 'text'; eye.textContent = '🙈'; }
-  else { inp.type = 'password'; eye.textContent = '👁'; }
-}
-
 // ===== 修改密码功能 =====
-function openChangePasswordModal() {
+window.openChangePasswordModal = function() {
   document.getElementById('current-pwd').value = '';
   document.getElementById('new-pwd').value = '';
   document.getElementById('confirm-pwd').value = '';
   showModal('modal-change-password');
-}
+};
 
-function saveNewPassword() {
+window.saveNewPassword = function() {
   const currentPwd = document.getElementById('current-pwd').value;
   const newPwd = document.getElementById('new-pwd').value;
   const confirmPwd = document.getElementById('confirm-pwd').value;
@@ -2564,19 +2576,14 @@ function saveNewPassword() {
   localStorage.setItem('mcm_password', newPwd);
 
   // 更新登录页提示
-  document.querySelector('.login-hint').textContent = `💡 当前密码：${newPwd}`;
+  const loginHint = document.querySelector('.login-hint');
+  if(loginHint) {
+    loginHint.textContent = `💡 当前密码：${newPwd}`;
+  }
 
   closeModal('modal-change-password');
   alert('✅ 密码修改成功！');
-}
-
-// ===== 立即暴露全局函数（供 HTML onclick 调用）=====
-// 必须在所有函数定义完成后立即执行
-window.doLogin = doLogin;
-window.togglePwdView = togglePwdView;
-window.openChangePasswordModal = openChangePasswordModal;
-window.saveNewPassword = saveNewPassword;
-console.log('✅ 全局函数已暴露: doLogin, togglePwdView, openChangePasswordModal, saveNewPassword');
+};
 
 // ===== 日历渲染 =====
 function getCalendarEvents() {
