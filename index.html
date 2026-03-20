@@ -1060,8 +1060,10 @@ async function getJsonBinData() {
   });
   if (!res.ok) throw new Error('获取数据失败');
   const data = await res.json();
-  // 保存当前版本号
-  currentBinVersion = data.meta.version;
+  // 安全检查：确保 meta 存在
+  if (data.meta && data.meta.version) {
+    currentBinVersion = data.meta.version;
+  }
   return data.record || { activities: [], files: {} };
 }
 
@@ -1085,8 +1087,10 @@ async function saveJsonBinData(data) {
     throw new Error(`保存失败: ${errText}`);
   }
   const result = await res.json();
-  // 更新版本号
-  currentBinVersion = result.meta.version;
+  // 安全检查：确保 meta 存在
+  if (result.meta && result.meta.version) {
+    currentBinVersion = result.meta.version;
+  }
   return result;
 }
 

@@ -574,7 +574,10 @@
       });
       if (!res.ok) throw new Error('获取数据失败');
       const data = await res.json();
-      currentBinVersion = data.meta.version;
+      // 安全检查：确保 meta 存在
+      if (data.meta && data.meta.version) {
+        currentBinVersion = data.meta.version;
+      }
       return data.record || { activities: [], files: {} };
     }
 
@@ -598,7 +601,10 @@
         throw new Error(`保存失败: ${errText}`);
       }
       const result = await res.json();
-      currentBinVersion = result.meta.version;
+      // 安全检查：确保 meta 存在
+      if (result.meta && result.meta.version) {
+        currentBinVersion = result.meta.version;
+      }
       return result;
     }
 
