@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>市场活动全流程管理系统</title>
 <script src="https://unpkg.com/leancloud-storage@4.0.0/dist/av-min.js"></script>
 <style>
@@ -1005,7 +1008,7 @@ const JSONBIN_BIN_ID = '69bd20d6b7ec241ddc86e1c2';
 const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
 
 // ===== jsonbin.io 数据操作 =====
-let currentBinVersion = null;
+var currentBinVersion = null;
 
 async function getJsonBinData() {
   const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}/latest`, {
@@ -1057,7 +1060,7 @@ async function saveFileStore(store) {
   fileStore = store;
   await syncData();
 }
-let fileStore = loadFileStore();
+var fileStore = loadFileStore();
 
 function getFiles(activityId, stage) {
   const key = String(activityId);
@@ -1104,7 +1107,7 @@ let currentFileStage = 'plan';   // 当前文件面板阶段
 let currentDetailId = null;
 
 // ===== 数据模型（从 jsonbin.io 加载）=====
-let activities = [];
+var activities = [];
 
 // 初始化：从 jsonbin.io 加载数据
 async function initData() {
@@ -1821,7 +1824,7 @@ async function advanceActivity(id) {
 
 // ===== 新建活动 =====
 // ===== 预算明细管理 =====
-let budgetItemCount = 0;
+var budgetItemCount = 0;
 
 function initBudgetItems() {
   budgetItemCount = 0;
@@ -2444,7 +2447,7 @@ ${a.risks.length?'风险情况：'+a.risks.map(r=>r.text).join('；'):''}
 }
 
 // ===== 登录功能 =====
-let calYear, calMonth;
+var calYear, calMonth;
 
 (function initLogin() {
   const key = 'mcm_auth_ts';
