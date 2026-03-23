@@ -1208,7 +1208,7 @@ function renderDashboard() {
   // 活动列表
   const list = document.getElementById('dashboard-activity-list');
   list.innerHTML = activities.map(a => `
-    <div class="dashboard-phase" style="cursor:pointer" onclick="openDetail(${a.id})">
+    <div class="dashboard-phase" style="cursor:pointer" onclick="openDetail('${a.id}')">
       <div class="phase-icon ${a.status==='策划中'?'plan':a.status==='执行中'?'exec':'review'}">
         ${a.status==='策划中'?'📋':a.status==='执行中'?'⚡':a.status==='复盘中'?'🔍':'✅'}
       </div>
@@ -1222,7 +1222,7 @@ function renderDashboard() {
         </div>
         <div class="text-sm color-text-muted mt-8" style="color:var(--text-muted)">${a.owner} · ${a.start} ~ ${a.end}</div>
       </div>
-      <button class="btn-delete" onclick="event.stopPropagation();doDeleteActivity(${a.id})" title="删除活动">🗑️</button>
+      <button class="btn-delete" onclick="event.stopPropagation();doDeleteActivity('${a.id}')" title="删除活动">🗑️</button>
     </div>
   `).join('');
 
@@ -1285,7 +1285,7 @@ function reviewCard(a) {
           <div class="card-title">${a.name}</div>
           ${statusBadge(a.status)}
         </div>
-        <button class="btn btn-outline btn-sm" onclick="openDetail(${a.id})">查看详情</button>
+        <button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">查看详情</button>
       </div>
       <div class="grid-2" style="gap:16px">
         <div>
@@ -1309,7 +1309,7 @@ function reviewCard(a) {
             <div style="text-align:center;padding:30px;color:var(--text-muted)">
               <div style="font-size:36px;margin-bottom:8px">📝</div>
               <div>尚未填写复盘总结</div>
-              <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openDetail(${a.id})">填写复盘</button>
+              <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openDetail('${a.id}')">填写复盘</button>
             </div>
           `}
         </div>
@@ -1396,8 +1396,8 @@ function renderActivities(filter='all') {
       </td>
       <td>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-outline btn-sm" onclick="openDetail(${a.id})">详情</button>
-          ${a.status!=='已完成'?`<button class="btn btn-success btn-sm" onclick="advanceActivity(${a.id})">推进</button>`:''}
+          <button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">详情</button>
+          ${a.status!=='已完成'?`<button class="btn btn-success btn-sm" onclick="advanceActivity('${a.id}')">推进</button>`:''}
         </div>
       </td>
     </tr>
@@ -1417,9 +1417,9 @@ function activityDetailCard(a) {
           ${statusBadge(a.status)}
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="openDetail(${a.id})">查看详情</button>
-          ${a.status==='策划中'?`<button class="btn btn-success btn-sm" onclick="advanceActivity(${a.id})">转为执行中</button>`:''}
-          ${a.status==='执行中'?`<button class="btn btn-primary btn-sm" onclick="advanceActivity(${a.id})">进入复盘</button>`:''}
+          <button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">查看详情</button>
+          ${a.status==='策划中'?`<button class="btn btn-success btn-sm" onclick="advanceActivity('${a.id}')">转为执行中</button>`:''}
+          ${a.status==='执行中'?`<button class="btn btn-primary btn-sm" onclick="advanceActivity('${a.id}')">进入复盘</button>`:''}
         </div>
       </div>
       <div class="grid-3" style="gap:16px">
@@ -1442,7 +1442,7 @@ function activityDetailCard(a) {
           <div class="text-sm fw-600" style="margin-bottom:8px">✅ 执行任务（${doneTasks}/${a.tasks.length}）</div>
           ${a.tasks.map((t,i) => `
             <div class="checklist-item">
-              <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${a.id},${i},this.checked)">
+              <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${a.id}',${i},this.checked)">
               <label class="${t.done?'checked':''}">${t.name}</label>
             </div>
           `).join('')}
@@ -1516,8 +1516,9 @@ function renderBudgetDetail(a) {
 
 // ===== 详情弹窗 =====
 function openDetail(id) {
-  const a = activities.find(x=>x.id===id);
-  currentDetailId = id;
+  const a = activities.find(x=>String(x.id)===String(id));
+  if(!a) { console.error('openDetail: 找不到活动 id=', id); return; }
+  currentDetailId = String(id);
   currentFileStage = a.status==='策划中'?'plan': a.status==='执行中'?'exec':'review';
   document.getElementById('detail-title').textContent = a.name;
   const btn = document.getElementById('detail-action-btn');
@@ -1558,7 +1559,7 @@ function openDetail(id) {
       <div class="text-muted mb-16" style="margin-bottom:12px">已完成 ${doneTasks}/${a.tasks.length} 项任务</div>
       ${a.tasks.map((t,i)=>`
         <div class="checklist-item">
-          <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${a.id},${i},this.checked)">
+          <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${a.id}',${i},this.checked)">
           <label class="${t.done?'checked':''}">${t.name}</label>
           <span class="badge ${t.done?'badge-done':'badge-plan'}">${t.done?'已完成':'待完成'}</span>
         </div>
@@ -1572,14 +1573,14 @@ function openDetail(id) {
             <div class="progress-wrap"><div class="progress-bar ${k.actual>=k.target?'progress-success':k.actual>0?'progress-warning':'progress-primary'}" style="width:${k.actual?Math.min(k.actual/k.target*100,100):0}%"></div></div>
           </div>
           <div class="kpi-target">目标 ${k.target}${k.unit}</div>
-          <div><input type="number" class="form-control" style="width:90px;padding:4px 8px" value="${k.actual||''}" placeholder="实际" onchange="updateKpi(${a.id},${i},this.value)"></div>
+          <div><input type="number" class="form-control" style="width:90px;padding:4px 8px" value="${k.actual||''}" placeholder="实际" onchange="updateKpi('${a.id}',${i},this.value)"></div>
           <span style="margin-left:4px;font-size:13px">${k.unit}</span>
         </div>
       `).join('')}
     </div>
     <div id="dtab-3" style="display:none">
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-        <button class="btn-ai" onclick="aiGenerateReview(${a.id})">✨ AI 自动生成复盘</button>
+        <button class="btn-ai" onclick="aiGenerateReview('${a.id}')">✨ AI 自动生成复盘</button>
       </div>
       <div class="form-group">
         <label>活动总结</label>
@@ -1593,7 +1594,7 @@ function openDetail(id) {
         <label>综合评分（1-5分）</label>
         <input type="number" class="form-control" id="review-score" min="1" max="5" step="0.1" value="${a.review?.score||''}" placeholder="4.5">
       </div>
-      <button class="btn btn-primary" onclick="saveReview(${a.id})">💾 保存复盘</button>
+      <button class="btn btn-primary" onclick="saveReview('${a.id}')">💾 保存复盘</button>
     </div>
     <div id="dtab-4" style="display:none">
       ${renderFilePanel(id)}
@@ -1758,7 +1759,8 @@ function detailTab(el, idx) {
 }
 
 async function saveReview(id) {
-  const index = activities.findIndex(x=>x.id===id);
+  const index = activities.findIndex(x=>String(x.id)===String(id));
+  if(index===-1) return;
   const a = activities[index];
   const summary = document.getElementById('review-summary').value;
   const lessons = document.getElementById('review-lessons').value;
@@ -1773,13 +1775,15 @@ async function saveReview(id) {
 }
 
 async function updateKpi(aid, idx, val) {
-  const index = activities.findIndex(x=>x.id===aid);
+  const index = activities.findIndex(x=>String(x.id)===String(aid));
+  if(index===-1) return;
   activities[index].kpis[idx].actual = parseFloat(val)||0;
   await syncData();
 }
 
 async function toggleTask(aid, idx, checked) {
-  const index = activities.findIndex(x=>x.id===aid);
+  const index = activities.findIndex(x=>String(x.id)===String(aid));
+  if(index===-1) return;
   activities[index].tasks[idx].done = checked;
   const a = activities[index];
   const done = a.tasks.filter(t=>t.done).length;
@@ -1789,7 +1793,7 @@ async function toggleTask(aid, idx, checked) {
 
 // ===== 删除活动 =====
 async function doDeleteActivity(id) {
-  const a = activities.find(x=>x.id===id);
+  const a = activities.find(x=>String(x.id)===String(id));
   if(!a) return;
   if(!confirm(`确定要删除活动「${a.name}」吗？此操作不可恢复！`)) return;
 
@@ -1809,7 +1813,8 @@ async function doDeleteActivity(id) {
 
 // ===== 推进阶段 =====
 async function advanceActivity(id) {
-  const index = activities.findIndex(x=>x.id===id);
+  const index = activities.findIndex(x=>String(x.id)===String(id));
+  if(index===-1) return;
   const a = activities[index];
   const map = {'策划中':'执行中','执行中':'复盘中','复盘中':'已完成'};
   if(map[a.status]) {
@@ -2052,7 +2057,7 @@ function showSearchResults(keyword) {
     if(matchedActivities.length > 0) {
       html += `<div class="search-section-title">📌 活动（${matchedActivities.length}）</div>`;
       html += matchedActivities.slice(0,5).map(a => `
-        <div class="search-result-item" onclick="clearSearch();openDetail(${a.id})">
+        <div class="search-result-item" onclick="clearSearch();openDetail('${a.id}')">
           <div class="search-result-icon" style="background:${a.status==='策划中'?'#ede9fe':a.status==='执行中'?'#fef3c7':a.status==='复盘中'?'#d1fae5':'#e0e7ff'}">
             ${a.status==='策划中'?'📋':a.status==='执行中'?'⚡':a.status==='复盘中'?'🔍':'✅'}
           </div>
@@ -2068,7 +2073,7 @@ function showSearchResults(keyword) {
     if(matchedFiles.length > 0) {
       html += `<div class="search-section-title">📎 文件（${matchedFiles.length}）</div>`;
       html += matchedFiles.slice(0,4).map(({file:f, activity:a}) => `
-        <div class="search-result-item" onclick="clearSearch();openDetail(${a.id});setTimeout(()=>{const tabs=document.querySelectorAll('#detail-content .tab');if(tabs[4])tabs[4].click()},300)">
+        <div class="search-result-item" onclick="clearSearch();openDetail('${a.id}');setTimeout(()=>{const tabs=document.querySelectorAll('#detail-content .tab');if(tabs[4])tabs[4].click()},300)">
           <div class="search-result-icon" style="background:#f1f5f9;font-size:20px">${fileIcon(f.type, f.name)}</div>
           <div class="search-result-body">
             <div class="search-result-title">${highlight(f.name, keyword)}</div>
@@ -2082,7 +2087,7 @@ function showSearchResults(keyword) {
     if(matchedTasks.length > 0) {
       html += `<div class="search-section-title">✅ 任务（${matchedTasks.length}）</div>`;
       html += matchedTasks.slice(0,3).map(({task:t, activity:a}) => `
-        <div class="search-result-item" onclick="clearSearch();openDetail(${a.id});setTimeout(()=>{const tabs=document.querySelectorAll('#detail-content .tab');if(tabs[1])tabs[1].click()},300)">
+        <div class="search-result-item" onclick="clearSearch();openDetail('${a.id}');setTimeout(()=>{const tabs=document.querySelectorAll('#detail-content .tab');if(tabs[1])tabs[1].click()},300)">
           <div class="search-result-icon" style="background:${t.done?'#d1fae5':'#f1f5f9'}">${t.done?'✅':'⬜'}</div>
           <div class="search-result-body">
             <div class="search-result-title">${highlight(t.name, keyword)}</div>
@@ -2387,7 +2392,7 @@ ${getActivitiesSummary()}
 // ===== AI 生成复盘 =====
 async function aiGenerateReview(activityId) {
   if(!getApiKey()) { toggleAiDrawer(); return; }
-  const a = activities.find(x=>x.id===activityId);
+  const a = activities.find(x=>String(x.id)===String(activityId));
   if(!a) return;
 
   const btn = event.target;
@@ -2755,7 +2760,7 @@ function renderOwnerAnalysis() {
                 </td>
                 <td class="${a.roi?'color-success fw-600':''}">${a.roi ? a.roi+'x' : '-'}</td>
                 <td>${a.satisfaction ? a.satisfaction+'⭐' : '-'}</td>
-                <td><button class="btn btn-outline btn-sm" onclick="openDetail(${a.id})">详情</button></td>
+                <td><button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">详情</button></td>
               </tr>
             `).join('')}
           </tbody>
