@@ -675,13 +675,10 @@
 
   <script>
     // ===== API 代理配置 =====
-    // 部署 Cloudflare Workers 后，将下面的地址替换为你的 Worker URL
-    const PROXY_API = ''; // ← 填入你的 Worker URL（部署后填写）
+    const PROXY_API = 'https://mcm-api-proxy.657164833.workers.dev';
 
     const JSONBIN_BIN_ID = '69bd20d6b7ec241ddc86e1c2';
     const JSONBIN_API_FALLBACK = 'https://api.jsonbin.io/v3/b';
-    // ⚠️ Worker 部署完成后应当删除下面这行
-    const JSONBIN_MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
 
     let currentBinVersion = null;
     let activities = [];
