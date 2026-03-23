@@ -897,8 +897,24 @@
         <input class="form-control" type="date" id="new-end">
       </div>
     </div>
-    <!-- 预算明细 -->
+
+    <!-- 预算类型选择 -->
     <div class="form-group">
+      <label>预算类型</label>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn" id="budget-type-has" onclick="toggleBudgetType('has')" 
+          style="flex:1;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px">
+          💰 有预算
+        </button>
+        <button type="button" class="btn" id="budget-type-none" onclick="toggleBudgetType('none')" 
+          style="flex:1;background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px">
+          ✨ 无花费
+        </button>
+      </div>
+    </div>
+
+    <!-- 预算明细 -->
+    <div id="budget-section" class="form-group">
       <label>预算明细（必填）</label>
       <div id="budget-items">
         <!-- 预算项会动态生成 -->
@@ -907,7 +923,7 @@
     </div>
     
     <!-- 特殊费用 -->
-    <div class="grid-2" style="gap:12px;margin-top:8px">
+    <div id="special-fee-section" class="grid-2" style="gap:12px;margin-top:8px">
       <div class="form-group">
         <label>🏗️ 售后搭建费用（元）</label>
         <input class="form-control" type="number" id="new-setup-fee" placeholder="展台搭建、舞台搭建等" value="0">
@@ -1514,7 +1530,7 @@ function activityDetailCard(a) {
           <div class="mt-16 text-sm" style="color:var(--text-muted)">
             📅 ${a.start} ~ ${a.end}<br>
             👤 ${a.owner}<br>
-            💰 预算 ¥${Number(a.budget).toLocaleString()} / 已支出 ¥${Number(a.spent).toLocaleString()}
+            ${a.hasBudget === false ? '✨ 无花费活动' : `💰 预算 ¥${Number(a.budget).toLocaleString()} / 已支出 ¥${Number(a.spent).toLocaleString()}`}
           </div>
         </div>
         <div>
@@ -1547,6 +1563,13 @@ function activityDetailCard(a) {
 
 // ===== 预算明细渲染 =====
 function renderBudgetDetail(a) {
+  // 如果活动标记为无花费，显示提示
+  if (a.hasBudget === false) {
+    return `<div class="form-group" style="background:#f0fdf4;padding:12px;border-radius:8px;color:#15803d;font-size:13px;border:1px solid #dcfce7">
+      ✨ 此活动无花费，无需预算申报
+    </div>`;
+  }
+  
   const items = a.budgetItems || [];
   if(!items || items.length === 0) {
     return `<div class="form-group" style="color:var(--text-muted);font-size:13px">暂无预算明细</div>`;
@@ -1907,6 +1930,35 @@ async function advanceActivity(id) {
 }
 
 // ===== 新建活动 =====
+// ===== 预算类型管理 =====
+var hasBudget = true; // 默认有预算
+
+function toggleBudgetType(type) {
+  hasBudget = (type === 'has');
+  const hasBtn = document.getElementById('budget-type-has');
+  const noneBtn = document.getElementById('budget-type-none');
+  const budgetSection = document.getElementById('budget-section');
+  const specialFeeSection = document.getElementById('special-fee-section');
+  
+  if (hasBudget) {
+    // 显示预算部分
+    hasBtn.style.background = 'var(--primary)';
+    hasBtn.style.color = '#fff';
+    noneBtn.style.background = '#e2e8f0';
+    noneBtn.style.color = '#64748b';
+    budgetSection.style.display = 'block';
+    specialFeeSection.style.display = 'grid';
+  } else {
+    // 隐藏预算部分
+    hasBtn.style.background = '#e2e8f0';
+    hasBtn.style.color = '#64748b';
+    noneBtn.style.background = 'var(--success)';
+    noneBtn.style.color = '#fff';
+    budgetSection.style.display = 'none';
+    specialFeeSection.style.display = 'none';
+  }
+}
+
 // ===== 预算明细管理 =====
 var budgetItemCount = 0;
 
@@ -2004,6 +2056,9 @@ function collectBudgetItems() {
 }
 
 function openNewActivity() { 
+  // 重置为有预算模式
+  hasBudget = true;
+  toggleBudgetType('has');
   initBudgetItems();
   showModal('modal-new'); 
 }
@@ -2012,10 +2067,15 @@ async function createActivity() {
   const name = document.getElementById('new-name').value.trim();
   if(!name) { alert('请填写活动名称'); return; }
   
-  const budgetItems = collectBudgetItems();
-  const totalBudget = budgetItems.reduce((sum, item) => sum + item.amount, 0);
+  let budgetItems = [];
+  let totalBudget = 0;
   
-  if(totalBudget === 0) { alert('请填写至少一项预算明细'); return; }
+  // 如果选择了有预算，需要检查预算信息
+  if (hasBudget) {
+    budgetItems = collectBudgetItems();
+    totalBudget = budgetItems.reduce((sum, item) => sum + item.amount, 0);
+    if(totalBudget === 0) { alert('请填写至少一项预算明细'); return; }
+  }
   
   const newA = {
     id: String(Date.now()),
@@ -2026,6 +2086,7 @@ async function createActivity() {
     end: document.getElementById('new-end').value || '待定',
     budget: totalBudget,
     spent: 0,
+    hasBudget: hasBudget, // 记录是否有预算
     status: '策划中',
     progress: 10,
     goal: document.getElementById('new-goal').value,
