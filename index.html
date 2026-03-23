@@ -1004,160 +1004,86 @@
 </div>
 
 <script>
-// ===== API 代理配置 =====
-const PROXY_API = 'https://mcm-api-proxy.11ad930b3bc368f221039c4a44b22d13.workers.dev';
+// ===== 本地存储（离线优先）=====
+const STORAGE_KEY = 'market_activities_data_frontend';
 
-const JSONBIN_BIN_ID = '69bd20d6b7ec241ddc86e1c2';
-const JSONBIN_API_FALLBACK = 'https://api.jsonbin.io/v3/b';
-
-// ===== jsonbin.io 数据操作（支持代理模式）=====
-var currentBinVersion = null;
-
+// ===== 获取数据（网络优先，本地备份）=====
 async function getJsonBinData(retryCount = 0) {
-  const MAX_RETRIES = 3;
-  const TIMEOUT_MS = 30000; // 30秒超时
+  const TIMEOUT_MS = 5000; // 5秒超时
+  const PROXY_API = 'https://mcm-api-proxy.11ad930b3bc368f221039c4a44b22d13.workers.dev';
   
-  console.log('🔄 开始加载数据...', retryCount > 0 ? `(重试 ${retryCount}/${MAX_RETRIES})` : '');
-  let res;
+  console.log('🔄 开始加载数据...');
+  
+  // 1. 尝试从网络获取
   if (PROXY_API) {
-    // ✅ 安全模式：通过 Workers 代理，不暴露 Key
-    console.log('📡 使用代理:', PROXY_API);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      console.warn('⚠️ 读取超时（' + TIMEOUT_MS + 'ms），中止连接');
-      controller.abort();
-    }, TIMEOUT_MS);
     try {
-      res = await fetch(`${PROXY_API}/data/latest`, {
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      console.log('✅ 代理响应:', res.status, res.statusText);
-    } catch (err) {
-      clearTimeout(timeout);
-      console.error('❌ 代理请求失败:', err.message);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
       
-      // 自动重试
-      if (retryCount < MAX_RETRIES && err.message.includes('aborted')) {
-        console.log('🔄 自动重试加载数据...');
-        await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
-        return getJsonBinData(retryCount + 1);
-      }
-      throw new Error(`代理请求失败: ${err.message}. 请检查 Workers 是否正常部署`);
-    }
-  } else {
-    // ⚠️ 临时直连模式（Worker 未部署时使用）
-    console.warn('⚠️ 未配置代理，使用直连模式');
-    const MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    try {
-      res = await fetch(`${JSONBIN_API_FALLBACK}/${JSONBIN_BIN_ID}/latest`, {
-        headers: { 'X-Master-Key': MASTER_KEY },
+      const res = await fetch(`${PROXY_API}/data/latest`, {
         signal: controller.signal
       });
       clearTimeout(timeout);
-    } catch (err) {
-      clearTimeout(timeout);
-      if (retryCount < MAX_RETRIES && err.message.includes('aborted')) {
-        console.log('🔄 自动重试加载数据...');
-        await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
-        return getJsonBinData(retryCount + 1);
+      
+      if (res.ok) {
+        const data = await res.json();
+        console.log('✅ 网络数据加载成功');
+        // 同时保存到本地
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.record || { activities: [], files: {} }));
+        return data.record || { activities: [], files: {} };
       }
-      throw err;
+    } catch (err) {
+      console.log('📡 网络连接失败（这是正常的，尝试使用本地数据）:', err.message);
     }
   }
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error('❌ API返回错误:', res.status, errText);
-    throw new Error(`获取数据失败 (${res.status}): ${errText}`);
+  
+  // 2. 回退到本地存储
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    console.log('✅ 使用本地缓存数据');
+    return JSON.parse(stored);
   }
-  const data = await res.json();
-  console.log('📦 数据加载成功', data);
-  if (data.meta && data.meta.version) {
-    currentBinVersion = data.meta.version;
-  }
-  return data.record || { activities: [], files: {} };
+  
+  // 3. 都没有的话返回空数据
+  console.log('⚠️ 没有本地数据，使用空数据');
+  return { activities: [], files: {} };
 }
 
+// ===== 保存数据（本地优先，异步网络同步）=====
 async function saveJsonBinData(data, retryCount = 0) {
-  const MAX_RETRIES = 3;
-  const TIMEOUT_MS = 60000; // 增加到 60 秒
+  console.log('💾 开始保存数据...');
   
-  console.log('💾 开始保存数据...', retryCount > 0 ? `(重试 ${retryCount}/${MAX_RETRIES})` : '');
-  const headers = { 'Content-Type': 'application/json' };
-  if (currentBinVersion) {
-    headers['X-Bin-Version'] = currentBinVersion;
-  }
-
-  let res;
+  // 1. 先保存到本地（即使网络失败也要保证本地有数据）
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  console.log('✅ 数据已保存到本地');
+  
+  // 2. 异步尝试网络同步（不阻塞用户）
+  const PROXY_API = 'https://mcm-api-proxy.11ad930b3bc368f221039c4a44b22d13.workers.dev';
   if (PROXY_API) {
-    // ✅ 安全模式：通过 Workers 代理
-    console.log('📡 使用代理保存:', PROXY_API);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      console.warn('⚠️ 请求超时（' + TIMEOUT_MS + 'ms），中止连接');
-      controller.abort();
-    }, TIMEOUT_MS);
-    
-    try {
-      res = await fetch(`${PROXY_API}/data`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(data),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      console.log('✅ 保存响应:', res.status, res.statusText);
-    } catch (err) {
-      clearTimeout(timeout);
-      console.error('❌ 代理保存失败:', err.message);
-      
-      // 自动重试
-      if (retryCount < MAX_RETRIES && err.message.includes('aborted')) {
-        console.log('🔄 自动重试保存数据...');
-        await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000)); // 等待 1-2 秒
-        return saveJsonBinData(data, retryCount + 1);
+    setTimeout(async () => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        
+        const res = await fetch(`${PROXY_API}/data`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        
+        if (res.ok) {
+          console.log('✅ 数据已同步到网络');
+        } else {
+          console.log('⚠️ 网络同步失败，但本地数据已保存');
+        }
+      } catch (err) {
+        console.log('⚠️ 网络同步失败（本地已保存）:', err.message);
       }
-      throw new Error(`代理保存失败: ${err.message}`);
-    }
-  } else {
-    // ⚠️ 临时直连模式
-    console.warn('⚠️ 未配置代理，使用直连模式');
-    const MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
-    headers['X-Master-Key'] = MASTER_KEY;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    
-    try {
-      res = await fetch(`${JSONBIN_API_FALLBACK}/${JSONBIN_BIN_ID}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(data),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-    } catch (err) {
-      clearTimeout(timeout);
-      if (retryCount < MAX_RETRIES && err.message.includes('aborted')) {
-        console.log('🔄 自动重试保存数据...');
-        await new Promise(r => setTimeout(r, 1000 + Math.random() * 1000));
-        return saveJsonBinData(data, retryCount + 1);
-      }
-      throw err;
-    }
+    }, 100);
   }
-
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error('❌ 保存错误:', res.status, errText);
-    throw new Error(`保存失败 (${res.status}): ${errText}`);
-  }
-  const result = await res.json();
-  if (result.meta && result.meta.version) {
-    currentBinVersion = result.meta.version;
-  }
-  return result;
+  
 }
 
 // ===== 文件存储（localStorage，Base64）=====
