@@ -592,6 +592,13 @@
     </div>
   </div>
 
+  <!-- 加载提示遮罩 -->
+  <div id="loading-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div style="font-size:48px;margin-bottom:20px">🔄</div>
+    <div style="font-size:16px;color:#64748b" id="loading-text">正在加载数据...</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:8px">首次加载可能需要 10 秒左右</div>
+  </div>
+
   <div class="content">
 
     <!-- ===== 仪表盘 ===== -->
@@ -1020,18 +1027,39 @@ const JSONBIN_API_FALLBACK = 'https://api.jsonbin.io/v3/b';
 var currentBinVersion = null;
 
 async function getJsonBinData() {
+  console.log('🔄 开始加载数据...');
   let res;
   if (PROXY_API) {
     // ✅ 安全模式：通过 Workers 代理，不暴露 Key
-    res = await fetch(`${PROXY_API}/data/latest`);
+    console.log('📡 使用代理:', PROXY_API);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10秒超时
+    try {
+      res = await fetch(`${PROXY_API}/data/latest`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      console.log('✅ 代理响应:', res.status, res.statusText);
+    } catch (err) {
+      clearTimeout(timeout);
+      console.error('❌ 代理请求失败:', err);
+      throw new Error(`代理请求失败: ${err.message}. 请检查 Workers 是否正常部署`);
+    }
   } else {
     // ⚠️ 临时直连模式（Worker 未部署时使用）
+    console.warn('⚠️ 未配置代理，使用直连模式');
+    const MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
     res = await fetch(`${JSONBIN_API_FALLBACK}/${JSONBIN_BIN_ID}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+      headers: { 'X-Master-Key': MASTER_KEY }
     });
   }
-  if (!res.ok) throw new Error('获取数据失败');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('❌ API返回错误:', res.status, errText);
+    throw new Error(`获取数据失败 (${res.status}): ${errText}`);
+  }
   const data = await res.json();
+  console.log('📦 数据加载成功', data);
   if (data.meta && data.meta.version) {
     currentBinVersion = data.meta.version;
   }
@@ -1039,6 +1067,7 @@ async function getJsonBinData() {
 }
 
 async function saveJsonBinData(data) {
+  console.log('💾 开始保存数据...');
   const headers = { 'Content-Type': 'application/json' };
   if (currentBinVersion) {
     headers['X-Bin-Version'] = currentBinVersion;
@@ -1047,14 +1076,28 @@ async function saveJsonBinData(data) {
   let res;
   if (PROXY_API) {
     // ✅ 安全模式：通过 Workers 代理
-    res = await fetch(`${PROXY_API}/data`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data)
-    });
+    console.log('📡 使用代理保存:', PROXY_API);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      res = await fetch(`${PROXY_API}/data`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(data),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      console.log('✅ 保存响应:', res.status, res.statusText);
+    } catch (err) {
+      clearTimeout(timeout);
+      console.error('❌ 代理保存失败:', err);
+      throw new Error(`代理保存失败: ${err.message}`);
+    }
   } else {
     // ⚠️ 临时直连模式
-    headers['X-Master-Key'] = JSONBIN_MASTER_KEY;
+    console.warn('⚠️ 未配置代理，使用直连模式');
+    const MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
+    headers['X-Master-Key'] = MASTER_KEY;
     res = await fetch(`${JSONBIN_API_FALLBACK}/${JSONBIN_BIN_ID}`, {
       method: 'PUT',
       headers,
@@ -1064,7 +1107,8 @@ async function saveJsonBinData(data) {
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`保存失败: ${errText}`);
+    console.error('❌ 保存错误:', res.status, errText);
+    throw new Error(`保存失败 (${res.status}): ${errText}`);
   }
   const result = await res.json();
   if (result.meta && result.meta.version) {
@@ -1134,16 +1178,25 @@ var activities = [];
 
 // 初始化：从 jsonbin.io 加载数据
 async function initData() {
+  const loadingOverlay = document.getElementById('loading-overlay');
+  const loadingText = document.getElementById('loading-text');
+
   try {
+    loadingText.textContent = '正在连接服务器...';
     const data = await getJsonBinData();
     activities = data.activities || [];
     fileStore = data.files || {};
     console.log('✅ 数据加载成功', activities.length, '个活动');
   } catch (err) {
     console.error('❌ 数据加载失败:', err.message);
+    loadingText.textContent = '加载失败，使用本地备份数据...';
     // 使用本地备份
     activities = JSON.parse(localStorage.getItem('mcm_activities_backup') || '[]');
     fileStore = JSON.parse(localStorage.getItem('mcm_files_backup') || '{}');
+    await new Promise(r => setTimeout(r, 1000)); // 让用户看到提示
+  } finally {
+    // 隐藏加载提示
+    loadingOverlay.style.display = 'none';
   }
 }
 
