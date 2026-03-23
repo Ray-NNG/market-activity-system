@@ -734,14 +734,24 @@
       <div id="ai-analysis-result" style="margin-bottom:20px"></div>
       <div class="grid-4 section-gap">
         <div class="stat-card">
-          <div class="label">📣 总触达人次</div>
-          <div class="value color-primary">128.6万</div>
-          <div class="change up">↑ 23% vs 上季度</div>
+          <div class="label">📋 活动总数</div>
+          <div class="value color-primary">${activities.length}</div>
+          <div class="change text-muted">累计已创建</div>
         </div>
         <div class="stat-card">
-          <div class="label">🎯 平均转化率</div>
-          <div class="value color-success">8.4%</div>
-          <div class="change up">↑ 1.2% vs 上季度</div>
+          <div class="label">👥 线下参与总人数</div>
+          <div class="value color-success">${activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('参与'))?.actual||0),0)}</div>
+          <div class="change text-muted">实际参与人数</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">🌐 线上覆盖总人数</div>
+          <div class="value color-info">${activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('覆盖'))?.actual||0),0)}</div>
+          <div class="change text-muted">线上触达人数</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">💼 商机总数</div>
+          <div class="value color-warning">${activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('商机'))?.actual||0),0)}</div>
+          <div class="change text-muted">累计商机数量</div>
         </div>
         <div class="stat-card">
           <div class="label">💸 平均 ROI</div>
@@ -775,7 +785,7 @@
             <thead>
               <tr>
                 <th>排名</th><th>活动名称</th><th>类型</th>
-                <th>触达人次</th><th>转化率</th><th>ROI</th><th>满意度</th><th>综合评分</th>
+                <th>实际参与</th><th>线上覆盖</th><th>商机</th><th>ROI</th><th>满意度</th><th>综合评分</th>
               </tr>
             </thead>
             <tbody id="ranking-table"></tbody>
@@ -1377,13 +1387,16 @@ function renderAnalysis() {
   const ranked = [...done].sort((a,b)=>b.roi-a.roi);
   tbody.innerHTML = ranked.map((a,i) => {
     const medals = ['🥇','🥈','🥉'];
-    const reach = a.kpis.find(k=>k.name.includes('曝光')||k.name.includes('触达')||k.name.includes('线索'));
+    const offline = a.kpis.find(k=>k.name.includes('参与'));
+    const online = a.kpis.find(k=>k.name.includes('覆盖'));
+    const leads = a.kpis.find(k=>k.name.includes('商机'));
     return `<tr>
       <td>${medals[i]||i+1}</td>
       <td class="fw-600">${a.name}</td>
       <td><span class="tag">${a.type}</span></td>
-      <td>${reach?reach.actual+reach.unit:'-'}</td>
-      <td>${a.kpis.find(k=>k.name.includes('转化'))?.actual+'%'||'-'}</td>
+      <td>${offline?offline.actual+offline.unit:'-'}</td>
+      <td>${online?online.actual+online.unit:'-'}</td>
+      <td>${leads?leads.actual+leads.unit:'-'}</td>
       <td class="color-success fw-600">${a.roi}x</td>
       <td>${a.satisfaction}⭐</td>
       <td><div style="display:inline-flex;align-items:center;gap:6px"><div class="progress-wrap" style="width:60px"><div class="progress-bar progress-success" style="width:${(a.roi/4)*100}%"></div></div><span class="text-sm">${Math.round((a.roi/4)*100)}分</span></div></td>
@@ -1966,7 +1979,11 @@ async function createActivity() {
     goal: document.getElementById('new-goal').value,
     desc: document.getElementById('new-desc').value,
     budgetItems: budgetItems,
-    kpis: window._aiPlanKpis || [{name:'曝光量',target:0,actual:0,unit:'万'},{name:'转化率',target:0,actual:0,unit:'%'}],
+    kpis: window._aiPlanKpis || [
+      {name:'活动实际参与人数',target:0,actual:0,unit:'人'},
+      {name:'线上覆盖人数',target:0,actual:0,unit:'人'},
+      {name:'商机情况',target:0,actual:0,unit:'个'}
+    ],
     tasks: window._aiPlanTasks || [{name:'制定活动方案',done:false},{name:'确认资源预算',done:false},{name:'启动执行',done:false},{name:'数据复盘',done:false}],
     risks: window._aiPlanRisks || [], review: null, roi: null, satisfaction: null
   };
@@ -2321,7 +2338,11 @@ async function aiGeneratePlan() {
   "goal": "核心目标（一段话，50字内）",
   "desc": "活动简介（100字内）",
   "tasks": ["任务1","任务2","任务3","任务4","任务5"],
-  "kpis": [{"name":"指标名","target":数字,"unit":"单位"},{"name":"指标名","target":数字,"unit":"单位"},{"name":"指标名","target":数字,"unit":"单位"}],
+  "kpis": [
+    {"name":"活动实际参与人数","target":数字,"unit":"人"},
+    {"name":"线上覆盖人数","target":数字,"unit":"人"},
+    {"name":"商机情况","target":数字,"unit":"个"}
+  ],
   "risks": [{"level":"高/中/低","text":"风险描述"}]
 }
 只返回 JSON，不要其他文字。`;
