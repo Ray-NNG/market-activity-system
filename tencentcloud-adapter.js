@@ -12,9 +12,9 @@
   // ============ 配置 ============
   const CONFIG = {
     // COS 存储桶配置
-    bucketName: 'market-activity-system',
-    region: 'bj',
-    endpoint: 'https://market-activity-system.cos.bj.myqcloud.com',
+    bucketName: 'nnqgcvte2026-1414699807',
+    region: 'ap-guangzhou',
+    endpoint: 'https://nnqgcvte2026-1414699807.cos.ap-guangzhou.myqcloud.com',
     
     // 数据文件配置
     activitiesFile: 'activities.json',
