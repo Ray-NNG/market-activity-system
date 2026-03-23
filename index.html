@@ -598,24 +598,24 @@
     <div id="page-dashboard" class="page active">
       <div class="grid-4 section-gap">
         <div class="stat-card">
-          <div class="label">📌 活动总数</div>
-          <div class="value color-primary" id="stat-total">6</div>
-          <div class="change up">↑ 2 本季度新增</div>
+          <div class="label">📋 活动总数</div>
+          <div class="value color-primary" id="stat-total">-</div>
+          <div class="change text-muted">累计已创建</div>
         </div>
         <div class="stat-card">
-          <div class="label">📋 策划中</div>
-          <div class="value" style="color:#7c3aed" id="stat-plan">2</div>
-          <div class="change">待推进执行</div>
+          <div class="label">👥 线下参与总人数</div>
+          <div class="value color-success" id="stat-participants">-</div>
+          <div class="change text-muted">实际参与人数</div>
         </div>
         <div class="stat-card">
-          <div class="label">⚡ 执行中</div>
-          <div class="value color-warning" id="stat-exec">2</div>
-          <div class="change up">↑ 进行中</div>
+          <div class="label">🌐 线上覆盖总人数</div>
+          <div class="value color-info" id="stat-coverage">-</div>
+          <div class="change text-muted">线上触达人数</div>
         </div>
         <div class="stat-card">
-          <div class="label">✅ 已复盘</div>
-          <div class="value color-success" id="stat-done">2</div>
-          <div class="change up">完成率 33%</div>
+          <div class="label">💼 商机总数</div>
+          <div class="value color-warning" id="stat-leads">-</div>
+          <div class="change text-muted">累计商机数量</div>
         </div>
       </div>
 
@@ -1224,9 +1224,9 @@ function renderPage(page) {
 // ===== 仪表盘 =====
 function renderDashboard() {
   document.getElementById('stat-total').textContent = activities.length;
-  document.getElementById('stat-plan').textContent = activities.filter(a=>a.status==='策划中').length;
-  document.getElementById('stat-exec').textContent = activities.filter(a=>a.status==='执行中').length;
-  document.getElementById('stat-done').textContent = activities.filter(a=>a.status==='已完成'||a.status==='复盘中').length;
+  document.getElementById('stat-participants').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('参与'))?.actual||0),0);
+  document.getElementById('stat-coverage').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('覆盖'))?.actual||0),0);
+  document.getElementById('stat-leads').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('商机'))?.actual||0),0);
 
   // 活动列表
   const list = document.getElementById('dashboard-activity-list');
