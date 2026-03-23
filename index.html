@@ -738,37 +738,8 @@
         <button class="btn-ai" onclick="aiAnalyzeAll()">✨ AI 智能效果分析</button>
       </div>
       <div id="ai-analysis-result" style="margin-bottom:20px"></div>
-      <div class="grid-4 section-gap">
-        <div class="stat-card">
-          <div class="label">📋 活动总数</div>
-          <div class="value color-primary">${activities.length}</div>
-          <div class="change text-muted">累计已创建</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">👥 线下参与总人数</div>
-          <div class="value color-success">${activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('参与'))?.actual||0),0)}</div>
-          <div class="change text-muted">实际参与人数</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">🌐 线上覆盖总人数</div>
-          <div class="value color-info">${activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('覆盖'))?.actual||0),0)}</div>
-          <div class="change text-muted">线上触达人数</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">💼 商机总数</div>
-          <div class="value color-warning">${activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('商机'))?.actual||0),0)}</div>
-          <div class="change text-muted">累计商机数量</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">💸 平均 ROI</div>
-          <div class="value color-warning">3.2x</div>
-          <div class="change up">↑ 0.4x vs 上季度</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">⭐ 平均满意度</div>
-          <div class="value" style="color:#f59e0b">4.6</div>
-          <div class="change">/ 5.0 分</div>
-        </div>
+      <div class="grid-4 section-gap" id="analysis-stats">
+        <!-- 将由 JavaScript 动态生成 -->
       </div>
 
       <div class="grid-2 section-gap">
@@ -1618,6 +1589,49 @@ async function deleteActivity(id) {
   }
   
   return { success: true };
+}
+
+// ===== 效果分析渲染 =====
+function renderAnalysis() {
+  const statsDiv = document.getElementById('analysis-stats');
+  if (!statsDiv) return;
+  
+  const totalParticipants = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('参与'))?.actual||0),0);
+  const totalCoverage = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('覆盖'))?.actual||0),0);
+  const totalLeads = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('商机'))?.actual||0),0);
+  
+  statsDiv.innerHTML = `
+    <div class="stat-card">
+      <div class="label">📋 活动总数</div>
+      <div class="value color-primary">${activities.length}</div>
+      <div class="change text-muted">累计已创建</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">👥 线下参与总人数</div>
+      <div class="value color-success">${totalParticipants}</div>
+      <div class="change text-muted">实际参与人数</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🌐 线上覆盖总人数</div>
+      <div class="value color-info">${totalCoverage}</div>
+      <div class="change text-muted">线上触达人数</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">💼 商机总数</div>
+      <div class="value color-warning">${totalLeads}</div>
+      <div class="change text-muted">累计商机数量</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">💸 平均 ROI</div>
+      <div class="value color-warning">3.2x</div>
+      <div class="change up">↑ 0.4x vs 上季度</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">⭐ 平均满意度</div>
+      <div class="value" style="color:#f59e0b">4.6</div>
+      <div class="change">/ 5.0 分</div>
+    </div>
+  `;
 }
 
 // ===== 路由 =====
