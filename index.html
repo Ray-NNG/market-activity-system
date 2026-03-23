@@ -1001,22 +1001,33 @@
 </div>
 
 <script>
-// ===== jsonbin.io 配置 =====
+// ===== API 代理配置 =====
+// 部署 Cloudflare Workers 后，将下面的地址替换为你的 Worker URL
+// 例如：https://mcm-api-proxy.your-name.workers.dev
+// 部署前暂时保留 jsonbin 直连作为回退
+const PROXY_API = ''; // ← 填入你的 Worker URL（部署后填写）
 
-const JSONBIN_MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
 const JSONBIN_BIN_ID = '69bd20d6b7ec241ddc86e1c2';
-const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
+const JSONBIN_API_FALLBACK = 'https://api.jsonbin.io/v3/b';
+// ⚠️ 下面这个 Key 在 Worker 部署完成后应当删除，届时前端不再需要它
+const JSONBIN_MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
 
-// ===== jsonbin.io 数据操作 =====
+// ===== jsonbin.io 数据操作（支持代理模式）=====
 var currentBinVersion = null;
 
 async function getJsonBinData() {
-  const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}/latest`, {
-    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-  });
+  let res;
+  if (PROXY_API) {
+    // ✅ 安全模式：通过 Workers 代理，不暴露 Key
+    res = await fetch(`${PROXY_API}/data/latest`);
+  } else {
+    // ⚠️ 临时直连模式（Worker 未部署时使用）
+    res = await fetch(`${JSONBIN_API_FALLBACK}/${JSONBIN_BIN_ID}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+    });
+  }
   if (!res.ok) throw new Error('获取数据失败');
   const data = await res.json();
-  // 安全检查：确保 meta 存在
   if (data.meta && data.meta.version) {
     currentBinVersion = data.meta.version;
   }
@@ -1024,26 +1035,34 @@ async function getJsonBinData() {
 }
 
 async function saveJsonBinData(data) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-Master-Key': JSONBIN_MASTER_KEY
-  };
-  // 如果有版本号，添加版本头
+  const headers = { 'Content-Type': 'application/json' };
   if (currentBinVersion) {
     headers['X-Bin-Version'] = currentBinVersion;
   }
 
-  const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}`, {
-    method: 'PUT',
-    headers: headers,
-    body: JSON.stringify(data)
-  });
+  let res;
+  if (PROXY_API) {
+    // ✅ 安全模式：通过 Workers 代理
+    res = await fetch(`${PROXY_API}/data`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data)
+    });
+  } else {
+    // ⚠️ 临时直连模式
+    headers['X-Master-Key'] = JSONBIN_MASTER_KEY;
+    res = await fetch(`${JSONBIN_API_FALLBACK}/${JSONBIN_BIN_ID}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data)
+    });
+  }
+
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`保存失败: ${errText}`);
   }
   const result = await res.json();
-  // 安全检查：确保 meta 存在
   if (result.meta && result.meta.version) {
     currentBinVersion = result.meta.version;
   }
