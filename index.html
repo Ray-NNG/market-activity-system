@@ -1259,12 +1259,26 @@ async function initData() {
     activities = data.activities || [];
     fileStore = data.files || {};
     console.log('✅ 数据加载成功', activities.length, '个活动');
+    
+    // 数据加载成功后，尝试同步离线队列
+    if (syncQueue.queue.length > 0) {
+      loadingText.textContent = '正在同步离线数据...';
+      console.log(`🔄 发现 ${syncQueue.queue.length} 项待同步任务，开始同步...`);
+      await syncQueue.syncAll();
+    }
   } catch (err) {
     console.error('❌ 数据加载失败:', err.message);
     loadingText.textContent = '加载失败，使用本地备份数据...';
     // 使用本地备份
     activities = JSON.parse(localStorage.getItem('mcm_activities_backup') || '[]');
     fileStore = JSON.parse(localStorage.getItem('mcm_files_backup') || '{}');
+    
+    // 离线状态下也提示用户有待同步的队列
+    if (syncQueue.queue.length > 0) {
+      console.warn(`⚠️ [离线] 检测到 ${syncQueue.queue.length} 项待同步任务，将在网络恢复时自动同步`);
+      loadingText.textContent = `本地模式 • 有 ${syncQueue.queue.length} 项待同步`;
+    }
+    
     await new Promise(r => setTimeout(r, 1000)); // 让用户看到提示
   } finally {
     // 隐藏加载提示
@@ -1272,17 +1286,243 @@ async function initData() {
   }
 }
 
-// 保存数据到 jsonbin.io
+// ===== 离线队列系统 =====
+class OfflineSyncQueue {
+  constructor() {
+    this.queue = JSON.parse(localStorage.getItem('mcm_sync_queue') || '[]');
+    this.isSyncing = false;
+    this.syncStats = {
+      total: 0,
+      success: 0,
+      failed: 0
+    };
+    this.startAutoSync();
+    this.setupNetworkListener();
+    console.log(`📋 初始化离线队列，当前待同步: ${this.queue.length} 项`);
+  }
+
+  // 添加待同步任务
+  addTask(task) {
+    const newTask = {
+      id: Date.now() + Math.random(),
+      type: task.type,  // 'save' | 'delete'
+      data: task.data,
+      timestamp: Date.now(),
+      retries: 0,
+      lastError: null
+    };
+    this.queue.push(newTask);
+    this.saveQueue();
+    console.log(`📋 [队列] 添加任务 (${this.queue.length} 项待同步)`, task.type);
+    this.updateQueueUI();
+  }
+
+  // 自动同步（每 5 秒检查一次）
+  startAutoSync() {
+    setInterval(async () => {
+      if (this.queue.length > 0 && !this.isSyncing && navigator.onLine) {
+        console.log('🔄 [队列] 自动同步检查...');
+        await this.syncAll();
+      }
+    }, 5000);
+  }
+
+  // 监听网络状态
+  setupNetworkListener() {
+    window.addEventListener('online', async () => {
+      console.log('🌐 [网络] 连接已恢复！');
+      if (this.queue.length > 0) {
+        console.log(`🔄 [队列] 开始同步 ${this.queue.length} 项待同步任务...`);
+        await this.syncAll();
+      }
+    });
+
+    window.addEventListener('offline', () => {
+      console.log('📡 [网络] 连接已断开，已切换到离线模式');
+      this.updateQueueUI();
+    });
+  }
+
+  // 同步所有待处理任务
+  async syncAll() {
+    if (this.isSyncing || this.queue.length === 0) return;
+    
+    this.isSyncing = true;
+    this.syncStats = { total: this.queue.length, success: 0, failed: 0 };
+    console.log(`🚀 [队列] 开始同步 ${this.syncStats.total} 项任务`);
+    
+    while (this.queue.length > 0) {
+      const task = this.queue[0];
+      try {
+        if (task.type === 'save') {
+          // 增量保存：只上传变化的数据
+          await this.incrementalSave(task.data);
+        } else if (task.type === 'delete') {
+          await deleteActivity(task.data.id);
+        }
+        
+        this.queue.shift();
+        this.syncStats.success++;
+        this.saveQueue();
+        console.log(`✅ [队列] 任务同步成功 (剩余: ${this.queue.length}/${this.syncStats.total})`);
+        this.updateQueueUI();
+      } catch (err) {
+        task.retries++;
+        task.lastError = err.message;
+        
+        if (task.retries > 5) {
+          console.warn(`⚠️ [队列] 任务已放弃，重试 5 次仍失败: ${task.type}`);
+          this.queue.shift();
+          this.syncStats.failed++;
+        } else {
+          console.warn(`⚠️ [队列] 任务失败 (重试 ${task.retries}/5): ${err.message}`);
+        }
+        
+        this.saveQueue();
+        this.updateQueueUI();
+        break;  // 失败就停止，等待下一个周期
+      }
+    }
+    
+    this.isSyncing = false;
+    
+    if (this.queue.length === 0) {
+      console.log(`✨ [队列] 所有任务同步完成！(成功: ${this.syncStats.success}, 失败: ${this.syncStats.failed})`);
+      this.updateQueueUI();
+    }
+  }
+
+  // 增量保存：只上传修改的活动
+  async incrementalSave(activityData) {
+    console.log(`📤 [增量] 上传单个活动: ${activityData.name || activityData.id}`);
+    
+    // 获取服务器最新数据
+    const serverData = await getJsonBinData();
+    
+    // 找到这个活动的索引
+    const index = serverData.activities.findIndex(a => String(a.id) === String(activityData.id));
+    if (index >= 0) {
+      serverData.activities[index] = activityData;
+    } else {
+      serverData.activities.push(activityData);
+    }
+    
+    // 只上传合并后的数据
+    await saveJsonBinData(serverData);
+    console.log(`✅ [增量] 单个活动上传成功`);
+  }
+
+  // 更新 UI 显示队列状态
+  updateQueueUI() {
+    const queueIndicator = document.getElementById('sync-queue-indicator');
+    if (!queueIndicator) {
+      // 创建队列指示器
+      const indicator = document.createElement('div');
+      indicator.id = 'sync-queue-indicator';
+      indicator.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: ${this.queue.length > 0 ? '#fbbf24' : '#10b981'};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 999;
+        display: ${navigator.onLine ? 'block' : 'none'};
+        cursor: pointer;
+        transition: all 0.3s;
+      `;
+      document.body.appendChild(indicator);
+    }
+    
+    const indicator = document.getElementById('sync-queue-indicator');
+    if (navigator.onLine) {
+      indicator.style.display = 'block';
+      if (this.queue.length > 0) {
+        indicator.style.background = '#fbbf24';
+        indicator.textContent = `⏳ ${this.queue.length} 项待同步`;
+        indicator.style.animation = 'pulse 1s infinite';
+      } else if (this.isSyncing) {
+        indicator.style.background = '#3b82f6';
+        indicator.textContent = '🔄 同步中...';
+      } else {
+        indicator.style.background = '#10b981';
+        indicator.textContent = '✅ 已同步';
+      }
+    } else {
+      indicator.style.display = 'none';
+    }
+  }
+
+  saveQueue() {
+    localStorage.setItem('mcm_sync_queue', JSON.stringify(this.queue));
+  }
+
+  // 获取队列状态
+  getStatus() {
+    return {
+      pending: this.queue.length,
+      isSyncing: this.isSyncing,
+      isOnline: navigator.onLine,
+      stats: this.syncStats
+    };
+  }
+}
+
+// 初始化离线队列
+const syncQueue = new OfflineSyncQueue();
+
+// 添加 pulse 动画
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+`;
+document.head.appendChild(style);
+
+// 保存数据到 jsonbin.io（改进版）
 async function syncData() {
   try {
+    console.log('💾 [同步] 开始保存数据到服务器...');
     await saveJsonBinData({ activities, files: fileStore });
-    console.log('✅ 数据同步成功');
+    console.log('✅ [同步] 数据同步成功');
     // 本地备份
     localStorage.setItem('mcm_activities_backup', JSON.stringify(activities));
     localStorage.setItem('mcm_files_backup', JSON.stringify(fileStore));
   } catch (err) {
-    console.error('❌ 数据同步失败:', err.message);
-    alert('数据保存失败，请检查网络连接');
+    console.error('❌ [同步] 数据同步失败:', err.message);
+    console.warn('⚠️ [离线] 加入离线队列，等待网络恢复...');
+    
+    // 将失败的保存操作加入离线队列
+    syncQueue.addTask({
+      type: 'save',
+      data: { activities, files: fileStore }
+    });
+    
+    // 不再弹出 alert，而是显示离线提示
+    const msg = document.createElement('div');
+    msg.style.cssText = `
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ef4444;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      animation: slideDown 0.3s ease-out;
+    `;
+    msg.textContent = '⚠️ 网络连接失败，数据已保存到离线队列，待网络恢复后自动同步';
+    document.body.appendChild(msg);
+    
+    setTimeout(() => msg.remove(), 5000);
   }
 }
 
@@ -1291,19 +1531,69 @@ initData().then(() => {
   renderDashboard(); // 初始加载仪表盘
 });
 
+// 离线队列调试接口
+window.getOfflineStatus = function() {
+  const status = syncQueue.getStatus();
+  console.table({
+    '网络连接': status.isOnline ? '✅ 在线' : '❌ 离线',
+    '待同步任务': status.pending,
+    '正在同步': status.isSyncing ? '是' : '否',
+    '成功计数': status.stats.success,
+    '失败计数': status.stats.failed,
+    '总任务数': status.stats.total
+  });
+  return status;
+};
+
+window.manualSync = async function() {
+  console.log('🔄 手动触发离线队列同步...');
+  await syncQueue.syncAll();
+};
+
+window.clearOfflineQueue = function() {
+  if (confirm('确定要清空所有待同步的离线任务吗？')) {
+    syncQueue.queue = [];
+    syncQueue.saveQueue();
+    syncQueue.updateQueueUI();
+    console.log('✅ 离线队列已清空');
+  }
+};
+
+console.log('💡 离线队列命令:');
+console.log('  getOfflineStatus()  - 查看离线队列状态');
+console.log('  manualSync()        - 手动同步待同步任务');
+console.log('  clearOfflineQueue() - 清空离线队列');
+
 // ===== 活动数据操作 =====
 async function getActivities() {
   return activities;
 }
 
 async function saveActivity(data) {
+  // 1. 先更新内存数据
   const index = activities.findIndex(a => String(a.id) === String(data.id));
   if (index >= 0) {
     activities[index] = { ...activities[index], ...data, id: String(data.id) };
   } else {
     activities.push({ id: String(Date.now()), ...data });
   }
-  await syncData();
+  
+  // 2. 本地备份（确保本地数据总是安全的）
+  localStorage.setItem('mcm_activities_backup', JSON.stringify(activities));
+  console.log(`✅ [本地] 活动已保存到本地 (${data.name || data.id})`);
+  
+  // 3. 尝试同步到服务器
+  try {
+    await syncData();
+  } catch (err) {
+    // 同步失败时，将活动加入离线队列
+    console.warn('⚠️ [离线] 同步失败，已加入离线队列');
+    syncQueue.addTask({
+      type: 'save',
+      data: { ...activities[activities.findIndex(a => String(a.id) === String(data.id))] }
+    });
+  }
+  
   return data;
 }
 
@@ -1311,7 +1601,22 @@ async function deleteActivity(id) {
   const index = activities.findIndex(a => String(a.id) === String(id));
   if (index === -1) throw new Error('活动不存在');
   activities.splice(index, 1);
-  await syncData();
+  
+  // 本地备份
+  localStorage.setItem('mcm_activities_backup', JSON.stringify(activities));
+  console.log(`✅ [本地] 活动已删除并保存到本地`);
+  
+  // 尝试同步到服务器
+  try {
+    await syncData();
+  } catch (err) {
+    console.warn('⚠️ [离线] 删除同步失败，已加入离线队列');
+    syncQueue.addTask({
+      type: 'delete',
+      data: { id }
+    });
+  }
+  
   return { success: true };
 }
 
