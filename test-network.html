@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网络连接测试</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 2rem; background: #f8fafc; }
+        .test-card { background: white; border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .status { padding: 0.5rem 1rem; border-radius: 8px; margin-left: 1rem; font-weight: 600; }
+        .status.success { background: #dcfce7; color: #166534; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .status.pending { background: #fef3c7; color: #92400e; }
+        button { margin-top: 1rem; padding: 0.75rem 1.5rem; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        pre { background: #1e293b; color: #f1f5f9; padding: 1rem; border-radius: 8px; margin-top: 1rem; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>📡 网络连接测试</h1>
+    
+    <div class="test-card">
+        <h3>测试 1: 腾讯云 COS SDK CDN</h3>
+        <p><strong>URL:</strong> https://cos-js-sdk-v5.myqcloud.com/cos-js-sdk-v5.min.js</p>
+        <div id="test1-status">待测试...</div>
+        <pre id="test1-result"></pre>
+    </div>
+    
+    <div class="test-card">
+        <h3>测试 2: 替代 CDN 地址</h3>
+        <p><strong>URL:</strong> https://cdn.jsdelivr.net/npm/cos-js-sdk-v5@2.13.6/dist/cos-js-sdk-v5.min.js</p>
+        <div id="test2-status">待测试...</div>
+        <pre id="test2-result"></pre>
+    </div>
+    
+    <div class="test-card">
+        <h3>测试 3: 本地文件加载</h3>
+        <p><strong>说明:</strong> 将 COS SDK 下载到本地使用</p>
+        <div id="test3-status">待测试...</div>
+        <pre id="test3-result"></pre>
+    </div>
+    
+    <button onclick="runAllTests()">🔄 运行全部测试</button>
+    <button onclick="location.reload()">🔄 刷新页面</button>
+    
+    <script>
+        function updateStatus(elementId, text, type = 'pending') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<span class="status ${type}">${text}</span>`;
+        }
+        
+        function showResult(elementId, text) {
+            const element = document.getElementById(elementId);
+            element.textContent = text;
+        }
+        
+        async function testUrl(url, testId, resultId) {
+            updateStatus(testId, '测试中...');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(url, { 
+                    method: 'HEAD',
+                    mode: 'no-cors'  // 避免 CORS 问题
+                });
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+                
+                if (response.ok || response.status === 0) {
+                    updateStatus(testId, `✅ 连接成功 (${duration}ms)`, 'success');
+                    showResult(resultId, `状态: 可访问\n延迟: ${duration}ms\n大小: 需要完整请求获取`);
+                    return true;
+                } else {
+                    updateStatus(testId, `❌ 连接失败 (状态码: ${response.status})`, 'error');
+                    showResult(resultId, `状态: 连接失败\nHTTP状态码: ${response.status}`);
+                    return false;
+                }
+            } catch (error) {
+                updateStatus(testId, `❌ 网络错误: ${error.message}`, 'error');
+                showResult(resultId, `错误详情: ${error.toString()}\n类型: ${error.name}`);
+                return false;
+            }
+        }
+        
+        async function testLocalFile() {
+            const testId = 'test3-status';
+            const resultId = 'test3-result';
+            updateStatus(testId, '测试中...');
+            
+            try {
+                // 尝试创建 COS 对象来测试是否已加载
+                if (typeof COS !== 'undefined') {
+                    updateStatus(testId, '✅ COS SDK 已加载', 'success');
+                    showResult(resultId, `COS SDK 版本: ${COS.version || '未知'}\n对象可用`);
+                    return true;
+                } else {
+                    updateStatus(testId, '❌ COS SDK 未加载', 'error');
+                    showResult(resultId, '全局 COS 对象未定义\n需要手动加载 SDK');
+                    return false;
+                }
+            } catch (error) {
+                updateStatus(testId, `❌ 测试失败: ${error.message}`, 'error');
+                showResult(resultId, `错误: ${error.toString()}`);
+                return false;
+            }
+        }
+        
+        function runAllTests() {
+            testUrl('https://cos-js-sdk-v5.myqcloud.com/cos-js-sdk-v5.min.js', 'test1-status', 'test1-result');
+            testUrl('https://cdn.jsdelivr.net/npm/cos-js-sdk-v5@2.13.6/dist/cos-js-sdk-v5.min.js', 'test2-status', 'test2-result');
+            testLocalFile();
+        }
+        
+        // 页面加载后自动运行测试
+        setTimeout(() => {
+            console.log('自动开始网络测试...');
+            runAllTests();
+        }, 1000);
+    </script>
+</body>
+</html>

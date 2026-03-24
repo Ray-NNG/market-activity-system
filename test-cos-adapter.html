@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腾讯云 COS 适配器测试</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        :root {
+            --primary: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
+        body {
+            background: #f8fafc;
+            color: #1e293b;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 { margin-bottom: 2rem; color: var(--primary); }
+        h2 { margin: 1.5rem 0 1rem; color: #475569; font-size: 1.2rem; }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+        }
+        .config-form {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .form-group {
+            display: grid;
+            gap: 0.5rem;
+        }
+        label {
+            font-weight: 500;
+            color: #475569;
+        }
+        input {
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        .btn-success:hover {
+            background: #0d9c6d;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+        .status {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background: #f1f5f9;
+            border-left: 4px solid #cbd5e1;
+        }
+        .status.success {
+            background: #d1fae5;
+            border-left-color: var(--success);
+        }
+        .status.error {
+            background: #fee2e2;
+            border-left-color: var(--danger);
+        }
+        .status.warning {
+            background: #fef3c7;
+            border-left-color: var(--warning);
+        }
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-item {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #334155;
+        }
+        .log-item:last-child {
+            border-bottom: none;
+        }
+        .log-time {
+            color: #94a3b8;
+            margin-right: 0.5rem;
+        }
+        .log-info { color: #60a5fa; }
+        .log-success { color: #34d399; }
+        .log-warning { color: #fbbf24; }
+        .log-error { color: #f87171; }
+        .log-debug { color: #a78bfa; }
+    </style>
+</head>
+<body>
+    <h1>🚀 腾讯云 COS 适配器测试</h1>
+    
+    <div class="card">
+        <h2>1. 配置腾讯云 COS</h2>
+        <p style="color: #64748b; margin-bottom: 1rem;">请填写你的腾讯云 COS 配置信息（这些信息仅保存在浏览器本地）</p>
+        
+        <div class="config-form">
+            <div class="form-group">
+                <label for="bucket">存储桶名称 (Bucket)</label>
+                <input type="text" id="bucket" placeholder="例: market-activity-system-1250000000">
+            </div>
+            
+            <div class="form-group">
+                <label for="region">存储区域 (Region)</label>
+                <input type="text" id="region" placeholder="例: ap-beijing (北京)">
+            </div>
+            
+            <div class="form-group">
+                <label for="secretId">SecretId</label>
+                <input type="password" id="secretId" placeholder="你的腾讯云 SecretId">
+            </div>
+            
+            <div class="form-group">
+                <label for="secretKey">SecretKey</label>
+                <input type="password" id="secretKey" placeholder="你的腾讯云 SecretKey">
+            </div>
+            
+            <div class="test-buttons">
+                <button class="btn-primary" onclick="testConfig()">🔧 测试配置</button>
+                <button class="btn-success" onclick="saveConfig()">💾 保存配置</button>
+                <button class="btn-secondary" onclick="clearConfig()">🗑️ 清除配置</button>
+            </div>
+        </div>
+        
+        <div id="config-status" class="status">
+            等待配置...
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>2. 测试数据操作</h2>
+        <p style="color: #64748b; margin-bottom: 1rem;">测试 COS 适配器的基本功能</p>
+        
+        <div class="test-buttons">
+            <button class="btn-primary" onclick="testLoadData()">📥 加载数据</button>
+            <button class="btn-primary" onclick="testSaveData()">📤 保存数据</button>
+            <button class="btn-secondary" onclick="testHealthCheck()">❤️ 健康检查</button>
+        </div>
+        
+        <div id="data-test-results" style="margin-top: 1rem;">
+            <!-- 测试结果会显示在这里 -->
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>3. 控制台日志</h2>
+        <div class="log" id="console-log">
+            <div class="log-item"><span class="log-time">[等待]</span> 准备测试...</div>
+        </div>
+        <div class="test-buttons">
+            <button class="btn-secondary" onclick="clearLogs()">🧹 清空日志</button>
+            <button class="btn-secondary" onclick="copyLogs()">📋 复制日志</button>
+        </div>
+    </div>
+    
+    <!-- 腾讯云 COS SDK -->
+    <script src="https://cos-js-sdk-v5.myqcloud.com/cos-js-sdk-v5.min.js"></script>
+    <script src="market-activity-cos-adapter.js"></script>
+    
+    <script>
+        // 日志系统
+        const logElement = document.getElementById('console-log');
+        const logs = [];
+        
+        function addLog(type, message) {
+            const now = new Date();
+            const time = now.toTimeString().substring(0, 8);
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item';
+            
+            let typeClass = '';
+            switch(type) {
+                case 'info': typeClass = 'log-info'; break;
+                case 'success': typeClass = 'log-success'; break;
+                case 'warn': typeClass = 'log-warning'; break;
+                case 'error': typeClass = 'log-error'; break;
+                case 'debug': typeClass = 'log-debug'; break;
+            }
+            
+            logItem.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="${typeClass}">${message}</span>
+            `;
+            
+            logElement.prepend(logItem);
+            logs.push({ time, type, message });
+            
+            // 保持日志数量
+            if (logElement.children.length > 50) {
+                logElement.removeChild(logElement.lastChild);
+            }
+        }
+        
+        function clearLogs() {
+            logElement.innerHTML = '<div class="log-item"><span class="log-time">[已清空]</span> 日志已清空</div>';
+            logs.length = 0;
+        }
+        
+        function copyLogs() {
+            const text = logs.map(log => `[${log.time}] ${log.message}`).join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                addLog('success', '日志已复制到剪贴板');
+            });
+        }
+        
+        // 状态更新
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'status ' + type;
+        }
+        
+        // 配置管理
+        function loadConfig() {
+            try {
+                const config = localStorage.getItem('cos_test_config');
+                if (config) {
+                    const { bucket, region } = JSON.parse(config);
+                    document.getElementById('bucket').value = bucket || '';
+                    document.getElementById('region').value = region || '';
+                    addLog('info', `已加载本地配置: ${bucket || '未设置'} @ ${region || '未设置'}`);
+                    return true;
+                }
+            } catch (e) {
+                addLog('error', '加载配置失败: ' + e.message);
+            }
+            return false;
+        }
+        
+        function saveConfig() {
+            const bucket = document.getElementById('bucket').value.trim();
+            const region = document.getElementById('region').value.trim();
+            const secretId = document.getElementById('secretId').value.trim();
+            const secretKey = document.getElementById('secretKey').value.trim();
+            
+            if (!bucket || !region || !secretId || !secretKey) {
+                updateStatus('config-status', '请填写所有配置项', 'warning');
+                addLog('warn', '配置信息不完整');
+                return;
+            }
+            
+            try {
+                // 保存到 localStorage（仅保存 bucket 和 region）
+                localStorage.setItem('cos_test_config', JSON.stringify({ bucket, region }));
+                
+                // 配置 COS 适配器
+                if (window.MarketActivityCOS && window.MarketActivityCOS.adapter) {
+                    window.MarketActivityCOS.adapter.configCOS(bucket, region, secretId, secretKey);
+                    addLog('success', `COS 配置已保存: ${bucket} @ ${region}`);
+                    updateStatus('config-status', '✅ 配置已保存并应用', 'success');
+                } else {
+                    addLog('error', 'COS 适配器未加载');
+                    updateStatus('config-status', '❌ COS 适配器未加载', 'error');
+                }
+            } catch (e) {
+                addLog('error', '保存配置失败: ' + e.message);
+                updateStatus('config-status', '❌ 保存失败: ' + e.message, 'error');
+            }
+        }
+        
+        function clearConfig() {
+            localStorage.removeItem('cos_test_config');
+            document.getElementById('bucket').value = '';
+            document.getElementById('region').value = '';
+            document.getElementById('secretId').value = '';
+            document.getElementById('secretKey').value = '';
+            addLog('info', '配置已清除');
+            updateStatus('config-status', '配置已清除', 'info');
+        }
+        
+        // 测试功能
+        async function testConfig() {
+            const bucket = document.getElementById('bucket').value.trim();
+            const region = document.getElementById('region').value.trim();
+            const secretId = document.getElementById('secretId').value.trim();
+            const secretKey = document.getElementById('secretKey').value.trim();
+            
+            if (!bucket || !region || !secretId || !secretKey) {
+                addLog('warn', '请先填写所有配置项');
+                return;
+            }
+            
+            addLog('info', `正在测试 COS 配置...`);
+            updateStatus('config-status', '正在测试连接...', 'info');
+            
+            try {
+                // 测试 COS SDK 是否加载
+                if (typeof COS === 'undefined') {
+                    throw new Error('COS SDK 未加载，请检查网络连接');
+                }
+                
+                // 测试适配器
+                if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+                    throw new Error('COS 适配器未加载');
+                }
+                
+                // 配置适配器
+                window.MarketActivityCOS.adapter.configCOS(bucket, region, secretId, secretKey);
+                
+                // 测试健康检查
+                const healthy = await window.MarketActivityCOS.adapter.checkHealth();
+                
+                if (healthy) {
+                    addLog('success', '✅ COS 连接测试成功');
+                    updateStatus('config-status', '✅ COS 连接正常', 'success');
+                } else {
+                    addLog('error', '❌ COS 连接测试失败');
+                    updateStatus('config-status', '❌ COS 连接失败', 'error');
+                }
+            } catch (error) {
+                addLog('error', '配置测试失败: ' + error.message);
+                updateStatus('config-status', '❌ 测试失败: ' + error.message, 'error');
+            }
+        }
+        
+        async function testLoadData() {
+            const resultsDiv = document.getElementById('data-test-results');
+            resultsDiv.innerHTML = '<div class="status info">正在加载数据...</div>';
+            
+            addLog('info', '正在测试数据加载...');
+            
+            try {
+                if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+                    throw new Error('COS 适配器未配置');
+                }
+                
+                const data = await window.MarketActivityCOS.adapter.getData();
+                
+                const activities = data.activities || [];
+                const files = data.files || {};
+                const fileCount = Object.keys(files).length;
+                
+                addLog('success', `✅ 数据加载成功: ${activities.length} 个活动, ${fileCount} 组文件`);
+                
+                resultsDiv.innerHTML = `
+                    <div class="status success">
+                        <strong>✅ 数据加载成功</strong><br>
+                        活动数量: ${activities.length} 个<br>
+                        文件组数: ${fileCount} 组<br>
+                        最后更新: ${data.updatedAt ? new Date(data.updatedAt).toLocaleString() : '未知'}
+                    </div>
+                `;
+            } catch (error) {
+                addLog('error', '❌ 数据加载失败: ' + error.message);
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ 数据加载失败</strong><br>
+                        错误: ${error.message}<br>
+                        提示: 请检查 COS 配置和存储桶权限
+                    </div>
+                `;
+            }
+        }
+        
+        async function testSaveData() {
+            const resultsDiv = document.getElementById('data-test-results');
+            resultsDiv.innerHTML = '<div class="status info">正在保存测试数据...</div>';
+            
+            addLog('info', '正在测试数据保存...');
+            
+            try {
+                if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+                    throw new Error('COS 适配器未配置');
+                }
+                
+                const testData = {
+                    activities: [
+                        {
+                            id: 'test-' + Date.now(),
+                            name: '测试活动',
+                            owner: '测试用户',
+                            status: '进行中',
+                            startDate: new Date().toISOString().split('T')[0],
+                            endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                            progress: 50,
+                            tasks: []
+                        }
+                    ],
+                    files: {},
+                    updatedAt: new Date().toISOString(),
+                    test: true
+                };
+                
+                await window.MarketActivityCOS.adapter.saveData(testData);
+                
+                addLog('success', '✅ 测试数据保存成功');
+                
+                resultsDiv.innerHTML = `
+                    <div class="status success">
+                        <strong>✅ 数据保存成功</strong><br>
+                        测试数据已保存到 COS<br>
+                        活动 ID: ${testData.activities[0].id}<br>
+                        时间: ${new Date().toLocaleString()}
+                    </div>
+                `;
+            } catch (error) {
+                addLog('error', '❌ 数据保存失败: ' + error.message);
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ 数据保存失败</strong><br>
+                        错误: ${error.message}<br>
+                        提示: 请检查 COS 配置、存储桶权限和 CORS 设置
+                    </div>
+                `;
+            }
+        }
+        
+        async function testHealthCheck() {
+            const resultsDiv = document.getElementById('data-test-results');
+            resultsDiv.innerHTML = '<div class="status info">正在检查 COS 健康状态...</div>';
+            
+            addLog('info', '正在测试健康检查...');
+            
+            try {
+                if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+                    throw new Error('COS 适配器未配置');
+                }
+                
+                const healthy = await window.MarketActivityCOS.adapter.checkHealth();
+                
+                if (healthy) {
+                    addLog('success', '✅ COS 健康检查通过');
+                    resultsDiv.innerHTML = `
+                        <div class="status success">
+                            <strong>✅ COS 健康状态正常</strong><br>
+                            连接: 正常<br>
+                            权限: 正常<br>
+                            存储桶: 可访问
+                        </div>
+                    `;
+                } else {
+                    addLog('error', '❌ COS 健康检查失败');
+                    resultsDiv.innerHTML = `
+                        <div class="status error">
+                            <strong>❌ COS 健康检查失败</strong><br>
+                            连接: 失败<br>
+                            请检查网络连接、存储桶配置和权限设置
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                addLog('error', '❌ 健康检查失败: ' + error.message);
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ 健康检查失败</strong><br>
+                        错误: ${error.message}<br>
+                        提示: COS 适配器可能未正确初始化
+                    </div>
+                `;
+            }
+        }
+        
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            addLog('info', '页面加载完成');
+            addLog('info', 'COS SDK 状态: ' + (typeof COS !== 'undefined' ? '已加载' : '未加载'));
+            addLog('info', 'COS 适配器状态: ' + (window.MarketActivityCOS ? '已加载' : '未加载'));
+            
+            if (loadConfig()) {
+                addLog('success', '本地配置已加载');
+            }
+            
+            // 监听控制台输出
+            const originalConsoleLog = console.log;
+            const originalConsoleError = console.error;
+            const originalConsoleWarn = console.warn;
+            
+            console.log = function(...args) {
+                originalConsoleLog.apply(console, args);
+                if (args[0] && args[0].includes && args[0].includes('[COS]')) {
+                    const message = args.map(arg => String(arg)).join(' ');
+                    addLog('info', message);
+                }
+            };
+            
+            console.error = function(...args) {
+                originalConsoleError.apply(console, args);
+                if (args[0] && args[0].includes && args[0].includes('[COS]')) {
+                    const message = args.map(arg => String(arg)).join(' ');
+                    addLog('error', message);
+                }
+            };
+            
+            console.warn = function(...args) {
+                originalConsoleWarn.apply(console, args);
+                if (args[0] && args[0].includes && args[0].includes('[COS]')) {
+                    const message = args.map(arg => String(arg)).join(' ');
+                    addLog('warn', message);
+                }
+            };
+        });
+    </script>
+</body>
+</html>

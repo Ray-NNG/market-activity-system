@@ -449,6 +449,12 @@
       color: #94a3b8;
     }
   </style>
+  
+  <!-- 腾讯云 COS 存储适配器 (无需外部CDN) -->
+  <!-- <script src="https://cos-js-sdk-v5.myqcloud.com/cos-js-sdk-v5.min.js"></script> -->
+  <!-- <script src="market-activity-cos-adapter.js"></script> -->
+  <script src="cos-adapter-no-cdn.js"></script>
+  
 </head>
 <body>
 
@@ -673,77 +679,72 @@
   </div>
 
   <script>
-    // ===== 数据层配置 =====
+    // ===== 腾讯云 COS 数据层配置 =====
     const STORAGE_KEY = 'market_activities_data';
-    const JSONBIN_BIN_ID = '69bd20d6b7ec241ddc86e1c2';
-    const JSONBIN_MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
-    const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
-    let currentBinVersion = null;
+    let currentDataVersion = null;
     let activities = [];
 
-    // 获取数据：先试 jsonbin.io 直连，失败则用本地
+    // 获取数据：先试腾讯云 COS，失败则用本地
     async function getJsonBinData() {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-        const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}/latest`, {
-          headers: { 'X-Master-Key': JSONBIN_MASTER_KEY },
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.metadata && data.metadata.version) currentBinVersion = data.metadata.version;
-          const record = data.record || { activities: [], files: {} };
-          // 同步保存到本地备份
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
-          console.log('✅ jsonbin.io 数据加载成功');
-          return record;
+      console.log('🔄 开始从腾讯云 COS 加载数据...');
+
+      // 检查 COS 适配器是否已配置
+      if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+        console.warn('⚠️ 腾讯云 COS 适配器未加载，检查是否已配置');
+        
+        // 回退到本地存储
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          console.log('✅ 使用本地缓存数据');
+          return JSON.parse(stored);
         }
-      } catch (err) {
-        console.log('⚠️ jsonbin.io 连接失败，使用本地数据:', err.message);
+        
+        console.log('⚠️ 没有本地数据，使用空数据');
+        return { activities: [], files: {} };
       }
 
-      // 回退本地存储
+      // 1. 尝试从腾讯云 COS 加载
+      try {
+        const data = await window.MarketActivityCOS.adapter.getData();
+        console.log('✅ 腾讯云 COS 数据加载成功');
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        return data;
+      } catch (err) {
+        console.log('⚠️ 腾讯云 COS 连接失败，使用本地数据:', err.message);
+      }
+
+      // 2. 回退到本地存储
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         console.log('✅ 使用本地缓存数据');
         return JSON.parse(stored);
       }
+
+      // 3. 都没有则返回空
+      console.log('⚠️ 没有本地数据，使用空数据');
       return { activities: [], files: {} };
     }
 
-    // 保存数据：先存本地，再异步同步到 jsonbin.io
+    // 保存数据：先存本地，再异步同步到腾讯云 COS
     async function saveJsonBinData(data) {
+      console.log('💾 开始保存数据到腾讯云 COS...');
+
       // 1. 立即写本地（保证不丢数据）
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      console.log('✅ 数据已保存到本地');
 
-      // 2. 异步同步到 jsonbin.io
+      // 2. 异步同步到腾讯云 COS（不阻塞用户）
       setTimeout(async () => {
         try {
-          const headers = {
-            'Content-Type': 'application/json',
-            'X-Master-Key': JSONBIN_MASTER_KEY
-          };
-          if (currentBinVersion) headers['X-Bin-Version'] = currentBinVersion;
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
-          const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}`, {
-            method: 'PUT',
-            headers,
-            body: JSON.stringify(data),
-            signal: controller.signal
-          });
-          clearTimeout(timeout);
-          if (res.ok) {
-            const result = await res.json();
-            if (result.metadata && result.metadata.version) currentBinVersion = result.metadata.version;
-            console.log('✅ 数据已同步到 jsonbin.io');
-          } else {
-            console.log('⚠️ jsonbin.io 同步失败，本地数据已保存');
+          if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+            console.warn('⚠️ 腾讯云 COS 适配器未加载，仅保存到本地');
+            return;
           }
+          
+          await window.MarketActivityCOS.adapter.saveData(data);
+          console.log('✅ 数据已同步到腾讯云 COS');
         } catch (err) {
-          console.log('⚠️ jsonbin.io 同步失败（本地已保存）:', err.message);
+          console.log('⚠️ 腾讯云 COS 同步失败（本地已保存）:', err.message);
         }
       }, 100);
 
@@ -1078,5 +1079,9 @@
       setTimeout(() => document.getElementById('admin-pw-input').focus(), 100);
     }
   </script>
+  
+  <!-- 腾讯云 COS 自动配置脚本 -->
+  <script src="setup-cos-config.js"></script>
+  
 </body>
 </html>
