@@ -211,7 +211,7 @@
         
         <div class="form-group">
             <label for="secretId">SecretId</label>
-            <input type="password" id="secretId" placeholder="例如: AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            <input type="password" id="secretId" placeholder="API密钥ID（从腾讯云控制台获取）">
             <div class="help-text">
                 在 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank">腾讯云 API 密钥管理</a> 获取
             </div>
@@ -219,7 +219,7 @@
         
         <div class="form-group">
             <label for="secretKey">SecretKey</label>
-            <input type="password" id="secretKey" placeholder="例如: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            <input type="password" id="secretKey" placeholder="32位以上的字符串">
             <div class="help-text">
                 与 SecretId 配对的密钥，请妥善保管
             </div>
@@ -443,7 +443,7 @@
             try {
                 // 测试 1: 检查配置有效性
                 addLog('检查配置格式...', 'info');
-                if (config.secretId.startsWith('AKID') && config.secretKey.length >= 32) {
+                if (config.secretId && config.secretKey && config.secretKey.length >= 32) {
                     addLog('✅ 配置格式正确', 'success');
                 } else {
                     addLog('⚠️ 配置格式可能不正确', 'error');
