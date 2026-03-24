@@ -454,7 +454,6 @@
 (function() {
     'use strict';
     console.log('🔧 加载腾讯云 COS 适配器（纯JS签名版）...');
-    // 默认配置为空，实际密钥从 localStorage 的 cos_config 读取（通过设置页面保存）
     const CONFIG = { secretId: '', secretKey: '', bucket: 'nnqgcvte2026-1414699807', region: 'ap-guangzhou', storageKey: 'data.json' };
     function loadConfig() {
         try {
@@ -638,20 +637,43 @@
 
 <!-- ===== 登录遮罩 ===== -->
 <div id="login-overlay">
-  <div class="login-card">
-    <div class="login-logo">
-      <div style="font-size:40px;margin-bottom:8px">🎯</div>
-      <h1>市场活动管理系统</h1>
-      <p>请输入密码以继续</p>
-    </div>
-    <div class="login-form">
-      <div class="login-field">
-        <label>密码</label>
-        <input type="password" id="login-pwd" placeholder="请输入密码"
-          onkeydown="if(event.key==='Enter') doLogin()">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:420px;padding:20px">
+    <!-- 登录卡片 -->
+    <div class="login-card" style="width:100%;margin:0">
+      <div class="login-logo">
+        <div style="font-size:40px;margin-bottom:8px">🎯</div>
+        <h1>市场活动管理系统</h1>
+        <p>请输入密码以继续</p>
       </div>
-      <div class="login-error" id="login-error">密码错误，请重新输入</div>
-      <button class="login-btn" onclick="doLogin()">登 录</button>
+      <div class="login-form">
+        <div class="login-field">
+          <label>密码</label>
+          <input type="password" id="login-pwd" placeholder="请输入密码"
+            onkeydown="if(event.key==='Enter') doLogin()">
+        </div>
+        <div class="login-error" id="login-error">密码错误，请重新输入</div>
+        <button class="login-btn" onclick="doLogin()">登 录</button>
+      </div>
+    </div>
+    <!-- COS 配置卡片（未配置时显示） -->
+    <div id="cos-setup-card" style="display:none;width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:20px;color:#fff">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">☁️ 首次使用 · 配置云存储</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:14px">配置后数据可跨设备同步，仅需填写一次</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">SecretId</div>
+        <input id="setup-secret-id" type="text" placeholder="AKIDxxxxxxxx"
+          style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;outline:none">
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">SecretKey</div>
+        <input id="setup-secret-key" type="password" placeholder="xxxxxxxxxxxxxxxx"
+          style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;outline:none">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="saveCosSetup()" style="flex:1;padding:9px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:13px;font-weight:600;cursor:pointer">保存配置</button>
+        <button onclick="document.getElementById('cos-setup-card').style.display='none'" style="padding:9px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:transparent;color:rgba(255,255,255,0.7);font-size:13px;cursor:pointer">跳过</button>
+      </div>
+      <div id="cos-setup-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:16px"></div>
     </div>
   </div>
 </div>
@@ -3200,6 +3222,13 @@ var calYear, calMonth;
   const saved = localStorage.getItem(authKey);
   const overlay = document.getElementById('login-overlay');
 
+  // 检查COS是否已配置，未配置则显示引导卡
+  const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
+  const cosSetupCard = document.getElementById('cos-setup-card');
+  if (cosSetupCard && (!cosConfig.secretId || !cosConfig.secretKey)) {
+    cosSetupCard.style.display = 'block';
+  }
+
   // 会话未过期，直接放行
   if (saved && (Date.now() - parseInt(saved)) < SESSION_HOURS * 3600000) {
     localStorage.setItem(authKey, Date.now().toString());
@@ -3238,8 +3267,42 @@ function doLogout() {
   localStorage.removeItem('mcm_auth_ts');
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.style.display = 'flex';
+  // 退出时也检查COS配置
+  const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
+  const cosSetupCard = document.getElementById('cos-setup-card');
+  if (cosSetupCard && (!cosConfig.secretId || !cosConfig.secretKey)) {
+    cosSetupCard.style.display = 'block';
+  }
   const pwdInput = document.getElementById('login-pwd');
   if (pwdInput) { pwdInput.value = ''; setTimeout(() => pwdInput.focus(), 50); }
+}
+
+// ===== COS 首次配置（登录页） =====
+async function saveCosSetup() {
+  const secretId  = (document.getElementById('setup-secret-id')?.value || '').trim();
+  const secretKey = (document.getElementById('setup-secret-key')?.value || '').trim();
+  const msgEl = document.getElementById('cos-setup-msg');
+  if (!secretId || !secretKey) {
+    if (msgEl) { msgEl.style.color='#fca5a5'; msgEl.textContent='请填写 SecretId 和 SecretKey'; }
+    return;
+  }
+  if (!secretId.startsWith('AKID')) {
+    if (msgEl) { msgEl.style.color='#fca5a5'; msgEl.textContent='SecretId 格式不对，应以 AKID 开头'; }
+    return;
+  }
+  if (msgEl) { msgEl.style.color='rgba(255,255,255,0.7)'; msgEl.textContent='验证中…'; }
+  // 保存配置
+  const config = { secretId, secretKey, bucket: 'nnqgcvte2026-1414699807', region: 'ap-guangzhou', storageKey: 'data.json' };
+  localStorage.setItem('cos_config', JSON.stringify(config));
+  if (window.MarketActivityCOS?.adapter?.configure) {
+    window.MarketActivityCOS.adapter.configure(config);
+  }
+  if (msgEl) { msgEl.style.color='#86efac'; msgEl.textContent='✅ 配置已保存！登录后数据将自动同步'; }
+  // 隐藏配置卡
+  setTimeout(() => {
+    const card = document.getElementById('cos-setup-card');
+    if (card) card.style.display = 'none';
+  }, 1500);
 }
 
 // ===== 修改密码功能 =====
