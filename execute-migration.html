@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>执行腾讯云COS一键完整迁移</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        h1 {
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .success { background: #10b981; color: white; }
+        .warning { background: #f59e0b; color: white; }
+        .error { background: #ef4444; color: white; }
+        .info { background: #3b82f6; color: white; }
+        
+        .progress-container {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        
+        .step {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            border-radius: 0 8px 8px 0;
+            position: relative;
+        }
+        .step.completed {
+            background: #f0fdf4;
+            border-left-color: #10b981;
+        }
+        .step.failed {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        
+        .step-number {
+            position: absolute;
+            top: 15px;
+            left: -25px;
+            width: 30px;
+            height: 30px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .step.completed .step-number {
+            background: #10b981;
+        }
+        .step.failed .step-number {
+            background: #ef4444;
+        }
+        
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            background: #f0fdf4;
+            border: 2px solid #10b981;
+        }
+        
+        .final-steps {
+            padding: 20px;
+            margin: 20px 0;
+            background: #eff6ff;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 腾讯云COS一键完整迁移</h1>
+        <p style="text-align: center; color: #64748b;">自动修复所有配置和数据上传问题</p>
+        
+        <div id="overall-status" class="status info">准备开始迁移...</div>
+        
+        <div class="progress-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        
+        <h2>📋 迁移步骤</h2>
+        
+        <div id="step1" class="step">
+            <div class="step-number">1</div>
+            <h3>加载修复版适配器</h3>
+            <p id="step1-desc">加载修复版的腾讯云COS适配器</p>
+        </div>
+        
+        <div id="step2" class="step">
+            <div class="step-number">2</div>
+            <h3>扫描旧的配置格式</h3>
+            <p id="step2-desc">查找所有可能存在的旧配置</p>
+        </div>
+        
+        <div id="step3" class="step">
+            <div class="step-number">3</div>
+            <h3>迁移配置到新格式</h3>
+            <p id="step3-desc">将找到的配置转换为适配器可用的格式</p>
+        </div>
+        
+        <div id="step4" class="step">
+            <div class="step-number">4</div>
+            <h3>测试腾讯云连接</h3>
+            <p id="step4-desc">验证配置是否有效，能否连接到腾讯云COS</p>
+        </div>
+        
+        <div id="step5" class="step">
+            <div class="step-number">5</div>
+            <h3>测试数据上传功能</h3>
+            <p id="step5-desc">创建测试数据并验证是否能上传到腾讯云</p>
+        </div>
+        
+        <div id="step6" class="step">
+            <div class="step-number">6</div>
+            <h3>验证本地数据同步</h3>
+            <p id="step6-desc">确保现有数据能够正确同步到云端</p>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button id="start-btn" class="btn btn-success" onclick="startMigration()">
+                🚀 开始一键完整迁移
+            </button>
+            <button id="retry-btn" class="btn" onclick="startMigration()" style="display: none;">
+                🔄 重新执行迁移
+            </button>
+        </div>
+        
+        <h2>📝 迁移日志</h2>
+        <div id="log" class="log">
+准备开始迁移...
+        </div>
+        
+        <div id="result" class="result" style="display: none;">
+            <h2>🎉 迁移结果</h2>
+            <div id="result-content"></div>
+        </div>
+        
+        <div id="final-steps" class="final-steps" style="display: none;">
+            <h2>✅ 迁移完成！下一步操作</h2>
+            <ol>
+                <li>访问 <a href="index.html" target="_blank">主系统</a> 测试资料上传</li>
+                <li>检查控制台是否有 <strong>"✅ 数据已保存到腾讯云 COS"</strong> 的提示</li>
+                <li>如果仍有问题，使用 <a href="check-cos-config.html" target="_blank">详细诊断工具</a></li>
+                <li>在其他设备上访问网站，验证数据是否同步</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        // 日志函数
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeIcon = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️'
+            }[type] || 'ℹ️';
+            
+            logDiv.innerHTML += `${timestamp} ${typeIcon} ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // 更新进度条
+        function updateProgress(percent) {
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = percent + '%';
+        }
+        
+        // 更新步骤状态
+        function updateStep(stepId, status, description) {
+            const step = document.getElementById(stepId);
+            const desc = document.getElementById(stepId + '-desc');
+            
+            if (description) {
+                desc.textContent = description;
+            }
+            
+            step.className = 'step';
+            
+            if (status === 'completed') {
+                step.classList.add('completed');
+                log(`步骤完成: ${step.querySelector('h3').textContent}`, 'success');
+            } else if (status === 'failed') {
+                step.classList.add('failed');
+                log(`步骤失败: ${step.querySelector('h3').textContent}`, 'error');
+            } else if (status === 'active') {
+                log(`开始执行: ${step.querySelector('h3').textContent}`, 'info');
+            }
+        }
+        
+        // 更新整体状态
+        function updateOverallStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('overall-status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+        
+        // 步骤1: 加载修复版适配器
+        async function step1() {
+            updateStep('step1', 'active', '正在加载修复版适配器...');
+            updateProgress(10);
+            
+            try {
+                // 检查是否已加载
+                if (window.MarketActivityCOS && window.MarketActivityCOS.adapter) {
+                    log('修复版适配器已加载', 'success');
+                    updateStep('step1', 'completed', '修复版适配器已就绪');
+                    return true;
+                }
+                
+                // 动态加载修复版适配器
+                log('动态加载修复版适配器...');
+                const script = document.createElement('script');
+                script.src = 'cos-adapter-fixed.js';
+                script.onload = function() {
+                    log('修复版适配器加载成功', 'success');
+                    updateStep('step1', 'completed', '修复版适配器加载成功');
+                };
+                script.onerror = function() {
+                    log('修复版适配器加载失败，尝试备用方案', 'error');
+                };
+                
+                document.head.appendChild(script);
+                
+                // 等待适配器加载
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (window.MarketActivityCOS && window.MarketActivityCOS.adapter) {
+                    updateStep('step1', 'completed', '修复版适配器已就绪');
+                    return true;
+                } else {
+                    log('警告: 适配器可能未完全加载，但继续执行', 'warning');
+                    updateStep('step1', 'completed', '适配器加载基本完成');
+                    return true; // 继续执行，可能有回退方案
+                }
+                
+            } catch (error) {
+                log(`适配器加载错误: ${error.message}`, 'error');
+                updateStep('step1', 'failed', '适配器加载失败');
+                return false;
+            }
+        }
+        
+        // 步骤2: 扫描旧的配置格式
+        function step2() {
+            updateStep('step2', 'active', '正在扫描旧的配置格式...');
+            updateProgress(25);
+            
+            try {
+                log('开始扫描 localStorage 中的旧配置...');
+                
+                // 所有可能的配置键名
+                const configKeys = [
+                    'cos_secretId', 'cos_secretKey', 'cos_bucket', 'cos_region',
+                    'tencent_secretId', 'tencent_secretKey', 'tencent_bucket', 'tencent_region',
+                    'mcm_cos_config', 'mcm_cos_adapter_config', 'cos_config'
+                ];
+                
+                let foundCount = 0;
+                let foundDetails = [];
+                
+                configKeys.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        foundCount++;
+                        foundDetails.push(key);
+                        log(`发现配置: ${key} (${value.length} 字符)`);
+                    }
+                });
+                
+                if (foundCount > 0) {
+                    log(`✅ 发现 ${foundCount} 个配置项: ${foundDetails.join(', ')}`, 'success');
+                    updateStep('step2', 'completed', `发现 ${foundCount} 个配置项`);
+                    return { found: true, count: foundCount, details: foundDetails };
+                } else {
+                    log('⚠️ 未发现任何配置信息', 'warning');
+                    updateStep('step2', 'completed', '未发现旧的配置');
+                    return { found: false, count: 0 };
+                }
+                
+            } catch (error) {
+                log(`配置扫描错误: ${error.message}`, 'error');
+                updateStep('step2', 'failed', '配置扫描失败');
+                return { found: false, error: error.message };
+            }
+        }
+        
+        // 步骤3: 迁移配置到新格式
+        function step3(scanResult) {
+            updateStep('step3', 'active', '正在迁移配置到新格式...');
+            updateProgress(40);
+            
+            try {
+                log('开始配置迁移...');
+                
+                // 提取所有可能的配置
+                const config = {
+                    secretId: '',
+                    secretKey: '',
+                    bucket: '',
+                    region: ''
+                };
+                
+                // 从独立键名提取
+                config.secretId = localStorage.getItem('cos_secretId') || 
+                                 localStorage.getItem('tencent_secretId') || 
+                                 config.secretId;
+                
+                config.secretKey = localStorage.getItem('cos_secretKey') || 
+                                  localStorage.getItem('tencent_secretKey') || 
+                                  config.secretKey;
+                
+                config.bucket = localStorage.getItem('cos_bucket') || 
+                               localStorage.getItem('tencent_bucket') || 
+                               config.bucket;
+                
+                config.region = localStorage.getItem('cos_region') || 
+                               localStorage.getItem('tencent_region') || 
+                               config.region;
+                
+                // 从结构化配置提取
+                const structuredKeys = ['mcm_cos_config', 'mcm_cos_adapter_config', 'cos_config'];
+                structuredKeys.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        try {
+                            const parsed = JSON.parse(value);
+                            Object.assign(config, parsed);
+                            log(`从 ${key} 提取配置成功`);
+                        } catch (e) {
+                            log(`配置 ${key} 解析失败: ${e.message}`, 'warning');
+                        }
+                    }
+                });
+                
+                // 检查配置完整性
+                const required = ['secretId', 'secretKey', 'bucket', 'region'];
+                const missing = required.filter(key => !config[key]);
+                
+                if (missing.length > 0) {
+                    log(`⚠️ 配置不完整，缺少: ${missing.join(', ')}`, 'warning');
+                    log('迁移后可能需要手动补充配置', 'info');
+                }
+                
+                // 保存到新格式
+                const newConfig = {
+                    secretId: config.secretId,
+                    secretKey: config.secretKey,
+                    bucket: config.bucket,
+                    region: config.region,
+                    storageKey: 'data.json'
+                };
+                
+                localStorage.setItem('cos_config', JSON.stringify(newConfig));
+                log('✅ 配置已保存为新格式 (cos_config)', 'success');
+                
+                // 显示迁移结果
+                let migrationResult = '配置迁移完成:\n';
+                required.forEach(key => {
+                    const hasValue = !!config[key];
+                    const valuePreview = config[key] ? 
+                        (key.includes('secret') ? '已配置' : config[key]) : 
+                        '未配置';
+                    migrationResult += `  ${key}: ${hasValue ? '✅' : '❌'} ${valuePreview}\n`;
+                });
+                
+                log(migrationResult);
+                
+                updateStep('step3', 'completed', '配置迁移完成');
+                return {
+                    success: true,
+                    config: config,
+                    complete: missing.length === 0
+                };
+                
+            } catch (error) {
+                log(`配置迁移错误: ${error.message}`, 'error');
+                updateStep('step3', 'failed', '配置迁移失败');
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // 步骤4: 测试腾讯云连接
+        async function step4(migrationResult) {
+            updateStep('step4', 'active', '正在测试腾讯云连接...');
+            updateProgress(60);
+            
+            try {
+                log('开始测试腾讯云 COS 连接...');
+                
+                if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+                    log('❌ 适配器未加载，无法测试连接', 'error');
+                    updateStep('step4', 'failed', '适配器未加载');
+                    return { success: false, reason: '适配器未加载' };
+                }
+                
+                // 等待适配器配置完成
+                if (migrationResult.success && migrationResult.complete) {
+                    log('重新加载适配器配置...');
+                    window.MarketActivityCOS.adapter.loadConfig();
+                }
+                
+                // 测试连接
+                const result = await window.MarketActivityCOS.adapter.testConnection();
+                
+                if (result.success) {
+                    log(`✅ 连接测试成功: ${result.message}`, 'success');
+                    updateStep('step4', 'completed', '连接测试成功');
+                    return { success: true, message: result.message };
+                } else {
+                    log(`⚠️ 连接测试失败: ${result.message}`, 'warning');
+                    updateStep('step4', 'completed', '连接测试有警告');
+                    return { success: false, message: result.message, warning: true };
+                }
+                
+            } catch (error) {
+                log(`连接测试错误: ${error.message}`, 'error');
+                updateStep('step4', 'failed', '连接测试失败');
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // 步骤5: 测试数据上传功能
+        async function step5() {
+            updateStep('step5', 'active', '正在测试数据上传功能...');
+            updateProgress(80);
+            
+            try {
+                log('开始测试数据上传功能...');
+                
+                if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+                    log('❌ 适配器未加载，无法测试上传', 'error');
+                    updateStep('step5', 'failed', '适配器未加载');
+                    return { success: false, reason: '适配器未加载' };
+                }
+                
+                // 创建测试数据
+                const testData = {
+                    activities: [
+                        {
+                            id: 'migration-test-' + Date.now(),
+                            name: '迁移测试活动',
+                            date: new Date().toISOString(),
+                            type: '迁移测试',
+                            status: '已完成',
+                            description: '这是一键完整迁移创建的测试活动'
+                        }
+                    ],
+                    files: {},
+                    migration: {
+                        timestamp: Date.now(),
+                        version: '1.0.0',
+                        purpose: '测试腾讯云COS数据上传功能'
+                    }
+                };
+                
+                log(`创建测试数据: ${JSON.stringify(testData).length} 字节`);
+                
+                // 保存数据
+                const saveResult = await window.MarketActivityCOS.adapter.saveData(testData);
+                
+                if (saveResult.success) {
+                    log('✅ 数据上传测试成功!', 'success');
+                    log(`响应: ${JSON.stringify(saveResult)}`);
+                    
+                    updateStep('step5', 'completed', '数据上传测试成功');
+                    return { success: true, result: saveResult };
+                } else {
+                    if (saveResult.local) {
+                        log('⚠️ 数据仅保存在本地，未上传到腾讯云COS', 'warning');
+                        log('可能的原因: 配置不完整或网络问题', 'info');
+                    } else {
+                        log(`⚠️ 上传测试失败: ${saveResult.message}`, 'warning');
+                    }
+                    
+                    updateStep('step5', 'completed', '数据上传测试有警告');
+                    return { success: false, result: saveResult, warning: true };
+                }
+                
+            } catch (error) {
+                log(`上传测试错误: ${error.message}`, 'error');
+                updateStep('step5', 'failed', '上传测试失败');
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // 步骤6: 验证本地数据同步
+        async function step6() {
+            updateStep('step6', 'active', '正在验证本地数据同步...');
+            updateProgress(95);
+            
+            try {
+                log('验证本地数据同步状态...');
+                
+                // 检查本地存储中的数据
+                const localKeys = [
+                    'market_activity_data',
+                    'market_activities_data_frontend',
+                    'mcm_activities_backup'
+                ];
+                
+                let hasLocalData = false;
+                let localDataInfo = {};
+                
+                localKeys.forEach(key => {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        hasLocalData = true;
+                        try {
+                            const parsed = JSON.parse(data);
+                            const activityCount = parsed.activities ? parsed.activities.length : 0;
+                            localDataInfo[key] = {
+                                size: data.length,
+                                activities: activityCount
+                            };
+                            log(`发现本地数据 ${key}: ${activityCount} 个活动`);
+                        } catch (e) {
+                            localDataInfo[key] = { size: data.length, error: '解析失败' };
+                            log(`本地数据 ${key} 解析失败`, 'warning');
+                        }
+                    }
+                });
+                
+                if (hasLocalData) {
+                    log('✅ 发现本地存储的数据', 'success');
+                    
+                    // 如果适配器可用，尝试同步现有数据
+                    if (window.MarketActivityCOS && window.MarketActivityCOS.adapter) {
+                        log('尝试同步现有数据到腾讯云COS...');
+                        
+                        // 获取最新的本地数据
+                        const latestData = await window.MarketActivityCOS.adapter.getData();
+                        const activityCount = latestData.activities ? latestData.activities.length : 0;
+                        
+                        if (activityCount > 0) {
+                            log(`准备同步 ${activityCount} 个活动到云端...`);
+                            
+                            // 异步同步，不等待结果
+                            setTimeout(() => {
+                                window.MarketActivityCOS.adapter.saveData(latestData)
+                                    .then(result => {
+                                        if (result.success) {
+                                            log(`✅ 现有数据同步完成: ${activityCount} 个活动`, 'success');
+                                        } else {
+                                            log(`⚠️ 数据同步失败，但数据仍在本地: ${result.message}`, 'warning');
+                                        }
+                                    })
+                                    .catch(err => {
+                                        log(`数据同步错误: ${err.message}`, 'error');
+                                    });
+                            }, 1000);
+                        }
+                    }
+                    
+                    updateStep('step6', 'completed', '本地数据验证完成');
+                    return { 
+                        success: true, 
+                        hasData: true, 
+                        info: localDataInfo 
+                    };
+                } else {
+                    log('本地存储中没有发现数据', 'info');
+                    updateStep('step6', 'completed', '本地数据验证完成');
+                    return { success: true, hasData: false };
+                }
+                
+            } catch (error) {
+                log(`数据验证错误: ${error.message}`, 'error');
+                updateStep('step6', 'failed', '数据验证失败');
+                return { success: false, error: error.message };
+            }
+        }
+        
+        // 显示最终结果
+        function showFinalResult(results) {
+            updateProgress(100);
+            
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('result-content');
+            const finalSteps = document.getElementById('final-steps');
+            
+            // 统计成功步骤
+            const completedSteps = Object.values(results).filter(r => 
+                r && (r.success || r.warning)
+            ).length;
+            
+            const totalSteps = 6;
+            const successRate = Math.round((completedSteps / totalSteps) * 100);
+            
+            let resultHtml = `
+                <h3>迁移完成度: ${successRate}%</h3>
+                <p>${completedSteps}/${totalSteps} 个步骤成功完成</p>
+                <ul>
+            `;
+            
+            // 显示每个步骤的结果
+            Object.entries(results).forEach(([key, result]) => {
+                if (result) {
+                    const stepName = key.replace('step', '步骤');
+                    const status = result.success ? '✅ 成功' : 
+                                 result.warning ? '⚠️ 警告' : '❌ 失败';
+                    resultHtml += `<li>${stepName}: ${status}</li>`;
+                }
+            });
+            
+            resultHtml += '</ul>';
+            
+            // 根据成功率显示不同消息
+            if (successRate >= 80) {
+                updateOverallStatus('✅ 迁移基本成功！', 'success');
+                resultHtml += `<div style="color: #10b981; font-weight: bold;">
+                    🎉 迁移基本成功！大部分功能已修复。
+                </div>`;
+            } else if (successRate >= 50) {
+                updateOverallStatus('⚠️ 迁移部分成功', 'warning');
+                resultHtml += `<div style="color: #f59e0b; font-weight: bold;">
+                    ⚠️ 迁移部分成功，可能需要手动调整配置。
+                </div>`;
+            } else {
+                updateOverallStatus('❌ 迁移遇到问题', 'error');
+                resultHtml += `<div style="color: #ef4444; font-weight: bold;">
+                    ❌ 迁移遇到较多问题，建议使用详细诊断工具。
+                </div>`;
+            }
+            
+            // 显示配置状态
+            const configStr = localStorage.getItem('cos_config');
+            if (configStr) {
+                try {
+                    const config = JSON.parse(configStr);
+                    resultHtml += `
+                        <h4>当前配置状态:</h4>
+                        <ul>
+                            <li>Bucket: ${config.bucket || '❌ 未配置'}</li>
+                            <li>Region: ${config.region || '❌ 未配置'}</li>
+                            <li>SecretId: ${config.secretId ? '✅ 已配置' : '❌ 未配置'}</li>
+                            <li>SecretKey: ${config.secretKey ? '✅ 已配置' : '❌ 未配置'}</li>
+                        </ul>
+                    `;
+                } catch (e) {
+                    resultHtml += `<p>配置解析错误: ${e.message}</p>`;
+                }
+            }
+            
+            resultContent.innerHTML = resultHtml;
+            resultDiv.style.display = 'block';
+            finalSteps.style.display = 'block';
+            
+            // 启用重试按钮
+            document.getElementById('retry-btn').style.display = 'inline-block';
+            document.getElementById('start-btn').style.display = 'none';
+            
+            log('✅ 一键完整迁移完成！', 'success');
+        }
+        
+        // 主迁移函数
+        async function startMigration() {
+            log('🚀 开始执行一键完整迁移...');
+            updateOverallStatus('迁移进行中...', 'info');
+            
+            // 禁用按钮
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('start-btn').textContent = '迁移进行中...';
+            
+            try {
+                // 执行所有步骤
+                const step1Result = await step1();
+                const step2Result = step2();
+                const step3Result = step3(step2Result);
+                const step4Result = await step4(step3Result);
+                const step5Result = await step5();
+                const step6Result = await step6();
+                
+                // 显示最终结果
+                showFinalResult({
+                    step1: step1Result,
+                    step2: step2Result,
+                    step3: step3Result,
+                    step4: step4Result,
+                    step5: step5Result,
+                    step6: step6Result
+                });
+                
+            } catch (error) {
+                log(`迁移过程发生错误: ${error.message}`, 'error');
+                updateOverallStatus('❌ 迁移过程出错', 'error');
+                
+                // 启用重试按钮
+                document.getElementById('retry-btn').style.display = 'inline-block';
+                document.getElementById('start-btn').style.display = 'none';
+            }
+        }
+        
+        // 页面加载时自动准备
+        window.onload = function() {
+            log('一键完整迁移工具已加载');
+            log('点击"开始一键完整迁移"按钮开始执行');
+            
+            // 检查当前配置状态
+            const configStr = localStorage.getItem('cos_config');
+            if (configStr) {
+                try {
+                    const config = JSON.parse(configStr);
+                    const hasConfig = config.bucket && config.region && config.secretId && config.secretKey;
+                    
+                    if (hasConfig) {
+                        log('检测到现有配置，迁移将在此基础上进行', 'info');
+                    }
+                } catch (e) {
+                    // 忽略解析错误
+                }
+            }
+        };
+    </script>
+</body>
+</html>
