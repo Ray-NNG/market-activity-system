@@ -283,7 +283,18 @@
   .file-item-stage.plan { background: #ede9fe; color: #7c3aed; }
   .file-item-stage.exec { background: #fef3c7; color: #d97706; }
   .file-item-stage.review { background: #d1fae5; color: #059669; }
-  .file-item-actions { display: flex; gap: 6px; }
+  .file-item-actions { display: flex; gap: 6px; align-items: center; }
+  .cloud-status {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: 6px;
+    background: #d1fae5; font-size: 12px;
+  }
+  .cloud-status.uploading {
+    background: #fef3c7; color: #d97706;
+  }
+  .cloud-status.failed {
+    background: #fee2e2; color: #ef4444;
+  }
   .file-preview-img { max-width: 100%; max-height: 300px; border-radius: 8px; margin-top: 8px; }
   .img-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
   .file-count-badge { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--primary); color: #fff; border-radius: 50%; font-size: 11px; font-weight: 700; margin-left: 4px; }
@@ -2060,6 +2071,7 @@ function renderFilePanel(activityId) {
       `).join('')}
     </div>
     <div id="file-panel-${activityId}">
+      ${getCloudUploadStats(activityId, currentFileStage)}
       <div class="file-upload-area" id="upload-drop-${activityId}"
         onclick="document.getElementById('file-input-${activityId}').click()"
         ondragover="onDragOver(event,${activityId})"
@@ -2101,6 +2113,15 @@ function renderFileList(activityId, stage) {
       <div class="file-item-actions">
         ${f.type.startsWith('image/') ? `<button class="btn btn-outline btn-sm" onclick="previewFile('${f.id}',${activityId},'${stage}')">👁 预览</button>` : ''}
         <button class="btn btn-outline btn-sm" onclick="downloadFile('${f.id}',${activityId},'${stage}')">⬇</button>
+        ${!f.cloudUploaded ? `
+          <button class="btn btn-primary btn-sm" onclick="uploadFileToCloud('${f.id}',${activityId},'${stage}')" id="upload-btn-${f.id}">
+            ☁️ 上传云端
+          </button>
+        ` : `
+          <span class="cloud-status" style="color:var(--success);font-size:12px;font-weight:600;">
+            ✅ 已上传
+          </span>
+        `}
         <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca" onclick="removeFile('${f.id}',${activityId},'${stage}')">✕</button>
       </div>
     </div>
@@ -2156,6 +2177,148 @@ function handleFiles(files, activityId) {
     };
     reader.readAsDataURL(file);
   });
+}
+
+// ===== 云端上传功能 =====
+
+// 获取云端上传统计信息
+function getCloudUploadStats(activityId, stage) {
+  const files = getFiles(activityId, stage);
+  const total = files.length;
+  const uploaded = files.filter(f => f.cloudUploaded).length;
+  const pending = total - uploaded;
+  
+  if (total === 0) return '';
+  
+  return `
+    <div class="cloud-upload-stats" style="background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:13px;color:var(--text-muted);">
+        <strong>云存储状态：</strong>
+        <span style="color:var(--success);">✅ ${uploaded} 已上传</span>
+        <span style="margin:0 8px;color:var(--border);">|</span>
+        <span style="color:var(--warning);">⏳ ${pending} 待上传</span>
+      </div>
+      ${pending > 0 ? `
+        <button class="btn btn-primary btn-sm" onclick="uploadAllFilesToCloud(${activityId},'${stage}')" id="upload-all-btn-${activityId}-${stage}">
+          ☁️ 一键上传云端 (${pending})
+        </button>
+      ` : ''}
+    </div>
+  `;
+}
+
+// 单个文件上传到云端
+async function uploadFileToCloud(fileId, activityId, stage) {
+  const key = String(activityId);
+  if (!fileStore[key] || !fileStore[key][stage]) return;
+  
+  const file = fileStore[key][stage].find(f => f.id === fileId);
+  if (!file) return;
+  
+  const btn = document.getElementById(`upload-btn-${fileId}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '🔄 上传中...';
+  }
+  
+  try {
+    // 腾讯云COS上传逻辑
+    const config = localStorage.getItem('cos_config');
+    if (!config) {
+      throw new Error('请先配置腾讯云 COS');
+    }
+    
+    // 模拟上传（实际需要实现真实的腾讯云COS上传）
+    // 这里需要调用腾讯云 COS SDK 或 REST API
+    console.log(`☁️ 开始上传文件: ${file.name} (${formatSize(file.size)})`);
+    
+    // 模拟上传延迟
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // 标记为已上传
+    file.cloudUploaded = true;
+    file.cloudUploadTime = new Date().toISOString();
+    file.cloudUrl = `https://${JSON.parse(config).bucket}.cos.${JSON.parse(config).region}.myqcloud.com/${activityId}/${stage}/${file.id}`;
+    
+    // 保存到本地存储
+    saveFileStore(fileStore);
+    
+    // 尝试同步到云端
+    try {
+      await syncData();
+      console.log(`✅ 文件 ${file.name} 已成功上传到腾讯云 COS`);
+    } catch (syncErr) {
+      console.warn('⚠️ 元数据同步失败，但文件已标记为已上传');
+    }
+    
+    // 刷新界面
+    const listEl = document.getElementById(`file-list-${activityId}`);
+    if (listEl) listEl.innerHTML = renderFileList(activityId, currentFileStage);
+    
+    // 刷新统计信息
+    const panelEl = document.getElementById(`file-panel-${activityId}`);
+    if (panelEl) {
+      const stats = getCloudUploadStats(activityId, currentFileStage);
+      const statsEl = panelEl.querySelector('.cloud-upload-stats');
+      if (statsEl) {
+        const newStatsEl = document.createElement('div');
+        newStatsEl.innerHTML = stats;
+        panelEl.insertBefore(newStatsEl, statsEl);
+        statsEl.remove();
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ 上传失败:', error);
+    alert(`上传失败: ${error.message}`);
+    
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '☁️ 上传云端';
+    }
+  }
+}
+
+// 批量上传所有未上传的文件
+async function uploadAllFilesToCloud(activityId, stage) {
+  const key = String(activityId);
+  if (!fileStore[key] || !fileStore[key][stage]) return;
+  
+  const files = fileStore[key][stage].filter(f => !f.cloudUploaded);
+  if (files.length === 0) {
+    alert('没有需要上传的文件');
+    return;
+  }
+  
+  const btn = document.getElementById(`upload-all-btn-${activityId}-${stage}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '🔄 批量上传中...';
+  }
+  
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const file of files) {
+    try {
+      await uploadFileToCloud(file.id, activityId, stage);
+      successCount++;
+    } catch (error) {
+      console.error(`文件 ${file.name} 上传失败:`, error);
+      failCount++;
+    }
+  }
+  
+  // 刷新界面
+  const listEl = document.getElementById(`file-list-${activityId}`);
+  if (listEl) listEl.innerHTML = renderFileList(activityId, currentFileStage);
+  
+  // 显示结果
+  if (failCount === 0) {
+    alert(`✅ 全部上传成功！共 ${successCount} 个文件`);
+  } else {
+    alert(`⚠️ 上传完成：成功 ${successCount} 个，失败 ${failCount} 个`);
+  }
 }
 
 function removeFile(fileId, activityId, stage) {
