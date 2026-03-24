@@ -1660,10 +1660,19 @@ function reviewCard(a) {
         </div>
         <div>
           ${a.review ? `
-            <div class="text-sm fw-600" style="margin-bottom:10px">📝 复盘总结</div>
-            <div style="background:#f8fafc;border-radius:8px;padding:12px;font-size:13px;margin-bottom:10px">${a.review.summary}</div>
-            <div class="text-sm fw-600" style="margin-bottom:6px">💡 经验沉淀</div>
-            <div style="background:#f0fdf4;border-radius:8px;padding:12px;font-size:13px;">${a.review.lessons}</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              ${[
+                {key:'overall',icon:'📋',label:'统筹'},
+                {key:'setup',icon:'🏗️',label:'搭建'},
+                {key:'presentation',icon:'🎤',label:'讲解'},
+                {key:'experience',icon:'🤝',label:'客户体验（含邀约）'}
+              ].map(d => a.review[d.key] ? `
+                <div>
+                  <div class="text-sm fw-600" style="margin-bottom:4px">${d.icon} ${d.label}</div>
+                  <div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:13px">${a.review[d.key]}</div>
+                </div>
+              ` : '').join('')}
+            </div>
           ` : `
             <div style="text-align:center;padding:30px;color:var(--text-muted)">
               <div style="font-size:36px;margin-bottom:8px">📝</div>
@@ -2046,15 +2055,25 @@ function openDetail(id) {
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
         <button class="btn-ai" onclick="aiGenerateReview('${a.id}')">✨ AI 自动生成复盘</button>
       </div>
-      <div class="form-group">
-        <label>活动总结</label>
-        <textarea class="form-control" id="review-summary" placeholder="总结活动整体表现，哪些超预期，哪些未达标...">${a.review?.summary||''}</textarea>
+      <div class="grid-2" style="gap:12px">
+        <div class="form-group">
+          <label>📋 统筹</label>
+          <textarea class="form-control" id="review-overall" rows="4" placeholder="活动整体统筹协调情况，流程是否顺畅，资源调配是否合理...">${a.review?.overall||''}</textarea>
+        </div>
+        <div class="form-group">
+          <label>🏗️ 搭建</label>
+          <textarea class="form-control" id="review-setup" rows="4" placeholder="展台/场地搭建执行情况，现场布置效果，物料到位情况...">${a.review?.setup||''}</textarea>
+        </div>
+        <div class="form-group">
+          <label>🎤 讲解</label>
+          <textarea class="form-control" id="review-presentation" rows="4" placeholder="产品/方案讲解效果，演讲表现，客户反馈与接受度...">${a.review?.presentation||''}</textarea>
+        </div>
+        <div class="form-group">
+          <label>🤝 客户体验（含邀约）</label>
+          <textarea class="form-control" id="review-experience" rows="4" placeholder="客户到场体验，邀约情况，客户满意度，现场互动反馈...">${a.review?.experience||''}</textarea>
+        </div>
       </div>
-      <div class="form-group">
-        <label>经验沉淀</label>
-        <textarea class="form-control" id="review-lessons" placeholder="记录可复用的经验、需要避免的坑...">${a.review?.lessons||''}</textarea>
-      </div>
-      <div class="form-group">
+      <div class="form-group" style="max-width:200px">
         <label>综合评分（1-5分）</label>
         <input type="number" class="form-control" id="review-score" min="1" max="5" step="0.1" value="${a.review?.score||''}" placeholder="4.5">
       </div>
@@ -2378,10 +2397,12 @@ async function saveReview(id) {
   const index = activities.findIndex(x=>String(x.id)===String(id));
   if(index===-1) return;
   const a = activities[index];
-  const summary = document.getElementById('review-summary').value;
-  const lessons = document.getElementById('review-lessons').value;
+  const overall = document.getElementById('review-overall').value;
+  const setup = document.getElementById('review-setup').value;
+  const presentation = document.getElementById('review-presentation').value;
+  const experience = document.getElementById('review-experience').value;
   const score = parseFloat(document.getElementById('review-score').value);
-  a.review = { summary, lessons, score: isNaN(score)?0:score };
+  a.review = { overall, setup, presentation, experience, score: isNaN(score)?0:score };
   a.satisfaction = a.review.score;
   if(a.status === '复盘中') { a.status = '已完成'; a.progress = 100; }
   await syncData();
