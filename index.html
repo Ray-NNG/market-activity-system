@@ -613,20 +613,16 @@
 
       <div class="grid-3">
         <div class="card">
-          <div class="card-header"><div class="card-title">💰 预算执行概况</div></div>
+          <div class="card-header"><div class="card-title">💰 费用支出概况</div></div>
           <div style="text-align:center;padding:8px 0">
-            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">本季度总预算</div>
-            <div style="font-size:32px;font-weight:700;color:var(--primary)" id="total-budget">¥ 0</div>
-            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">已支出 <span id="total-spent">¥ 0</span> <span class="color-warning" id="budget-percent">（0%）</span></div>
-          </div>
-          <div class="mt-16">
-            <div class="flex-between text-sm mb-16">
-              <span>预算使用率</span><span class="fw-600" id="budget-usage-rate">0%</span>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">本季度总支出</div>
+            <div style="font-size:32px;font-weight:700;color:var(--primary)" id="total-spent">¥ 0</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">
+              总部：<span id="hq-spent">¥ 0</span> &nbsp;·&nbsp; 子公司：<span id="sub-spent">¥ 0</span>
             </div>
-            <div class="progress-wrap"><div class="progress-bar progress-warning" style="width:0%" id="budget-progress"></div></div>
           </div>
           <div class="mt-16" style="display:flex;flex-direction:column;gap:8px;" id="budget-breakdown">
-            <!-- 动态加载预算明细 -->
+            <!-- 动态加载支出明细 -->
           </div>
         </div>
 
@@ -896,14 +892,28 @@
     </div>
     
     <!-- 特殊费用 -->
-    <div id="special-fee-section" class="grid-2" style="gap:12px;margin-top:8px">
-      <div class="form-group">
-        <label>🏗️ 售后搭建费用（元）</label>
-        <input class="form-control" type="number" id="new-setup-fee" placeholder="展台搭建、舞台搭建等" value="0">
-      </div>
-      <div class="form-group">
-        <label>🚚 物流运输费用（元）</label>
-        <input class="form-control" type="number" id="new-logistics-fee" placeholder="物料运输、设备运输等" value="0">
+    <div id="special-fee-section" style="margin-top:8px">
+      <div class="grid-2" style="gap:12px">
+        <div class="form-group">
+          <label>🏗️ 售后搭建费用（元）</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="form-control" type="number" id="new-setup-fee" placeholder="展台搭建、舞台搭建等" value="0" oninput="updateBudgetTotal()" style="flex:1">
+            <select class="form-control" id="new-setup-source" onchange="updateBudgetTotal()" style="width:90px;flex-shrink:0">
+              <option value="hq">总部</option>
+              <option value="subsidiary">子公司</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>🚚 物流运输费用（元）</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="form-control" type="number" id="new-logistics-fee" placeholder="物料运输、设备运输等" value="0" oninput="updateBudgetTotal()" style="flex:1">
+            <select class="form-control" id="new-logistics-source" onchange="updateBudgetTotal()" style="width:90px;flex-shrink:0">
+              <option value="hq">总部</option>
+              <option value="subsidiary">子公司</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -2521,12 +2531,14 @@ function updateBudgetTotal() {
     }
   });
   
-  // 加上搭建费和物流费
+  // 加上搭建费和物流费（各自有独立的来源选择）
   const setupFee = parseFloat(document.getElementById('new-setup-fee')?.value) || 0;
+  const setupSource = document.getElementById('new-setup-source')?.value || 'hq';
   const logisticsFee = parseFloat(document.getElementById('new-logistics-fee')?.value) || 0;
+  const logisticsSource = document.getElementById('new-logistics-source')?.value || 'subsidiary';
   total += setupFee + logisticsFee;
-  hqTotal += setupFee;
-  subTotal += logisticsFee;
+  if (setupSource === 'hq') hqTotal += setupFee; else subTotal += setupFee;
+  if (logisticsSource === 'hq') hqTotal += logisticsFee; else subTotal += logisticsFee;
   
   document.getElementById('budget-total').textContent = '¥' + total.toLocaleString();
   document.getElementById('budget-hq').textContent = '总部：¥' + hqTotal.toLocaleString();
@@ -2548,12 +2560,14 @@ function collectBudgetItems() {
     }
   });
   
-  // 添加特殊费用
+  // 添加特殊费用（各自读取来源选项）
+  const setupSource = document.getElementById('new-setup-source')?.value || 'hq';
+  const logisticsSource = document.getElementById('new-logistics-source')?.value || 'subsidiary';
   if(setupFee > 0) {
-    items.push({ name: '🏗️ 售后搭建费用', source: 'hq', amount: setupFee });
+    items.push({ name: '🏗️ 售后搭建费用', source: setupSource, amount: setupFee });
   }
   if(logisticsFee > 0) {
-    items.push({ name: '🚚 物流运输费用', source: 'subsidiary', amount: logisticsFee });
+    items.push({ name: '🚚 物流运输费用', source: logisticsSource, amount: logisticsFee });
   }
   
   return items;
@@ -2827,36 +2841,65 @@ function saveNewPassword() {
   alert('✅ 密码已修改成功');
 }
 
-// ===== 预算统计更新 =====
+// ===== 费用支出统计更新 =====
 function updateBudgetStats() {
-  // 计算所有活动的总预算和总支出
-  const totalBudget = activities.reduce((sum, a) => sum + (Number(a.budget) || 0), 0);
-  const totalSpent = activities.reduce((sum, a) => sum + (Number(a.spent) || 0), 0);
-  const budgetPercent = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+  // 汇总所有活动的支出，按总部/子公司拆分
+  let totalSpent = 0;
+  let hqSpent = 0;
+  let subSpent = 0;
 
-  // 更新预算概况
-  document.getElementById('total-budget').textContent = `¥ ${totalBudget.toLocaleString()}`;
+  activities.forEach(a => {
+    if (a.budgetItems && a.budgetItems.length > 0) {
+      a.budgetItems.forEach(item => {
+        const amt = Number(item.amount) || 0;
+        totalSpent += amt;
+        if (item.source === 'hq') hqSpent += amt;
+        else subSpent += amt;
+      });
+    } else {
+      // 兼容旧数据：活动有 spent 字段但没有 budgetItems
+      totalSpent += Number(a.spent) || 0;
+    }
+  });
+
+  // 更新顶部汇总
   document.getElementById('total-spent').textContent = `¥ ${totalSpent.toLocaleString()}`;
-  document.getElementById('budget-percent').textContent = `（${budgetPercent}%）`;
-  document.getElementById('budget-usage-rate').textContent = `${budgetPercent}%`;
-  document.getElementById('budget-progress').style.width = `${Math.min(budgetPercent, 100)}%`;
+  document.getElementById('hq-spent').textContent = `¥ ${hqSpent.toLocaleString()}`;
+  document.getElementById('sub-spent').textContent = `¥ ${subSpent.toLocaleString()}`;
 
-  // 动态生成预算明细（按活动分类）
+  // 动态生成支出明细（按活动列出）
   const breakdown = document.getElementById('budget-breakdown');
   if (activities.length > 0) {
-    breakdown.innerHTML = activities.map(a => {
-      const pct = a.budget > 0 ? Math.round((a.spent / a.budget) * 100) : 0;
+    const rows = activities.map(a => {
+      let actSpent = 0;
+      let actHq = 0;
+      let actSub = 0;
+      if (a.budgetItems && a.budgetItems.length > 0) {
+        a.budgetItems.forEach(item => {
+          const amt = Number(item.amount) || 0;
+          actSpent += amt;
+          if (item.source === 'hq') actHq += amt;
+          else actSub += amt;
+        });
+      } else {
+        actSpent = Number(a.spent) || 0;
+      }
+      if (actSpent === 0) return '';
       return `
-        <div class="flex-between text-sm">
-          <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name}">${a.name}</span>
-          <span style="color:${pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#64748b'}">
-            ¥ ${a.spent.toLocaleString()} <span style="font-size:11px;color:#94a3b8">/ ¥ ${a.budget.toLocaleString()} (${pct}%)</span>
-          </span>
+        <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+          <div class="flex-between text-sm fw-600" style="margin-bottom:3px">
+            <span style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name}">${a.name}</span>
+            <span style="color:var(--primary)">¥ ${actSpent.toLocaleString()}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted)">
+            总部 ¥ ${actHq.toLocaleString()} &nbsp;·&nbsp; 子公司 ¥ ${actSub.toLocaleString()}
+          </div>
         </div>
       `;
-    }).join('');
+    }).filter(Boolean).join('');
+    breakdown.innerHTML = rows || '<div class="text-sm" style="color:var(--text-muted);text-align:center;padding:16px">暂无支出数据</div>';
   } else {
-    breakdown.innerHTML = '<div class="text-sm" style="color:var(--text-muted);text-align:center;padding:20px">暂无预算数据</div>';
+    breakdown.innerHTML = '<div class="text-sm" style="color:var(--text-muted);text-align:center;padding:16px">暂无支出数据</div>';
   }
 }
 
