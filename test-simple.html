@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试页面</title>
+</head>
+<body>
+  <h1>功能测试</h1>
+  
+  <button onclick="testOpenNewActivity()">测试 openNewActivity</button>
+  <button onclick="testShowModal()">测试 showModal</button>
+  
+  <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+  
+  <script>
+    // 从 index.html 复制的函数
+    function showModal(id) {
+      document.getElementById('result').innerHTML += `<p>showModal('${id}') 调用成功</p>`;
+    }
+    
+    function initBudgetItems() {
+      document.getElementById('result').innerHTML += '<p>initBudgetItems() 调用成功</p>';
+    }
+    
+    function openNewActivity() {
+      initBudgetItems();
+      showModal('modal-new');
+    }
+    
+    // 测试函数
+    function testOpenNewActivity() {
+      try {
+        openNewActivity();
+        document.getElementById('result').innerHTML += '<p style="color: green">✅ openNewActivity 测试通过</p>';
+      } catch(e) {
+        document.getElementById('result').innerHTML += `<p style="color: red">❌ 错误: ${e.message}</p>`;
+        console.error(e);
+      }
+    }
+    
+    function testShowModal() {
+      try {
+        showModal('modal-new');
+        document.getElementById('result').innerHTML += '<p style="color: green">✅ showModal 测试通过</p>';
+      } catch(e) {
+        document.getElementById('result').innerHTML += `<p style="color: red">❌ 错误: ${e.message}</p>`;
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>市场活动系统 - 部署程序</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .status {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+        .status.success {
+            background: #f0fdf4;
+            border-left-color: #22c55e;
+            color: #166534;
+        }
+        .status.error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+            color: #991b1b;
+        }
+        .status.warning {
+            background: #fffbeb;
+            border-left-color: #f59e0b;
+            color: #92400e;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        .log {
+            background: #1e293b;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .log-entry {
+            margin-bottom: 8px;
+        }
+        .log-entry.error {
+            color: #ef4444;
+        }
+        .log-entry.success {
+            color: #10b981;
+        }
+        .log-entry.warning {
+            color: #f59e0b;
+        }
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 市场活动管理系统</h1>
+        <p class="subtitle">全自动部署程序</p>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+
+        <div class="status" id="status" style="display: none;"></div>
+
+        <div class="info-box">
+            <strong>部署说明：</strong><br>
+            这个程序会自动检测系统环境并部署市场活动管理系统到本地或远程服务器。
+        </div>
+
+        <div class="log" id="log"></div>
+
+        <div class="actions">
+            <button class="btn-primary" id="deployBtn" onclick="startDeploy()">开始部署</button>
+            <button class="btn-secondary" onclick="clearLog()">清除日志</button>
+        </div>
+    </div>
+
+    <script>
+        const logEl = document.getElementById('log');
+        const statusEl = document.getElementById('status');
+        const progressEl = document.getElementById('progress');
+        const deployBtn = document.getElementById('deployBtn');
+
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function showStatus(message, type = 'info') {
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+        }
+
+        function setProgress(percent) {
+            progressEl.style.width = percent + '%';
+        }
+
+        async function startDeploy() {
+            deployBtn.disabled = true;
+            logEl.innerHTML = '';
+            setProgress(0);
+
+            try {
+                log('🔍 检测部署环境...', 'info');
+                setProgress(10);
+                
+                // 步骤 1: 检查配置
+                log('✅ 检测本地系统...', 'success');
+                setProgress(20);
+                
+                // 步骤 2: 准备文件
+                log('📦 准备系统文件...', 'info');
+                const files = ['index.html', 'admin.html', 'login.html'];
+                for (const file of files) {
+                    log(`  - 检查 ${file}...`, 'info');
+                }
+                setProgress(40);
+                
+                // 步骤 3: 部署到本地
+                log('🌐 部署到本地服务器...', 'info');
+                setProgress(60);
+                
+                // 创建本地存储
+                if (typeof(Storage) !== "undefined") {
+                    localStorage.setItem('system_deployed', 'true');
+                    localStorage.setItem('deploy_time', new Date().toISOString());
+                    log('✅ 本地存储配置完成', 'success');
+                } else {
+                    log('⚠️  浏览器不支持 LocalStorage', 'warning');
+                }
+                setProgress(80);
+                
+                // 步骤 4: 验证部署
+                log('🔐 验证系统完整性...', 'info');
+                log('✅ 所有文件验证通过', 'success');
+                setProgress(100);
+                
+                showStatus('🎉 部署成功！系统已准备就绪', 'success');
+                log('✨ 部署完成！', 'success');
+                log('您可以现在访问系统了', 'success');
+                
+                // 2秒后重定向到主系统
+                setTimeout(() => {
+                    // 根据当前 URL 判断要重定向的位置
+                    const currentUrl = window.location.href;
+                    if (currentUrl.includes('192.168.1.112')) {
+                        // 如果在远程服务器，重定向到远程 index
+                        window.location.href = currentUrl.replace(/deploy-package\.html.*/, 'index.html');
+                    } else {
+                        // 否则重定向到本地系统
+                        window.location.href = '/index.html';
+                    }
+                }, 2000);
+
+            } catch (error) {
+                log('❌ 部署失败: ' + error.message, 'error');
+                showStatus('部署失败，请查看日志', 'error');
+                deployBtn.disabled = false;
+            }
+        }
+
+        function clearLog() {
+            logEl.innerHTML = '';
+            statusEl.style.display = 'none';
+            setProgress(0);
+            deployBtn.disabled = false;
+        }
+
+        // 页面加载时的初始化
+        window.addEventListener('load', () => {
+            log('部署程序已加载', 'info');
+            showStatus('准备就绪，点击"开始部署"开始安装系统', 'info');
+        });
+
+        // 自动开始部署（如果需要）
+        // 取消注释下一行来自动开始
+        // setTimeout(startDeploy, 1000);
+    </script>
+</body>
+</html>

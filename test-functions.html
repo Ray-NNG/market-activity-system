@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>测试函数</title>
+</head>
+<body>
+  <h1>函数测试</h1>
+  <button onclick="testOpenNewActivity()">测试 openNewActivity</button>
+  <button onclick="testCreateActivity()">测试 createActivity</button>
+  <div id="output"></div>
+
+  <script>
+    // 模拟必要的函数
+    function showModal(id) {
+      document.getElementById('output').innerHTML += '<p>showModal(' + id + ') 被调用</p>';
+    }
+
+    function initBudgetItems() {
+      document.getElementById('output').innerHTML += '<p>initBudgetItems() 被调用</p>';
+    }
+
+    function openNewActivity() {
+      initBudgetItems();
+      showModal('modal-new');
+    }
+
+    async function createActivity() {
+      document.getElementById('output').innerHTML += '<p>createActivity() 被调用</p>';
+    }
+
+    function testOpenNewActivity() {
+      try {
+        openNewActivity();
+      } catch(e) {
+        document.getElementById('output').innerHTML += '<p style="color:red">错误: ' + e.message + '</p>';
+      }
+    }
+
+    function testCreateActivity() {
+      try {
+        createActivity();
+      } catch(e) {
+        document.getElementById('output').innerHTML += '<p style="color:red">错误: ' + e.message + '</p>';
+      }
+    }
+  </script>
+</body>
+</html>

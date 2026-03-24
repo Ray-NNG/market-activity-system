@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>全局函数测试</title>
+</head>
+<body>
+  <h1>测试全局函数</h1>
+  <button id="btn-test">测试按钮</button>
+  <button onclick="openNewActivity()">onclick 测试</button>
+  <div id="result"></div>
+  
+  <script>
+    // 模拟 index.html 的函数定义方式
+    let budgetItemCount = 0;
+    
+    function showModal(id) {
+      document.getElementById('result').innerHTML += `<p>showModal('${id}')</p>`;
+    }
+    
+    function initBudgetItems() {
+      document.getElementById('result').innerHTML += '<p>initBudgetItems()</p>';
+    }
+    
+    function openNewActivity() {
+      initBudgetItems();
+      showModal('modal-new');
+    }
+    
+    // 测试1: onclick 属性
+    // 测试2: addEventListener
+    document.getElementById('btn-test').addEventListener('click', function() {
+      document.getElementById('result').innerHTML += '<p>addEventListener 触发</p>';
+      try {
+        if (typeof openNewActivity === 'function') {
+          openNewActivity();
+          document.getElementById('result').innerHTML += '<p style="color:green">✅ openNewActivity 存在且可调用</p>';
+        } else {
+          document.getElementById('result').innerHTML += '<p style="color:red">❌ openNewActivity 不是函数</p>';
+        }
+      } catch(e) {
+        document.getElementById('result').innerHTML += `<p style="color:red">❌ 错误: ${e.message}</p>`;
+      }
+    });
+    
+    // 页面加载后检查
+    window.onload = function() {
+      document.getElementById('result').innerHTML += '<hr>';
+      document.getElementById('result').innerHTML += '<p>页面加载完成,检查全局函数:</p>';
+      document.getElementById('result').innerHTML += `<p>typeof openNewActivity: ${typeof openNewActivity}</p>`;
+      document.getElementById('result').innerHTML += `<p>typeof showModal: ${typeof showModal}</p>`;
+      document.getElementById('result').innerHTML += `<p>typeof initBudgetItems: ${typeof initBudgetItems}</p>`;
+    };
+  </script>
+</body>
+</html>
