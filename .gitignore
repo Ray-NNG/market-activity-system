@@ -1,0 +1,26 @@
+# 工作记忆文件
+.workbuddy/memory/*
+
+# 敏感配置
+*.env
+*.key
+*.secret
+
+# 备份文件
+*.backup
+*.bak
+
+# 临时文件
+temp_*
+*.tmp
+
+# 包含敏感信息的测试文件
+test-*.html
+system-ready.html
+configure-cos*.html
+
+# 本地数据
+.data/
+
+# 日志文件
+*.log
