@@ -744,6 +744,7 @@
         <div class="search-dropdown" id="search-dropdown"></div>
       </div>
       <button class="btn btn-outline btn-sm" onclick="openChangePasswordModal()">🔒 修改密码</button>
+      <button class="btn btn-outline btn-sm" style="color:#ef4444;border-color:#fca5a5" onclick="doLogout()">⏻ 退出登录</button>
       <button class="btn btn-primary" onclick="openNewActivity()">＋ 新建活动</button>
     </div>
   </div>
@@ -3205,6 +3206,16 @@ function doLogin() {
     if (errorEl) errorEl.style.display = 'block';
     if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
   }
+}
+
+// ===== 退出登录 =====
+function doLogout() {
+  if (!confirm('确定要退出当前登录吗？')) return;
+  localStorage.removeItem('mcm_auth_ts');
+  const overlay = document.getElementById('login-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  const pwdInput = document.getElementById('login-pwd');
+  if (pwdInput) { pwdInput.value = ''; setTimeout(() => pwdInput.focus(), 50); }
 }
 
 // ===== 修改密码功能 =====
