@@ -446,8 +446,189 @@
   }
 </style>
 
-  <!-- 腾讯云 COS 存储适配器 (修复版本) -->
-  <script src="cos-adapter-fixed.js"></script>
+  <!-- 腾讯云 COS 存储适配器 (内联版本，避免外部文件加载失败) -->
+  <script>
+/**
+ * 腾讯云 COS 适配器 - 纯JS版（兼容 HTTP 页面，不依赖 crypto.subtle）
+ */
+(function() {
+    'use strict';
+    console.log('🔧 加载腾讯云 COS 适配器（纯JS签名版）...');
+    const CONFIG = { secretId: '', secretKey: '', bucket: '', region: '', storageKey: 'data.json' };
+    function loadConfig() {
+        try {
+            const saved = localStorage.getItem('cos_config');
+            if (saved) { Object.assign(CONFIG, JSON.parse(saved)); console.log('✅ 已加载 COS 配置'); return true; }
+        } catch(e) {}
+        return false;
+    }
+    function saveConfig() {
+        try { localStorage.setItem('cos_config', JSON.stringify(CONFIG)); return true; } catch(e) { return false; }
+    }
+    function configure(config) { Object.assign(CONFIG, config); saveConfig(); }
+    function isConfigured() { return !!(CONFIG.secretId && CONFIG.secretKey && CONFIG.bucket && CONFIG.region); }
+
+    // ===== 纯JS SHA1（不依赖 crypto.subtle）=====
+    // _sha1Bytes: 直接接受字节数组，避免 UTF-8 重编码问题
+    function _sha1Bytes(bytes) {
+        function rotl(n,s){return(n<<s)|(n>>>(32-s));}
+        function toHex(n){return('0000000'+(n>>>0).toString(16)).slice(-8);}
+        const b=[...bytes];
+        const bitLen=b.length*8;
+        b.push(0x80);
+        while(b.length%64!==56)b.push(0);
+        b.push(0,0,0,0,(bitLen>>>24)&255,(bitLen>>>16)&255,(bitLen>>>8)&255,bitLen&255);
+        let h0=0x67452301,h1=0xEFCDAB89,h2=0x98BADCFE,h3=0x10325476,h4=0xC3D2E1F0;
+        for(let i=0;i<b.length;i+=64){
+            const w=[];
+            for(let j=0;j<16;j++)w[j]=(b[i+j*4]<<24)|(b[i+j*4+1]<<16)|(b[i+j*4+2]<<8)|b[i+j*4+3];
+            for(let j=16;j<80;j++)w[j]=rotl(w[j-3]^w[j-8]^w[j-14]^w[j-16],1);
+            let a=h0,bb=h1,c=h2,d=h3,e=h4;
+            for(let j=0;j<80;j++){
+                let f,k;
+                if(j<20){f=(bb&c)|((~bb)&d);k=0x5A827999;}
+                else if(j<40){f=bb^c^d;k=0x6ED9EBA1;}
+                else if(j<60){f=(bb&c)|(bb&d)|(c&d);k=0x8F1BBCDC;}
+                else{f=bb^c^d;k=0xCA62C1D6;}
+                const tmp=(rotl(a,5)+f+e+k+w[j])>>>0;
+                e=d;d=c;c=rotl(bb,30);bb=a;a=tmp;
+            }
+            h0=(h0+a)>>>0;h1=(h1+bb)>>>0;h2=(h2+c)>>>0;h3=(h3+d)>>>0;h4=(h4+e)>>>0;
+        }
+        return toHex(h0)+toHex(h1)+toHex(h2)+toHex(h3)+toHex(h4);
+    }
+    // _sha1: 接受字符串（UTF-8编码），用于对普通文本计算哈希
+    function _sha1(msg) {
+        return _sha1Bytes(strToBytes(msg));
+    }
+    // _hmacSha1: keyBytes 为字节数组，message 为字符串（UTF-8编码）
+    // 全程使用字节数组，避免任何 String.fromCharCode 导致的 UTF-8 重编码
+    function _hmacSha1(keyBytes, message) {
+        const bs=64;
+        let kb=[...keyBytes];
+        if(kb.length>bs){
+            // key > blockSize: sha1(key) → 取20字节
+            kb=_sha1Bytes(kb).match(/.{2}/g).map(h=>parseInt(h,16));
+        }
+        while(kb.length<bs)kb.push(0);
+        const opad=kb.map(b=>b^0x5c);
+        const ipad=kb.map(b=>b^0x36);
+        // 内层: sha1(ipad || message字节)
+        const msgBytes = strToBytes(message);
+        const innerBytes = _sha1Bytes([...ipad, ...msgBytes]).match(/.{2}/g).map(h=>parseInt(h,16));
+        // 外层: sha1(opad || inner_hash字节)
+        return _sha1Bytes([...opad, ...innerBytes]);
+    }
+    function strToBytes(s){
+        const b=[];
+        for(let i=0;i<s.length;i++){
+            const c=s.charCodeAt(i);
+            if(c<128)b.push(c);
+            else if(c<2048)b.push(192|(c>>6),128|(c&63));
+            else b.push(224|(c>>12),128|((c>>6)&63),128|(c&63));
+        }
+        return b;
+    }
+
+    function buildCosRequest(method, key, body) {
+        if (!isConfigured()) throw new Error('腾讯云 COS 适配器未配置');
+        const now = Math.floor(Date.now() / 1000);
+        const expired = now + 3600;
+        const signTime = `${now};${expired}`;
+        const host = `${CONFIG.bucket}.cos.${CONFIG.region}.myqcloud.com`;
+
+        // 腾讯云签名规范：
+        // HttpString = HttpMethod\nUriPathname\nHttpParameters\nHttpHeaders\n
+        // HttpHeaders：header key 小写，value URL encode，按字典序，格式 k=v&k=v
+        const uriPath = '/' + key;
+        const httpParams = '';  // 无 URL 参数
+        // host 值不需要 URL encode（只含小写字母、数字、点、连字符）
+        const httpHeaders = `host=${host}`;
+        const httpString = `${method.toLowerCase()}\n${uriPath}\n${httpParams}\n${httpHeaders}\n`;
+
+        // Step1: signKey = HMAC-SHA1(SecretKey字节, KeyTime) → hex
+        const signKey = _hmacSha1(strToBytes(CONFIG.secretKey), signTime);
+        // Step2: StringToSign = "sha1\n" + KeyTime + "\n" + SHA1(HttpString) + "\n"
+        const httpHash = _sha1(httpString);
+        const stringToSign = `sha1\n${signTime}\n${httpHash}\n`;
+        // Step3: Signature = HMAC-SHA1(SignKey字节, StringToSign) → hex
+        const signKeyBytes = signKey.match(/.{2}/g).map(h=>parseInt(h,16));
+        const signature = _hmacSha1(signKeyBytes, stringToSign);
+
+        console.log('🔐 COS签名调试:', {
+            method: method.toLowerCase(), uriPath, host,
+            httpString: JSON.stringify(httpString),
+            httpHash, signTime, stringToSign: JSON.stringify(stringToSign),
+            signKey, signature,
+            // 密钥诊断（不显示完整密钥，只看长度和首尾）
+            secretId_len: CONFIG.secretId.length,
+            secretId_head: CONFIG.secretId.slice(0,6),
+            secretKey_len: CONFIG.secretKey.length,
+            secretKey_head: CONFIG.secretKey.slice(0,4),
+            secretKey_tail: CONFIG.secretKey.slice(-4),
+        });
+
+        const url = `https://${host}/${key}`;
+        const headers = {
+            'Host': host,
+            'Authorization': `q-sign-algorithm=sha1&q-ak=${CONFIG.secretId}&q-sign-time=${signTime}&q-key-time=${signTime}&q-header-list=host&q-url-param-list=&q-signature=${signature}`
+        };
+        // 注意：不在签名headers里加Content-Type，避免q-header-list与实际header不一致
+        // PUT请求的body类型由调用方通过fetch的body参数隐式传递
+        return { url, headers };
+    }
+    function getLocalData() {
+        const s = localStorage.getItem('market_activity_data') || localStorage.getItem('market_activities_data_frontend');
+        if (s) { try { return JSON.parse(s); } catch(e) {} }
+        return { activities: [], files: {} };
+    }
+    function saveLocalData(data) {
+        const s = JSON.stringify(data, null, 2);
+        localStorage.setItem('market_activity_data', s);
+        localStorage.setItem('market_activity_backup', s);
+        localStorage.setItem('market_activities_data_frontend', s);
+        localStorage.setItem('mcm_activities_backup', JSON.stringify(data.activities || []));
+        if (data.files) localStorage.setItem('mcm_files_backup', JSON.stringify(data.files));
+        return true;
+    }
+    async function getData() {
+        if (!isConfigured()) return getLocalData();
+        try {
+            const req = buildCosRequest('GET', CONFIG.storageKey);
+            const res = await fetch(req.url, { method: 'GET', headers: req.headers, signal: AbortSignal.timeout(10000) });
+            if (res.ok) { const d = await res.json(); saveLocalData(d); return d; }
+            if (res.status === 404) { const empty = { activities: [], files: {} }; await saveData(empty); return empty; }
+            throw new Error(`HTTP ${res.status}`);
+        } catch(e) { console.warn('⚠️ COS 获取失败，使用本地:', e.message); return getLocalData(); }
+    }
+    async function saveData(data) {
+        saveLocalData(data);
+        if (!isConfigured()) return { success: false, message: '未配置', local: true };
+        try {
+            const dataStr = JSON.stringify(data, null, 2);
+            const req = buildCosRequest('PUT', CONFIG.storageKey, dataStr);
+            const res = await fetch(req.url, { method: 'PUT', headers: req.headers, body: dataStr, signal: AbortSignal.timeout(15000) });
+            if (res.ok) return { success: true, message: '保存成功', timestamp: Date.now() };
+            throw new Error(`HTTP ${res.status}`);
+        } catch(e) { return { success: false, message: e.message, local: true }; }
+    }
+    async function testConnection() {
+        if (!isConfigured()) return { success: false, message: '未配置腾讯云 COS' };
+        try {
+            const req = buildCosRequest('HEAD', CONFIG.storageKey);
+            const res = await fetch(req.url, { method: 'HEAD', headers: req.headers, signal: AbortSignal.timeout(8000) });
+            if (res.ok || res.status === 404) return { success: true, message: `连接成功 (HTTP ${res.status})`, configured: true };
+            return { success: false, message: `连接失败: HTTP ${res.status}` };
+        } catch(e) { return { success: false, message: `连接失败: ${e.message}` }; }
+    }
+    if (!window.MarketActivityCOS) window.MarketActivityCOS = {};
+    window.MarketActivityCOS.adapter = { configure, getData, saveData, testConnection, isConfigured, loadConfig, getConfig: () => ({ ...CONFIG }) };
+    window.MarketActivityCOS.version = 'inline-1.0.1';
+    loadConfig();
+    console.log('✅ COS 适配器已就绪，配置状态:', isConfigured());
+    setTimeout(() => window.dispatchEvent(new CustomEvent('cos-adapter-ready', { detail: { configured: isConfigured() } })), 100);
+})();
+  </script>
 </head>
 <body>
 
@@ -2998,25 +3179,118 @@ function saveCosConfig() {
 async function testCosConnection() {
   const btn = event.target;
   btn.disabled = true;
-  btn.textContent = '🔄 测试中…';
-  showCosResult('info', '正在测试连接，请稍候…');
+  btn.textContent = '🔄 诊断中…';
+
+  const steps = [];
+  const addStep = (icon, label, detail='') => {
+    steps.push(`${icon} ${label}${detail ? '<br><span style="color:#64748b;font-size:12px;padding-left:18px">' + detail + '</span>' : ''}`);
+    showCosResult('info', steps.join('<br>'));
+  };
 
   try {
+    // Step 1: 适配器检查
     if (!window.MarketActivityCOS?.adapter) {
-      throw new Error('适配器未加载，请刷新页面');
+      addStep('❌', '适配器未加载', '请刷新页面后重试');
+      return;
     }
-    if (!window.MarketActivityCOS.adapter.isConfigured()) {
-      throw new Error('请先保存配置再测试连接');
+    addStep('✅', '适配器已加载');
+
+    // Step 2: 配置完整性
+    const cfg = window.MarketActivityCOS.adapter.getConfig?.() || JSON.parse(localStorage.getItem('cos_config')||'{}');
+    if (!cfg.secretId || !cfg.secretKey || !cfg.bucket || !cfg.region) {
+      const missing = [];
+      if (!cfg.secretId)  missing.push('SecretId');
+      if (!cfg.secretKey) missing.push('SecretKey');
+      if (!cfg.bucket)    missing.push('Bucket 名称');
+      if (!cfg.region)    missing.push('地域');
+      addStep('❌', '配置不完整', '缺少：' + missing.join('、') + '，请先保存配置');
+      return;
     }
+    addStep('✅', '配置完整', `桶: ${cfg.bucket} | 地域: ${cfg.region}`);
+
+    // Step 3: 格式校验
+    const bucketOk = /^[a-z0-9-]+-\d+$/.test(cfg.bucket);
+    if (!bucketOk) {
+      addStep('⚠️', '存储桶名称格式异常', `正确格式示例: my-bucket-1234567890，当前值: ${cfg.bucket}`);
+    } else {
+      addStep('✅', '存储桶名称格式正确');
+    }
+    const idOk = cfg.secretId.startsWith('AKID') && cfg.secretId.length >= 36;
+    if (!idOk) {
+      addStep('⚠️', 'SecretId 格式异常', 'SecretId 应以 AKID 开头，长度约36字符');
+    } else {
+      addStep('✅', 'SecretId 格式正确');
+    }
+
+    // Step 4: 签名请求测试
+    const endpoint = `https://${cfg.bucket}.cos.${cfg.region}.myqcloud.com/data.json`;
+    addStep('🔄', '正在测试签名请求…', endpoint);
     const result = await window.MarketActivityCOS.adapter.testConnection();
+
     if (result.success) {
-      showCosResult('success', `✅ 连接成功！COS 存储桶可正常访问（状态码: ${result.status}）`);
+      addStep('✅', `连接成功（HTTP ${result.message}）`, '签名验证通过，可以开始使用！');
+      showCosResult('success', steps.join('<br>') + '<br><br>🎉 <strong>全部检查通过！现在可以正常使用云存储。</strong>');
       updateCosStatusBar();
     } else {
-      showCosResult('error', `❌ 连接失败: ${result.message}\n\n请检查 SecretId/SecretKey 是否正确，以及存储桶名称和地域是否匹配，并确认 CORS 已开放。`);
+      const msg = result.message || '';
+      if (msg.includes('403') || msg.includes('Forbidden')) {
+        // Step 5: 匿名请求对比测试，区分「密钥错误」vs「存储桶策略」
+        addStep('🔄', '正在做匿名对比测试，判断403根因…');
+        let anonStatus = null;
+        try {
+          const anonRes = await fetch(endpoint, { method: 'HEAD', signal: AbortSignal.timeout(6000) });
+          anonStatus = anonRes.status;
+        } catch(e) { anonStatus = 'err:' + e.message; }
+
+        let hint = '';
+        if (anonStatus === 200 || anonStatus === 404) {
+          // 匿名可访问说明桶是公有读，问题在签名
+          addStep('⚠️', `匿名访问返回 ${anonStatus}（桶是公有读）`, '说明签名计算有误，密钥可能复制错了');
+          hint = `❌ <strong>签名验证失败（密钥错误）</strong><br>
+存储桶是公有读，但签名请求被拒绝 → 说明 SecretId 或 SecretKey 有误。<br><br>
+<strong>请按以下步骤重新获取密钥：</strong><br>
+1. 打开 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank" style="color:#4f46e5">腾讯云 API密钥管理</a><br>
+2. 找到你使用的密钥，点「查看」，重新完整复制 SecretId 和 SecretKey<br>
+3. 注意：SecretKey 只在创建时可见一次，若已遗忘请重新创建<br>
+4. 回到此页「系统设置」，清空后重新粘贴，点保存`;
+        } else if (anonStatus === 403) {
+          // 匿名也403，说明是存储桶策略/防盗链问题
+          addStep('ℹ️', `匿名访问也是 403`, '说明存储桶为私有，且密钥权限配置有问题');
+          hint = `❌ <strong>存储桶权限配置错误</strong><br>
+匿名和签名请求都返回 403，说明该密钥账号对存储桶没有权限。<br><br>
+<strong>请在腾讯云控制台检查：</strong><br>
+1. 打开 <a href="https://console.cloud.tencent.com/cos" target="_blank" style="color:#4f46e5">COS 控制台</a> → 找到存储桶 <strong>${cfg.bucket}</strong><br>
+2. 左侧「权限管理」→「存储桶访问权限」<br>
+3. 如果你用的是<strong>主账号密钥</strong>，主账号默认有所有权限，可能是密钥本身复制错了<br>
+4. 如果你用的是<strong>子账号密钥</strong>，需要在 CAM 控制台给子账号授予 QcloudCOSFullAccess 权限<br><br>
+<strong>最简单的验证方法：</strong><br>
+→ 在腾讯云控制台直接上传一个文件到这个桶，如果上传成功说明桶正常，问题在密钥`;
+        } else {
+          addStep('⚠️', `匿名测试结果: ${anonStatus}`);
+          hint = `→ 错误详情：${msg}，匿名结果：${anonStatus}`;
+        }
+        addStep('❌', '连接失败');
+        showCosResult('error', steps.join('<br>') + '<br><br>' + hint);
+      } else if (msg.includes('401') || msg.includes('Unauthorized')) {
+        addStep('❌', '签名验证失败 (401)');
+        showCosResult('error', steps.join('<br>') + '<br><br>❌ <strong>401 签名验证失败</strong>：SecretKey 有误或系统时钟偏差超过15分钟<br>→ 重新复制 SecretKey，注意不要有多余空格');
+      } else if (msg.includes('404') || msg.includes('NoSuchBucket')) {
+        addStep('❌', '存储桶不存在 (404)');
+        showCosResult('error', steps.join('<br>') + '<br><br>❌ <strong>存储桶不存在</strong>：Bucket 名称或地域填写有误<br>→ 存储桶名称格式：桶名-AppId，如 market-data-1312345678<br>→ 地域需与控制台一致，如 ap-guangzhou');
+      } else if (msg.includes('CORS') || msg.includes('cors') || msg.includes('Cross-Origin')) {
+        addStep('❌', 'CORS 跨域错误');
+        showCosResult('error', steps.join('<br>') + '<br><br>❌ <strong>CORS 跨域错误</strong><br>→ COS 控制台 → 存储桶 → 安全管理 → 跨域访问 → 添加规则<br>→ 来源填 *，Methods 勾选 GET PUT POST DELETE HEAD，Headers 填 *');
+      } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('timeout')) {
+        addStep('❌', '网络无法访问');
+        showCosResult('error', steps.join('<br>') + '<br><br>❌ <strong>网络无法访问</strong><br>→ 检查网络连接<br>→ 地域格式示例: ap-beijing、ap-guangzhou');
+      } else {
+        addStep('❌', '连接失败: ' + msg);
+        showCosResult('error', steps.join('<br>') + '<br><br>→ 错误详情：' + msg);
+      }
     }
   } catch (err) {
-    showCosResult('error', `❌ 测试出错: ${err.message}`);
+    addStep('❌', '测试异常: ' + err.message, '');
+    showCosResult('error', steps.join('<br>'));
   } finally {
     btn.disabled = false;
     btn.textContent = '🔌 测试连接';
@@ -3050,7 +3324,8 @@ function showCosResult(type, msg) {
   el.style.background = c.bg;
   el.style.color      = c.color;
   el.style.whiteSpace = 'pre-wrap';
-  el.textContent      = msg;
+  el.style.lineHeight = '1.8';
+  el.innerHTML        = msg;
 }
 
 function savePasswordFromSettings() {
