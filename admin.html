@@ -673,69 +673,79 @@
   </div>
 
   <script>
-    // ===== 本地存储方案（离线优先）=====
+    // ===== 数据层配置 =====
     const STORAGE_KEY = 'market_activities_data';
+    const JSONBIN_BIN_ID = '69bd20d6b7ec241ddc86e1c2';
+    const JSONBIN_MASTER_KEY = '$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde';
+    const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
+    let currentBinVersion = null;
     let activities = [];
 
-    // 获取数据（本地存储）
+    // 获取数据：先试 jsonbin.io 直连，失败则用本地
     async function getJsonBinData() {
       try {
-        // 1. 先尝试从网络获取（如果有代理）
-        const PROXY_API = 'https://mcm-api-proxy.11ad930b3bc368f221039c4a44b22d13.workers.dev';
-        if (PROXY_API) {
-          try {
-            const res = await Promise.race([
-              fetch(`${PROXY_API}/data/latest`),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('超时')), 3000))
-            ]);
-            if (res.ok) {
-              const data = await res.json();
-              // 网络数据获取成功，同时保存到本地
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(data.record || { activities: [], files: {} }));
-              return data.record || { activities: [], files: {} };
-            }
-          } catch (err) {
-            console.log('网络连接失败，使用本地数据:', err.message);
-          }
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}/latest`, {
+          headers: { 'X-Master-Key': JSONBIN_MASTER_KEY },
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.metadata && data.metadata.version) currentBinVersion = data.metadata.version;
+          const record = data.record || { activities: [], files: {} };
+          // 同步保存到本地备份
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+          console.log('✅ jsonbin.io 数据加载成功');
+          return record;
         }
       } catch (err) {
-        console.log('获取网络数据异常:', err);
+        console.log('⚠️ jsonbin.io 连接失败，使用本地数据:', err.message);
       }
 
-      // 2. 回退到本地存储
+      // 回退本地存储
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
+        console.log('✅ 使用本地缓存数据');
         return JSON.parse(stored);
       }
-
-      // 3. 没有本地数据则返回空
       return { activities: [], files: {} };
     }
 
-    // 保存数据（本地优先）
+    // 保存数据：先存本地，再异步同步到 jsonbin.io
     async function saveJsonBinData(data) {
-      // 1. 总是保存到本地存储（即使网络失败也能离线工作）
+      // 1. 立即写本地（保证不丢数据）
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
-      // 2. 尝试同步到网络（但不阻塞本地保存）
-      try {
-        const PROXY_API = 'https://mcm-api-proxy.11ad930b3bc368f221039c4a44b22d13.workers.dev';
-        if (PROXY_API) {
-          const res = await Promise.race([
-            fetch(`${PROXY_API}/data`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(data)
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('超时')), 3000))
-          ]);
-          if (!res.ok) {
-            console.log('网络同步失败，但本地数据已保存');
+      // 2. 异步同步到 jsonbin.io
+      setTimeout(async () => {
+        try {
+          const headers = {
+            'Content-Type': 'application/json',
+            'X-Master-Key': JSONBIN_MASTER_KEY
+          };
+          if (currentBinVersion) headers['X-Bin-Version'] = currentBinVersion;
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
+          const res = await fetch(`${JSONBIN_API}/${JSONBIN_BIN_ID}`, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(data),
+            signal: controller.signal
+          });
+          clearTimeout(timeout);
+          if (res.ok) {
+            const result = await res.json();
+            if (result.metadata && result.metadata.version) currentBinVersion = result.metadata.version;
+            console.log('✅ 数据已同步到 jsonbin.io');
+          } else {
+            console.log('⚠️ jsonbin.io 同步失败，本地数据已保存');
           }
+        } catch (err) {
+          console.log('⚠️ jsonbin.io 同步失败（本地已保存）:', err.message);
         }
-      } catch (err) {
-        console.log('后台同步失败（本地已保存）:', err.message);
-      }
+      }, 100);
 
       return data;
     }
