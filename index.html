@@ -540,7 +540,9 @@
         // 腾讯云签名规范：
         // HttpString = HttpMethod\nUriPathname\nHttpParameters\nHttpHeaders\n
         // HttpHeaders：header key 小写，value URL encode，按字典序，格式 k=v&k=v
-        const uriPath = '/' + key;
+        // uriPath：每个路径段做 encodeURIComponent（保留"/"分隔符），签名和请求 URL 必须完全一致
+        const encodedKey = key.split('/').map(seg => encodeURIComponent(seg)).join('/');
+        const uriPath = '/' + encodedKey;
         const httpParams = '';  // 无 URL 参数
         // host 值不需要 URL encode（只含小写字母、数字、点、连字符）
         const httpHeaders = `host=${host}`;
@@ -569,7 +571,7 @@
             secretKey_tail: CONFIG.secretKey.slice(-4),
         });
 
-        const url = `https://${host}/${key}`;
+        const url = `https://${host}/${encodedKey}`;
         const headers = {
             'Host': host,
             'Authorization': `q-sign-algorithm=sha1&q-ak=${CONFIG.secretId}&q-sign-time=${signTime}&q-key-time=${signTime}&q-header-list=host&q-url-param-list=&q-signature=${signature}`
@@ -2652,7 +2654,7 @@ async function uploadFileToCloud(fileId, activityId, stage) {
     const blob = new Blob([bytes], { type: file.type || 'application/octet-stream' });
 
     // COS 对象路径：files/{activityId}/{stage}/{fileId}/{filename}
-    const cosKey = `files/${activityId}/${stage}/${file.id}/${encodeURIComponent(file.name)}`;
+    const cosKey = `files/${activityId}/${stage}/${file.id}/${file.name}`;
     const req = window.MarketActivityCOS.adapter.buildRequest('PUT', cosKey, blob);
     const res = await fetch(req.url, {
       method: 'PUT',
@@ -2668,7 +2670,7 @@ async function uploadFileToCloud(fileId, activityId, stage) {
     // 标记为已上传
     file.cloudUploaded = true;
     file.cloudUploadTime = new Date().toISOString();
-    file.cloudUrl = `https://${cfg.bucket}.cos.${cfg.region}.myqcloud.com/${cosKey}`;
+    file.cloudUrl = req.url;  // 直接用请求 URL（已包含 encode）
     
     // 保存到本地存储
     saveFileStore(fileStore);
