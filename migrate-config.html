@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腾讯云COS配置迁移工具</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        h1 {
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .success { background: #10b981; color: white; }
+        .warning { background: #f59e0b; color: white; }
+        .error { background: #ef4444; color: white; }
+        .info { background: #3b82f6; color: white; }
+        
+        .config-section {
+            background: #f8fafc;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .step {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .field {
+            margin: 15px 0;
+        }
+        .field label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+        .field input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        .field input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔄 腾讯云COS配置迁移工具</h1>
+        <p style="text-align: center; color: #64748b;">解决"资料好像没有存在腾讯云里面"的问题</p>
+        
+        <div id="status" class="status info">正在检查当前配置状态...</div>
+        
+        <h2>🔍 配置状态检查</h2>
+        <div id="config-details" class="config-section">
+            正在分析配置...
+        </div>
+        
+        <h2>📝 手动配置（如果自动迁移失败）</h2>
+        <div class="config-section">
+            <div class="field">
+                <label for="secretId">SecretId (API密钥ID)</label>
+                <input type="password" id="secretId" placeholder="以 AKID 开头的字符串">
+            </div>
+            <div class="field">
+                <label for="secretKey">SecretKey (API密钥)</label>
+                <input type="password" id="secretKey" placeholder="32位以上的字符串">
+            </div>
+            <div class="field">
+                <label for="bucket">Bucket (存储桶名称)</label>
+                <input type="text" id="bucket" placeholder="例如: market-activity-system-xxxxxx">
+            </div>
+            <div class="field">
+                <label for="region">Region (存储区域)</label>
+                <input type="text" id="region" placeholder="例如: ap-guangzhou、ap-beijing">
+            </div>
+            <button class="btn btn-success" onclick="saveManualConfig()">
+                💾 保存手动配置
+            </button>
+        </div>
+        
+        <h2>⚡ 自动迁移操作</h2>
+        <div class="config-section">
+            <button class="btn" onclick="scanOldConfigs()">
+                1. 扫描旧配置
+            </button>
+            <button class="btn" onclick="migrateToNewFormat()">
+                2. 迁移到新格式
+            </button>
+            <button class="btn" onclick="testConfiguration()">
+                3. 测试配置
+            </button>
+            <button class="btn btn-success" onclick="doFullMigration()">
+                🚀 一键完整迁移
+            </button>
+        </div>
+        
+        <h2>📊 操作日志</h2>
+        <div id="log" class="log">
+等待操作...
+        </div>
+        
+        <h2>🎯 迁移完成后操作</h2>
+        <div class="step">
+            <h3>迁移完成后:</h3>
+            <ol>
+                <li>访问 <a href="index.html" target="_blank">主系统</a> 测试数据上传</li>
+                <li>检查控制台输出是否有错误信息</li>
+                <li>如果仍有问题，使用下面的诊断工具</li>
+            </ol>
+            <button class="btn" onclick="testDataUpload()">
+                📤 测试数据上传
+            </button>
+            <button class="btn" onclick="window.location.href='check-cos-config.html'">
+                🔧 打开详细诊断工具
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // 日志函数
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeIcon = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️'
+            }[type] || 'ℹ️';
+            
+            logDiv.innerHTML += `${timestamp} ${typeIcon} ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // 检查所有可能的配置位置
+        function scanOldConfigs() {
+            log('开始扫描旧的配置格式...');
+            
+            const configKeys = [
+                // 旧版格式
+                'cos_secretId', 'cos_secretKey', 'cos_bucket', 'cos_region',
+                'tencent_secretId', 'tencent_secretKey', 'tencent_bucket', 'tencent_region',
+                // 新版格式
+                'mcm_cos_config', 'mcm_cos_adapter_config'
+            ];
+            
+            let foundConfigs = {};
+            
+            configKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    foundConfigs[key] = value.length > 50 ? 
+                        value.substring(0, 50) + '...' : 
+                        value;
+                    log(`发现配置项: ${key} = ${foundConfigs[key]}`);
+                }
+            });
+            
+            // 检查结构化配置
+            const structuredKeys = ['cos_config'];
+            structuredKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        foundConfigs[key] = JSON.stringify(parsed, null, 2);
+                        log(`发现结构化配置: ${key}`);
+                    } catch (e) {
+                        log(`配置 ${key} 解析失败: ${e.message}`, 'error');
+                    }
+                }
+            });
+            
+            // 显示结果
+            const detailsDiv = document.getElementById('config-details');
+            let html = '<h3>发现的配置:</h3>';
+            
+            if (Object.keys(foundConfigs).length > 0) {
+                html += '<ul>';
+                Object.entries(foundConfigs).forEach(([key, value]) => {
+                    html += `<li><strong>${key}:</strong> ${value}</li>`;
+                });
+                html += '</ul>';
+                
+                const statusDiv = document.getElementById('status');
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = '✅ 发现配置信息';
+                
+                log(`扫描完成: 发现 ${Object.keys(foundConfigs).length} 个配置项`, 'success');
+            } else {
+                html += '<p style="color: #ef4444;">❌ 未发现任何配置信息</p>';
+                html += '<p>请在上面的"手动配置"部分填写你的腾讯云信息。</p>';
+                
+                const statusDiv = document.getElementById('status');
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ 未发现配置信息';
+                
+                log('扫描完成: 未发现配置信息', 'error');
+            }
+            
+            detailsDiv.innerHTML = html;
+            
+            return foundConfigs;
+        }
+        
+        // 迁移到新格式
+        function migrateToNewFormat() {
+            log('开始迁移配置到新格式...');
+            
+            // 尝试从各种旧格式中提取配置
+            const config = {
+                secretId: '',
+                secretKey: '',
+                bucket: '',
+                region: ''
+            };
+            
+            // 检查旧版独立配置
+            config.secretId = localStorage.getItem('cos_secretId') || 
+                             localStorage.getItem('tencent_secretId') || 
+                             config.secretId;
+            
+            config.secretKey = localStorage.getItem('cos_secretKey') || 
+                              localStorage.getItem('tencent_secretKey') || 
+                              config.secretKey;
+            
+            config.bucket = localStorage.getItem('cos_bucket') || 
+                           localStorage.getItem('tencent_bucket') || 
+                           config.bucket;
+            
+            config.region = localStorage.getItem('cos_region') || 
+                           localStorage.getItem('tencent_region') || 
+                           config.region;
+            
+            // 检查结构化配置
+            const structuredConfigs = ['mcm_cos_config', 'mcm_cos_adapter_config', 'cos_config'];
+            structuredConfigs.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        Object.assign(config, parsed);
+                        log(`从 ${key} 加载配置成功`);
+                    } catch (e) {
+                        log(`配置 ${key} 解析失败: ${e.message}`, 'warning');
+                    }
+                }
+            });
+            
+            // 保存到新格式
+            try {
+                localStorage.setItem('cos_config', JSON.stringify(config));
+                log('✅ 配置已迁移到新格式 (cos_config)', 'success');
+                
+                // 同时保存到适配器期望的格式
+                if (config.bucket && config.region) {
+                    const adapterConfig = {
+                        bucket: config.bucket,
+                        region: config.region,
+                        storageKey: 'data.json'
+                    };
+                    
+                    // 如果是修复版适配器，需要包含密钥
+                    const fixedConfig = {
+                        secretId: config.secretId,
+                        secretKey: config.secretKey,
+                        bucket: config.bucket,
+                        region: config.region,
+                        storageKey: 'data.json'
+                    };
+                    
+                    localStorage.setItem('mcm_cos_adapter_config', JSON.stringify(adapterConfig));
+                    localStorage.setItem('cos_config', JSON.stringify(fixedConfig));
+                    
+                    log('✅ 适配器配置也已更新', 'success');
+                }
+                
+                // 显示迁移结果
+                const detailsDiv = document.getElementById('config-details');
+                detailsDiv.innerHTML = `
+                    <h3>迁移完成!</h3>
+                    <ul>
+                        <li><strong>SecretId:</strong> ${config.secretId ? '已配置' : '未配置'}</li>
+                        <li><strong>SecretKey:</strong> ${config.secretKey ? '已配置' : '未配置'}</li>
+                        <li><strong>Bucket:</strong> ${config.bucket || '未配置'}</li>
+                        <li><strong>Region:</strong> ${config.region || '未配置'}</li>
+                    </ul>
+                `;
+                
+                const statusDiv = document.getElementById('status');
+                if (config.secretId && config.secretKey && config.bucket && config.region) {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ 配置迁移完成且完整';
+                } else {
+                    statusDiv.className = 'status warning';
+                    statusDiv.innerHTML = '⚠️ 配置迁移完成但不完整';
+                }
+                
+            } catch (e) {
+                log(`❌ 迁移失败: ${e.message}`, 'error');
+            }
+        }
+        
+        // 测试配置
+        async function testConfiguration() {
+            log('测试配置有效性...');
+            
+            // 加载配置
+            const configStr = localStorage.getItem('cos_config');
+            if (!configStr) {
+                log('❌ 未找到配置信息，请先迁移配置', 'error');
+                return;
+            }
+            
+            try {
+                const config = JSON.parse(configStr);
+                
+                // 检查配置完整性
+                const required = ['secretId', 'secretKey', 'bucket', 'region'];
+                const missing = required.filter(key => !config[key]);
+                
+                if (missing.length > 0) {
+                    log(`❌ 配置不完整，缺少: ${missing.join(', ')}`, 'error');
+                    return;
+                }
+                
+                log('✅ 配置格式检查通过', 'success');
+                log(`Bucket: ${config.bucket}, Region: ${config.region}`);
+                
+                // 测试连接
+                log('测试腾讯云COS连接...');
+                
+                // 使用适配器测试连接
+                if (window.MarketActivityCOS && window.MarketActivityCOS.adapter) {
+                    const result = await window.MarketActivityCOS.adapter.testConnection();
+                    
+                    if (result.success) {
+                        log(`✅ 连接测试成功: ${result.message}`, 'success');
+                    } else {
+                        log(`⚠️ 连接测试失败: ${result.message}`, 'warning');
+                    }
+                } else {
+                    log('⚠️ 适配器未加载，无法测试连接', 'warning');
+                }
+                
+            } catch (e) {
+                log(`❌ 配置测试失败: ${e.message}`, 'error');
+            }
+        }
+        
+        // 保存手动配置
+        function saveManualConfig() {
+            const config = {
+                secretId: document.getElementById('secretId').value.trim(),
+                secretKey: document.getElementById('secretKey').value.trim(),
+                bucket: document.getElementById('bucket').value.trim(),
+                region: document.getElementById('region').value.trim()
+            };
+            
+            if (!config.secretId || !config.secretKey || !config.bucket || !config.region) {
+                log('❌ 请填写所有配置项', 'error');
+                return;
+            }
+            
+            try {
+                localStorage.setItem('cos_config', JSON.stringify(config));
+                log('✅ 手动配置已保存', 'success');
+                
+                // 更新状态显示
+                const statusDiv = document.getElementById('status');
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = '✅ 手动配置已保存';
+                
+                // 清空表单
+                document.getElementById('secretId').value = '';
+                document.getElementById('secretKey').value = '';
+                
+            } catch (e) {
+                log(`❌ 保存失败: ${e.message}`, 'error');
+            }
+        }
+        
+        // 一键完整迁移
+        async function doFullMigration() {
+            log('开始一键完整迁移...');
+            
+            // 1. 扫描旧配置
+            scanOldConfigs();
+            
+            // 2. 迁移到新格式
+            migrateToNewFormat();
+            
+            // 3. 测试配置
+            await testConfiguration();
+            
+            log('✅ 一键迁移完成', 'success');
+        }
+        
+        // 测试数据上传
+        async function testDataUpload() {
+            log('测试数据上传功能...');
+            
+            if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+                log('❌ 适配器未加载，请刷新页面', 'error');
+                return;
+            }
+            
+            // 创建测试数据
+            const testData = {
+                activities: [
+                    {
+                        id: 'test-' + Date.now(),
+                        name: '测试活动',
+                        date: new Date().toISOString(),
+                        type: '测试',
+                        status: '进行中'
+                    }
+                ],
+                files: {},
+                testTimestamp: Date.now()
+            };
+            
+            log(`创建测试数据: ${JSON.stringify(testData).length} 字节`);
+            
+            try {
+                // 使用适配器保存数据
+                const result = await window.MarketActivityCOS.adapter.saveData(testData);
+                
+                if (result.success) {
+                    log('✅ 数据上传测试成功!', 'success');
+                    log(`响应: ${JSON.stringify(result)}`);
+                    
+                    // 测试读取数据
+                    log('测试读取刚刚上传的数据...');
+                    const readResult = await window.MarketActivityCOS.adapter.getData();
+                    
+                    if (readResult.activities && readResult.activities.length > 0) {
+                        log(`✅ 数据读取成功! 找到 ${readResult.activities.length} 个活动`, 'success');
+                    } else {
+                        log('⚠️ 数据读取成功但未找到活动', 'warning');
+                    }
+                } else {
+                    log(`⚠️ 上传测试可能失败: ${result.message}`, 'warning');
+                    if (result.local) {
+                        log('数据仅保存在本地，未上传到腾讯云COS', 'info');
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ 上传测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 页面加载时自动扫描
+        window.onload = function() {
+            log('配置迁移工具已加载');
+            setTimeout(() => {
+                scanOldConfigs();
+            }, 500);
+        };
+    </script>
+</body>
+</html>
