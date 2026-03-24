@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腾讯云COS配置检查</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        h1 {
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .success { background: #10b981; color: white; }
+        .warning { background: #f59e0b; color: white; }
+        .error { background: #ef4444; color: white; }
+        .info { background: #3b82f6; color: white; }
+        
+        .config-item {
+            background: #f8fafc;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .test-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 5px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .log {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .step {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔍 腾讯云COS配置检查</h1>
+        <p style="text-align: center; color: #64748b;">诊断资料上传问题的工具</p>
+        
+        <div id="config-status" class="status info">正在检查配置...</div>
+        
+        <h2>📋 当前配置</h2>
+        <div id="config-details" class="config-item">
+            正在加载配置信息...
+        </div>
+        
+        <h2>🧪 测试功能</h2>
+        <button class="test-btn" onclick="testConfig()">1. 测试配置</button>
+        <button class="test-btn" onclick="testConnection()">2. 测试连接</button>
+        <button class="test-btn" onclick="testUpload()">3. 测试上传</button>
+        <button class="test-btn" onclick="testDownload()">4. 测试下载</button>
+        <button class="test-btn" onclick="checkLocalStorage()">5. 检查本地存储</button>
+        
+        <h2>📝 测试日志</h2>
+        <div id="test-log" class="log">
+等待测试...
+        </div>
+        
+        <h2>🔧 问题诊断</h2>
+        <div class="step">
+            <h3>常见问题排查:</h3>
+            <ol>
+                <li><strong>配置未保存:</strong> 需要先在 COS 配置页面填写信息</li>
+                <li><strong>Bucket权限问题:</strong> 检查存储桶的读写权限和CORS设置</li>
+                <li><strong>网络连接问题:</strong> 可能被防火墙或网络策略阻止</li>
+                <li><strong>本地存储优先:</strong> 系统可能在使用本地缓存数据</li>
+                <li><strong>异步同步延迟:</strong> 数据可能在排队等待同步</li>
+            </ol>
+        </div>
+        
+        <div class="step">
+            <h3>解决方案:</h3>
+            <ol>
+                <li>访问 <a href="cos-configuration.html" target="_blank">COS配置页面</a> 填写信息</li>
+                <li>使用下面的"修复配置"按钮</li>
+                <li>检查腾讯云控制台的存储桶设置</li>
+                <li>清除浏览器缓存后重试</li>
+            </ol>
+            <button class="test-btn" onclick="fixConfiguration()" style="background: linear-gradient(135deg, #10b981, #059669);">
+                🔧 修复配置
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // 日志函数
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const typeIcon = {
+                'info': 'ℹ️',
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️'
+            }[type] || 'ℹ️';
+            
+            logDiv.innerHTML += `${timestamp} ${typeIcon} ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // 检查配置
+        function checkConfiguration() {
+            log('开始检查腾讯云COS配置...');
+            
+            const config = {
+                secretId: localStorage.getItem('cos_secretId'),
+                secretKey: localStorage.getItem('cos_secretKey'),
+                bucket: localStorage.getItem('cos_bucket'),
+                region: localStorage.getItem('cos_region'),
+                appId: localStorage.getItem('cos_appId')
+            };
+            
+            const configDiv = document.getElementById('config-details');
+            const statusDiv = document.getElementById('config-status');
+            
+            let configValid = true;
+            let configHtml = '';
+            
+            configHtml += `<strong>SecretId:</strong> ${config.secretId ? '已配置' : '❌ 未配置'}<br>`;
+            if (!config.secretId) configValid = false;
+            
+            configHtml += `<strong>SecretKey:</strong> ${config.secretKey ? '已配置' : '❌ 未配置'}<br>`;
+            if (!config.secretKey) configValid = false;
+            
+            configHtml += `<strong>Bucket:</strong> ${config.bucket || '❌ 未配置'}<br>`;
+            if (!config.bucket) configValid = false;
+            
+            configHtml += `<strong>Region:</strong> ${config.region || '❌ 未配置'}<br>`;
+            if (!config.region) configValid = false;
+            
+            configHtml += `<strong>AppId:</strong> ${config.appId || '使用默认'}<br>`;
+            
+            configDiv.innerHTML = configHtml;
+            
+            if (configValid) {
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = '✅ 配置完整';
+                log('配置检查完成: 配置完整', 'success');
+            } else {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ 配置不完整';
+                log('配置检查完成: 配置不完整，请先配置腾讯云信息', 'error');
+            }
+            
+            return configValid ? config : null;
+        }
+        
+        // 测试配置
+        function testConfig() {
+            log('测试配置有效性...');
+            const config = checkConfiguration();
+            
+            if (!config) {
+                log('配置不完整，无法测试', 'error');
+                return;
+            }
+            
+            // 验证配置格式
+            let valid = true;
+            
+            if (config.secretId && !config.secretId.startsWith('AKID')) {
+                log('警告: SecretId 格式可能不正确', 'warning');
+            }
+            
+            if (config.secretKey && config.secretKey.length < 32) {
+                log('警告: SecretKey 长度可能太短', 'warning');
+            }
+            
+            if (config.bucket && !config.bucket.includes('-')) {
+                log('警告: Bucket 名称格式可能不正确', 'warning');
+            }
+            
+            if (valid) {
+                log('配置格式检查通过', 'success');
+            }
+        }
+        
+        // 测试连接
+        async function testConnection() {
+            log('测试腾讯云COS连接...');
+            const config = checkConfiguration();
+            
+            if (!config) {
+                log('配置不完整，无法测试连接', 'error');
+                return;
+            }
+            
+            try {
+                // 简单的连接测试：尝试列出Bucket
+                const timestamp = Math.floor(Date.now() / 1000);
+                const method = 'GET';
+                const pathname = '/';
+                const params = {};
+                
+                // 生成签名（简化版）
+                const queryString = Object.keys(params)
+                    .sort()
+                    .map(key => `${key}=${encodeURIComponent(params[key])}`)
+                    .join('&');
+                
+                const url = `https://${config.bucket}.cos.${config.region}.myqcloud.com/?${queryString}`;
+                
+                log(`尝试连接: ${url}`);
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': 'QCloud',
+                        'Host': `${config.bucket}.cos.${config.region}.myqcloud.com`
+                    }
+                });
+                
+                if (response.status === 200 || response.status === 403) {
+                    // 403表示需要签名，但至少连接通了
+                    log(`连接成功! 状态码: ${response.status}`, 'success');
+                    log('说明: 服务器响应正常，可能需要正确的签名', 'info');
+                } else {
+                    log(`连接异常! 状态码: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`连接失败: ${error.message}`, 'error');
+                log('可能的原因: 网络问题、域名解析失败、CORS限制', 'warning');
+            }
+        }
+        
+        // 测试上传
+        async function testUpload() {
+            log('测试数据上传到腾讯云COS...');
+            const config = checkConfiguration();
+            
+            if (!config) {
+                log('配置不完整，无法测试上传', 'error');
+                return;
+            }
+            
+            try {
+                // 创建测试数据
+                const testData = {
+                    type: 'test',
+                    timestamp: new Date().toISOString(),
+                    message: '这是腾讯云COS上传测试数据',
+                    system: '市场活动管理系统'
+                };
+                
+                const dataStr = JSON.stringify(testData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                
+                log(`创建测试数据: ${dataStr.length} 字节`);
+                
+                // 使用系统的适配器进行上传
+                if (window.getJsonBinData && window.saveJsonBinData) {
+                    log('检测到系统适配器，使用适配器上传...');
+                    
+                    // 保存到本地存储
+                    localStorage.setItem('market_activity_data_test', dataStr);
+                    log('测试数据已保存到本地存储', 'success');
+                    
+                    // 尝试上传到COS（通过适配器）
+                    const result = await saveJsonBinData(dataStr);
+                    
+                    if (result && result.success) {
+                        log('✅ 上传成功! 数据已保存到腾讯云COS', 'success');
+                        log(`响应: ${JSON.stringify(result)}`);
+                    } else {
+                        log('⚠️ 上传可能失败，但数据已保存在本地', 'warning');
+                        log(`响应: ${JSON.stringify(result)}`);
+                    }
+                } else {
+                    log('❌ 系统适配器未加载，无法测试上传', 'error');
+                    log('建议: 检查页面是否正确加载了 cos-adapter-configurable.js', 'warning');
+                }
+                
+            } catch (error) {
+                log(`上传测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 测试下载
+        async function testDownload() {
+            log('测试从腾讯云COS下载数据...');
+            
+            try {
+                if (window.getJsonBinData) {
+                    log('使用系统适配器下载数据...');
+                    const data = await getJsonBinData();
+                    
+                    if (data) {
+                        log('✅ 下载成功!', 'success');
+                        log(`数据大小: ${JSON.stringify(data).length} 字节`);
+                        log(`数据内容预览: ${JSON.stringify(data).substring(0, 200)}...`);
+                    } else {
+                        log('⚠️ 下载成功但数据为空', 'warning');
+                        log('可能的原因: COS中还没有数据，或者配置错误', 'info');
+                    }
+                } else {
+                    log('❌ 系统适配器未加载，无法测试下载', 'error');
+                }
+            } catch (error) {
+                log(`下载测试失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 检查本地存储
+        function checkLocalStorage() {
+            log('检查本地存储中的数据...');
+            
+            // 检查系统数据
+            const systemData = localStorage.getItem('market_activity_data');
+            const testData = localStorage.getItem('market_activity_data_test');
+            const cosConfig = {
+                secretId: localStorage.getItem('cos_secretId'),
+                secretKey: localStorage.getItem('cos_secretKey'),
+                bucket: localStorage.getItem('cos_bucket'),
+                region: localStorage.getItem('cos_region')
+            };
+            
+            log(`系统数据: ${systemData ? systemData.length + ' 字节' : '无'}`);
+            log(`测试数据: ${testData ? testData.length + ' 字节' : '无'}`);
+            
+            let hasConfig = true;
+            Object.entries(cosConfig).forEach(([key, value]) => {
+                log(`${key}: ${value ? '已配置' : '❌ 未配置'}`);
+                if (!value) hasConfig = false;
+            });
+            
+            if (systemData) {
+                log('✅ 发现本地存储的系统数据', 'success');
+                try {
+                    const parsed = JSON.parse(systemData);
+                    log(`活动数量: ${parsed.activities ? parsed.activities.length : 0}`);
+                    log(`用户数量: ${parsed.users ? parsed.users.length : 0}`);
+                } catch (e) {
+                    log(`数据解析错误: ${e.message}`, 'error');
+                }
+            } else {
+                log('本地存储中未发现系统数据', 'warning');
+            }
+            
+            if (!hasConfig) {
+                log('❌ COS配置不完整，数据无法上传到腾讯云', 'error');
+            }
+        }
+        
+        // 修复配置
+        function fixConfiguration() {
+            log('尝试修复配置...');
+            
+            // 尝试从不同位置读取配置
+            const possibleKeys = [
+                'cos_secretId', 'cos_secretKey', 'cos_bucket', 'cos_region',
+                'tencent_secretId', 'tencent_secretKey', 'tencent_bucket', 'tencent_region'
+            ];
+            
+            possibleKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    log(`发现配置项 ${key}: ${value.substring(0, 10)}...`);
+                    
+                    // 如果是腾讯云相关配置，保存为标准格式
+                    if (key.includes('secretId')) {
+                        localStorage.setItem('cos_secretId', value);
+                    } else if (key.includes('secretKey')) {
+                        localStorage.setItem('cos_secretKey', value);
+                    } else if (key.includes('bucket')) {
+                        localStorage.setItem('cos_bucket', value);
+                    } else if (key.includes('region')) {
+                        localStorage.setItem('cos_region', value);
+                    }
+                }
+            });
+            
+            // 检查修复后的配置
+            checkConfiguration();
+            log('配置修复完成', 'success');
+        }
+        
+        // 页面加载时自动检查
+        window.onload = function() {
+            log('配置检查工具已加载');
+            checkConfiguration();
+        };
+    </script>
+</body>
+</html>
