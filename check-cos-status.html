@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>腾讯云 COS 配置检查</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 700px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .content {
+      padding: 30px;
+    }
+    .check-item {
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      background: #f8fafc;
+    }
+    .check-item.success {
+      border-color: #10b981;
+      background: #d1fae5;
+    }
+    .check-item.warning {
+      border-color: #f59e0b;
+      background: #fef3c7;
+    }
+    .check-item.error {
+      border-color: #ef4444;
+      background: #fee2e2;
+    }
+    .check-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .check-icon {
+      font-size: 24px;
+    }
+    .check-title {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .check-detail {
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .check-detail code {
+      background: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-badge.success {
+      background: #10b981;
+      color: white;
+    }
+    .status-badge.warning {
+      background: #f59e0b;
+      color: white;
+    }
+    .status-badge.error {
+      background: #ef4444;
+      color: white;
+    }
+    .config-display {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+    .config-display .label {
+      color: #94a3b8;
+    }
+    .config-display .value {
+      color: #10b981;
+    }
+    .actions {
+      margin-top: 24px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+    .summary {
+      margin-top: 24px;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      color: white;
+      text-align: center;
+    }
+    .summary h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .summary p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 腾讯云 COS 配置检查</h1>
+      <p>自动诊断你的腾讯云 COS 配置状态</p>
+    </div>
+    <div class="content">
+      <div id="results">
+        <div style="text-align: center; padding: 40px;">
+          <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
+          <p style="color: #64748b;">正在检查配置...</p>
+        </div>
+      </div>
+      
+      <div class="actions" id="actions">
+        <button class="btn btn-primary" onclick="checkConfig()">
+          🔄 重新检查
+        </button>
+        <button class="btn btn-secondary" onclick="goToConfig()">
+          ⚙️ 前往配置
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 检查配置状态
+    function checkConfig() {
+      const results = document.getElementById('results');
+      results.innerHTML = '<div style="text-align: center; padding: 40px;"><div style="font-size: 48px; margin-bottom: 20px;">🔍</div><p style="color: #64748b;">正在检查配置...</p></div>';
+      
+      setTimeout(() => {
+        const config = localStorage.getItem('cos_config');
+        let html = '';
+        let status = 'success';
+        
+        // 检查 1: 配置是否存在
+        if (!config) {
+          status = 'error';
+          html += `
+            <div class="check-item error">
+              <div class="check-header">
+                <span class="check-icon">❌</span>
+                <span class="check-title">配置不存在</span>
+              </div>
+              <div class="check-detail">
+                未找到腾讯云 COS 配置。你需要先配置腾讯云 COS 才能使用云端存储功能。
+              </div>
+            </div>
+          `;
+        } else {
+          try {
+            const configObj = JSON.parse(config);
+            const checks = [
+              { name: 'SecretId', key: 'secretId', label: 'API密钥ID' },
+              { name: 'SecretKey', key: 'secretKey', label: 'API密钥' },
+              { name: 'Bucket', key: 'bucket', label: '存储桶名称' },
+              { name: 'Region', key: 'region', label: '地区' }
+            ];
+            
+            let missingCount = 0;
+            let configHtml = '<div class="check-item success"><div class="check-header"><span class="check-icon">✅</span><span class="check-title">配置已找到</span></div><div class="config-display">';
+            
+            checks.forEach(check => {
+              const value = configObj[check.key];
+              if (!value || value.trim() === '') {
+                missingCount++;
+                configHtml += `<div><span class="label">${check.name}:</span> <span style="color:#ef4444">❌ 未配置</span></div>`;
+              } else {
+                const displayValue = check.key === 'secretKey' ? value.substring(0, 4) + '****' + value.substring(value.length - 4) : value;
+                configHtml += `<div><span class="label">${check.name}:</span> <span class="value">${displayValue}</span></div>`;
+              }
+            });
+            
+            configHtml += '</div></div>';
+            
+            if (missingCount > 0) {
+              status = 'warning';
+              configHtml = `
+                <div class="check-item warning">
+                  <div class="check-header">
+                    <span class="check-icon">⚠️</span>
+                    <span class="check-title">配置不完整</span>
+                  </div>
+                  <div class="check-detail">
+                    配置存在但缺少 ${missingCount} 个必要参数。请补充完整配置。
+                  </div>
+                </div>
+              ` + configHtml;
+            }
+            
+            html += configHtml;
+            
+            // 检查 2: 适配器是否加载
+            if (typeof window.MarketActivityCOS !== 'undefined' && window.MarketActivityCOS.adapter) {
+              html += `
+                <div class="check-item ${status}">
+                  <div class="check-header">
+                    <span class="check-icon">${status === 'success' ? '✅' : '⚠️'}</span>
+                    <span class="check-title">适配器状态</span>
+                  </div>
+                  <div class="check-detail">
+                    腾讯云 COS 适配器已加载并正常工作。
+                  </div>
+                </div>
+              `;
+            } else {
+              html += `
+                <div class="check-item warning">
+                  <div class="check-header">
+                    <span class="check-icon">⚠️</span>
+                    <span class="check-title">适配器未加载</span>
+                  </div>
+                  <div class="check-detail">
+                    适配器可能未正确加载，但配置存在。请刷新页面后重试。
+                  </div>
+                </div>
+              `;
+            }
+            
+            // 检查 3: 测试连接
+            html += `
+              <div class="check-item info" style="border-color: #3b82f6; background: #dbeafe;">
+                <div class="check-header">
+                  <span class="check-icon">ℹ️</span>
+                  <span class="check-title">连接测试</span>
+                </div>
+                <div class="check-detail">
+                  配置已保存，但实际连接需要在主系统中测试。请返回主系统尝试上传文件来验证连接是否正常。
+                </div>
+              </div>
+            `;
+            
+          } catch (e) {
+            status = 'error';
+            html += `
+              <div class="check-item error">
+                <div class="check-header">
+                  <span class="check-icon">❌</span>
+                  <span class="check-title">配置解析失败</span>
+                </div>
+                <div class="check-detail">
+                  配置文件损坏或格式错误。错误信息: <code>${e.message}</code>
+                </div>
+              </div>
+            `;
+          }
+        }
+        
+        // 总结
+        if (status === 'success') {
+          html += `
+            <div class="summary">
+              <h3>✅ 配置检查通过</h3>
+              <p>你的腾讯云 COS 配置完整且正确，可以正常使用云端存储功能。</p>
+            </div>
+          `;
+        } else if (status === 'warning') {
+          html += `
+            <div class="summary" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+              <h3>⚠️ 配置需要完善</h3>
+              <p>配置已找到但不完整，请补充缺少的参数。</p>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="summary" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+              <h3>❌ 配置缺失</h3>
+              <p>未找到腾讯云 COS 配置，请先进行配置。</p>
+            </div>
+          `;
+        }
+        
+        results.innerHTML = html;
+      }, 800);
+    }
+    
+    // 前往配置页面
+    function goToConfig() {
+      if (window.location.href.includes('github.io')) {
+        window.location.href = 'cos-configuration.html';
+      } else {
+        window.location.href = '/Users/ray/WorkBuddy/20260320100957/clean-deploy/cos-configuration.html';
+      }
+    }
+    
+    // 页面加载时自动检查
+    window.onload = function() {
+      checkConfig();
+    };
+  </script>
+</body>
+</html>
