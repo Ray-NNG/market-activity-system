@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台管理 - 市场活动系统</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部导航 */
+    .header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .header-links {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .header-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .header-links a:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .header-links a.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* 主内容区 */
+    .main {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* 卡片 */
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-header h2 {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    /* 表格 */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg);
+      font-weight: 600;
+      color: var(--text-muted);
+      position: sticky;
+      top: 0;
+    }
+
+    tr:hover {
+      background: var(--bg);
+    }
+
+    /* 标签 */
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .tag-planning { background: #dbeafe; color: #1d4ed8; }
+    .tag-executing { background: #fef3c7; color: #b45309; }
+    .tag-reviewing { background: #e0e7ff; color: #4338ca; }
+    .tag-completed { background: #d1fae5; color: #047857; }
+
+    /* 按钮 */
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-outline {
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg);
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .btn-danger:hover {
+      background: #fecaca;
+    }
+
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    /* 表单 */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    /* 模态框 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideIn 0.2s;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    /* 状态指示 */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+
+    .status-ok {
+      background: #d1fae5;
+      color: #047857;
+    }
+
+    .status-error {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    /* 统计卡片 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* 加载状态 */
+    .loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+    }
+
+    /* 响应式 */
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .main {
+        padding: 1rem;
+      }
+
+      .card {
+        padding: 1rem;
+      }
+    }
+
+    /* ===== 登录遮罩 ===== */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4f46e5 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .login-box {
+      background: white;
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 360px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    .login-box .login-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .login-box h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 0.375rem;
+    }
+
+    .login-box p {
+      font-size: 0.875rem;
+      color: #64748b;
+      margin-bottom: 1.75rem;
+    }
+
+    .login-input-wrap {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .login-input-wrap input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+
+    .login-input-wrap input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+    }
+
+    .login-input-wrap .input-icon {
+      position: absolute;
+      left: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      pointer-events: none;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .login-btn:hover { background: #4338ca; }
+    .login-btn:active { transform: scale(0.98); }
+
+    .login-error {
+      color: #ef4444;
+      font-size: 0.8125rem;
+      margin-top: 0.75rem;
+      min-height: 1.2em;
+    }
+
+    .login-hint {
+      margin-top: 1.25rem;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+  </style>
+  
+  <!-- 腾讯云 COS 存储适配器 (可配置版本，无硬编码密钥) -->
+  <script src="cos-adapter-configurable.js"></script>
+  
+</head>
+<body>
+
+  <!-- ===== 登录遮罩 ===== -->
+  <div id="login-overlay">
+    <div class="login-box">
+      <div class="login-icon">🔐</div>
+      <h2>后台管理系统</h2>
+      <p>请输入管理员密码以继续</p>
+      <div class="login-input-wrap">
+        <span class="input-icon">🔑</span>
+        <input type="password" id="admin-pw-input" placeholder="输入管理员密码"
+          onkeydown="if(event.key==='Enter') doAdminLogin()">
+      </div>
+      <button class="login-btn" onclick="doAdminLogin()">登录</button>
+      <div class="login-error" id="login-error-msg"></div>
+      <div class="login-hint">默认密码可在系统设置中修改</div>
+    </div>
+  </div>
+  <!-- 顶部导航 -->
+  <div class="header">
+    <h1>🎯 后台管理系统</h1>
+    <div class="header-links">
+      <a href="#" class="active" onclick="showPage('dashboard')">数据概览</a>
+      <a href="#" onclick="showPage('activities')">活动管理</a>
+      <a href="#" onclick="showPage('settings')">系统设置</a>
+      <a href="../index.html" target="_blank">前台页面</a>
+      <a href="#" onclick="adminLogout()" style="color:#ef4444;">退出登录</a>
+    </div>
+  </div>
+
+  <!-- 主内容区 -->
+  <div class="main" id="main-content">
+    <!-- 数据概览页面 -->
+    <div id="page-dashboard">
+      <div class="card">
+        <div class="card-header">
+          <h2>系统状态</h2>
+          <button class="btn btn-outline" onclick="loadData()">刷新数据</button>
+        </div>
+        <div class="status-badge status-ok" id="connection-status">✅ 数据连接正常</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">活动总数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-planning">0</div>
+          <div class="stat-label">策划中</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-executing">0</div>
+          <div class="stat-label">执行中</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-completed">0</div>
+          <div class="stat-label">已完成</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>最近活动</h2>
+        </div>
+        <div class="table-container">
+          <table id="recent-table">
+            <thead>
+              <tr>
+                <th>活动名称</th>
+                <th>负责人</th>
+                <th>状态</th>
+                <th>进度</th>
+              </tr>
+            </thead>
+            <tbody id="recent-tbody">
+              <tr><td colspan="4" class="loading">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 活动管理页面 -->
+    <div id="page-activities" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <h2>所有活动</h2>
+          <button class="btn btn-primary" onclick="openAddActivityModal()">+ 新建活动</button>
+        </div>
+        <div class="table-container">
+          <table id="activities-table">
+            <thead>
+              <tr>
+                <th>活动名称</th>
+                <th>负责人</th>
+                <th>开始时间</th>
+                <th>结束时间</th>
+                <th>状态</th>
+                <th>进度</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="activities-tbody">
+              <tr><td colspan="7" class="loading">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 系统设置页面 -->
+    <div id="page-settings" style="display: none;">
+      <div class="card">
+        <div class="card-header">
+          <h2>系统设置</h2>
+        </div>
+
+        <div class="form-group">
+          <label>当前登录密码</label>
+          <div class="form-input" id="current-password-display">加载中...</div>
+        </div>
+
+        <div class="form-group">
+          <label>修改密码</label>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <input type="password" id="new-password" class="form-input" placeholder="输入新密码">
+            <button class="btn btn-primary" onclick="changePassword()">修改密码</button>
+          </div>
+          <p style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.5rem;">
+            密码长度至少 4 位
+          </p>
+        </div>
+
+        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border);">
+
+        <div class="form-group">
+          <label>数据存储信息</label>
+          <div style="background: var(--bg); padding: 1rem; border-radius: 6px; font-size: 0.8125rem; color: var(--text-muted);">
+            <p><strong>服务：</strong> jsonbin.io</p>
+            <p><strong>Bin ID：</strong> 69bd20d6b7ec241ddc86e1c2</p>
+            <p><strong>最后更新：</strong> <span id="last-update">加载中...</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建活动模态框 -->
+  <div class="modal-overlay" id="modal-add-activity">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>新建活动</h3>
+        <button class="modal-close" onclick="closeModal('modal-add-activity')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>活动名称 *</label>
+          <input type="text" id="add-name" class="form-input" placeholder="输入活动名称">
+        </div>
+        <div class="form-group">
+          <label>负责人 *</label>
+          <input type="text" id="add-owner" class="form-input" placeholder="输入负责人姓名">
+        </div>
+        <div class="form-group">
+          <label>开始时间</label>
+          <input type="date" id="add-start" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>结束时间</label>
+          <input type="date" id="add-end" class="form-input">
+        </div>
+        <div class="form-group">
+          <label>活动目标</label>
+          <textarea id="add-goal" class="form-input" rows="3" placeholder="描述活动目标"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-add-activity')">取消</button>
+        <button class="btn btn-primary" onclick="saveNewActivity()">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑活动模态框 -->
+  <div class="modal-overlay" id="modal-edit-activity">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>编辑活动</h3>
+        <button class="modal-close" onclick="closeModal('modal-edit-activity')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+          <label>活动名称 *</label>
+          <input type="text" id="edit-name" class="form-input" placeholder="输入活动名称">
+        </div>
+        <div class="form-group">
+          <label>负责人 *</label>
+          <input type="text" id="edit-owner" class="form-input" placeholder="输入负责人姓名">
+        </div>
+        <div class="form-group">
+          <label>状态</label>
+          <select id="edit-status" class="form-input">
+            <option value="策划中">策划中</option>
+            <option value="执行中">执行中</option>
+            <option value="复盘中">复盘中</option>
+            <option value="已完成">已完成</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>进度 (%)</label>
+          <input type="number" id="edit-progress" class="form-input" min="0" max="100" placeholder="0-100">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-edit-activity')">取消</button>
+        <button class="btn btn-primary" onclick="updateActivity()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== 腾讯云 COS 数据层配置 =====
+    const STORAGE_KEY = 'market_activities_data';
+    let currentDataVersion = null;
+    let activities = [];
+
+    // 获取数据：先试腾讯云 COS，失败则用本地
+    async function getJsonBinData() {
+      console.log('🔄 开始从腾讯云 COS 加载数据...');
+
+      // 检查 COS 适配器是否已配置
+      if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+        console.warn('⚠️ 腾讯云 COS 适配器未加载，检查是否已配置');
+        
+        // 回退到本地存储
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          console.log('✅ 使用本地缓存数据');
+          return JSON.parse(stored);
+        }
+        
+        console.log('⚠️ 没有本地数据，使用空数据');
+        return { activities: [], files: {} };
+      }
+
+      // 1. 尝试从腾讯云 COS 加载
+      try {
+        const data = await window.MarketActivityCOS.adapter.getData();
+        console.log('✅ 腾讯云 COS 数据加载成功');
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        return data;
+      } catch (err) {
+        console.log('⚠️ 腾讯云 COS 连接失败，使用本地数据:', err.message);
+      }
+
+      // 2. 回退到本地存储
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        console.log('✅ 使用本地缓存数据');
+        return JSON.parse(stored);
+      }
+
+      // 3. 都没有则返回空
+      console.log('⚠️ 没有本地数据，使用空数据');
+      return { activities: [], files: {} };
+    }
+
+    // 保存数据：先存本地，再异步同步到腾讯云 COS
+    async function saveJsonBinData(data) {
+      console.log('💾 开始保存数据到腾讯云 COS...');
+
+      // 1. 立即写本地（保证不丢数据）
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      console.log('✅ 数据已保存到本地');
+
+      // 2. 异步同步到腾讯云 COS（不阻塞用户）
+      setTimeout(async () => {
+        try {
+          if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+            console.warn('⚠️ 腾讯云 COS 适配器未加载，仅保存到本地');
+            return;
+          }
+          
+          await window.MarketActivityCOS.adapter.saveData(data);
+          console.log('✅ 数据已同步到腾讯云 COS');
+        } catch (err) {
+          console.log('⚠️ 腾讯云 COS 同步失败（本地已保存）:', err.message);
+        }
+      }, 100);
+
+      return data;
+    }
+
+    // 加载数据
+    async function loadData() {
+      try {
+        const data = await getJsonBinData();
+        activities = data.activities || [];
+
+        // 更新统计数据
+        updateStats();
+
+        // 更新表格
+        renderActivities();
+
+        // 更新密码显示
+        const currentPassword = localStorage.getItem('mcm_password') || 'admin123';
+        document.getElementById('current-password-display').textContent = '****** (' + currentPassword.length + ' 位)';
+
+        // 更新最后更新时间
+        document.getElementById('last-update').textContent = new Date().toLocaleString('zh-CN');
+
+        // 显示连接状态
+        const statusEl = document.getElementById('connection-status');
+        if (statusEl) {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            statusEl.className = 'status-badge status-ok';
+            statusEl.textContent = '✅ 离线模式（本地数据）';
+          } else {
+            statusEl.className = 'status-badge status-ok';
+            statusEl.textContent = '✅ 本地模式';
+          }
+        }
+
+      } catch (err) {
+        console.error('加载数据失败:', err);
+        // 即使失败也不要阻止用户继续使用
+        activities = [];
+        const statusEl = document.getElementById('connection-status');
+        if (statusEl) {
+          statusEl.className = 'status-badge status-warning';
+          statusEl.textContent = '⚠️ 离线模式（无数据）';
+        }
+      }
+    }
+
+    // 更新统计
+    function updateStats() {
+      const total = activities.length;
+      const planning = activities.filter(a => a.status === '策划中').length;
+      const executing = activities.filter(a => a.status === '执行中').length;
+      const completed = activities.filter(a => a.status === '已完成').length;
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-planning').textContent = planning;
+      document.getElementById('stat-executing').textContent = executing;
+      document.getElementById('stat-completed').textContent = completed;
+    }
+
+    // 渲染活动表格
+    function renderActivities() {
+      // 最近活动（前5个）
+      const recentTbody = document.getElementById('recent-tbody');
+      if (activities.length === 0) {
+        recentTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:2rem;">暂无活动数据</td></tr>';
+      } else {
+        recentTbody.innerHTML = activities.slice(0, 5).map(a => `
+          <tr>
+            <td>${a.name}</td>
+            <td>${a.owner || '-'}</td>
+            <td>${getStatusTag(a.status)}</td>
+            <td>${a.progress || 0}%</td>
+          </tr>
+        `).join('');
+      }
+
+      // 所有活动
+      const activitiesTbody = document.getElementById('activities-tbody');
+      if (activities.length === 0) {
+        activitiesTbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem;">暂无活动数据</td></tr>';
+      } else {
+        activitiesTbody.innerHTML = activities.map(a => `
+          <tr>
+            <td>${a.name}</td>
+            <td>${a.owner || '-'}</td>
+            <td>${a.start || '-'}</td>
+            <td>${a.end || '-'}</td>
+            <td>${getStatusTag(a.status)}</td>
+            <td>${a.progress || 0}%</td>
+            <td>
+              <button class="btn btn-sm btn-outline" onclick="openEditActivityModal('${a.id}')">编辑</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteActivity('${a.id}')">删除</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // 获取状态标签
+    function getStatusTag(status) {
+      const map = {
+        '策划中': 'tag-planning',
+        '执行中': 'tag-executing',
+        '复盘中': 'tag-reviewing',
+        '已完成': 'tag-completed'
+      };
+      return `<span class="tag ${map[status] || ''}">${status}</span>`;
+    }
+
+    // 显示页面
+    function showPage(page) {
+      document.getElementById('page-dashboard').style.display = page === 'dashboard' ? 'block' : 'none';
+      document.getElementById('page-activities').style.display = page === 'activities' ? 'block' : 'none';
+      document.getElementById('page-settings').style.display = page === 'settings' ? 'block' : 'none';
+
+      // 更新导航高亮
+      document.querySelectorAll('.header-links a').forEach(a => a.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+
+    // 打开新建活动模态框
+    function openAddActivityModal() {
+      showModal('modal-add-activity');
+    }
+
+    // 保存新活动
+    async function saveNewActivity() {
+      const name = document.getElementById('add-name').value.trim();
+      const owner = document.getElementById('add-owner').value.trim();
+      const start = document.getElementById('add-start').value;
+      const end = document.getElementById('add-end').value;
+      const goal = document.getElementById('add-goal').value.trim();
+
+      if (!name || !owner) {
+        alert('请填写活动名称和负责人');
+        return;
+      }
+
+      const newActivity = {
+        id: String(Date.now()),
+        name,
+        owner,
+        start,
+        end,
+        goal,
+        status: '策划中',
+        progress: 0,
+        tasks: [],
+        kpis: [],
+        risks: [],
+        files: {},
+        created_at: new Date().toISOString()
+      };
+
+      activities.unshift(newActivity);
+
+      try {
+        await saveJsonBinData({ activities, files: {} });
+        alert('✅ 活动创建成功！');
+        closeModal('modal-add-activity');
+        loadData();
+        // 清空表单
+        document.getElementById('add-name').value = '';
+        document.getElementById('add-owner').value = '';
+        document.getElementById('add-start').value = '';
+        document.getElementById('add-end').value = '';
+        document.getElementById('add-goal').value = '';
+      } catch (err) {
+        alert('❌ 保存失败: ' + err.message);
+        loadData();
+      }
+    }
+
+    // 打开编辑活动模态框
+    function openEditActivityModal(id) {
+      const activity = activities.find(a => a.id === id);
+      if (!activity) {
+        alert('活动不存在');
+        return;
+      }
+
+      document.getElementById('edit-id').value = activity.id;
+      document.getElementById('edit-name').value = activity.name;
+      document.getElementById('edit-owner').value = activity.owner || '';
+      document.getElementById('edit-status').value = activity.status;
+      document.getElementById('edit-progress').value = activity.progress || 0;
+
+      showModal('modal-edit-activity');
+    }
+
+    // 更新活动
+    async function updateActivity() {
+      const id = document.getElementById('edit-id').value;
+      const name = document.getElementById('edit-name').value.trim();
+      const owner = document.getElementById('edit-owner').value.trim();
+      const status = document.getElementById('edit-status').value;
+      const progress = parseInt(document.getElementById('edit-progress').value) || 0;
+
+      if (!name || !owner) {
+        alert('请填写活动名称和负责人');
+        return;
+      }
+
+      const index = activities.findIndex(a => a.id === id);
+      if (index === -1) {
+        alert('活动不存在');
+        return;
+      }
+
+      activities[index] = {
+        ...activities[index],
+        name,
+        owner,
+        status,
+        progress: Math.min(100, Math.max(0, progress))
+      };
+
+      try {
+        await saveJsonBinData({ activities, files: {} });
+        alert('✅ 活动更新成功！');
+        closeModal('modal-edit-activity');
+        loadData();
+      } catch (err) {
+        alert('❌ 保存失败: ' + err.message);
+        loadData();
+      }
+    }
+
+    // 删除活动
+    async function deleteActivity(id) {
+      if (!confirm('确定要删除这个活动吗？此操作不可恢复！')) {
+        return;
+      }
+
+      const index = activities.findIndex(a => a.id === id);
+      if (index === -1) {
+        alert('活动不存在');
+        return;
+      }
+
+      activities.splice(index, 1);
+
+      try {
+        await saveJsonBinData({ activities, files: {} });
+        alert('✅ 活动删除成功！');
+        loadData();
+      } catch (err) {
+        alert('❌ 删除失败: ' + err.message);
+        loadData();
+      }
+    }
+
+    // 修改密码
+    function changePassword() {
+      const newPassword = document.getElementById('new-password').value.trim();
+
+      if (!newPassword || newPassword.length < 4) {
+        alert('新密码长度至少 4 位');
+        return;
+      }
+
+      localStorage.setItem('mcm_password', newPassword);
+      alert('✅ 密码修改成功！\n\n新密码：' + newPassword);
+      document.getElementById('new-password').value = '';
+      document.getElementById('current-password-display').textContent = '****** (' + newPassword.length + ' 位)';
+    }
+
+    // 显示模态框
+    function showModal(modalId) {
+      document.getElementById(modalId).style.display = 'flex';
+    }
+
+    // 关闭模态框
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+
+    // 点击模态框外部关闭
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.style.display = 'none';
+        }
+      });
+    });
+
+    // ===== 登录鉴权 =====
+    const ADMIN_SESSION_KEY = 'mcm_admin_auth';
+    const ADMIN_SESSION_HOURS = 8;
+
+    function getAdminPassword() {
+      return localStorage.getItem('mcm_password') || 'admin123';
+    }
+
+    function isAdminLoggedIn() {
+      const ts = localStorage.getItem(ADMIN_SESSION_KEY);
+      if (!ts) return false;
+      return (Date.now() - parseInt(ts)) < ADMIN_SESSION_HOURS * 3600000;
+    }
+
+    function doAdminLogin() {
+      const input = document.getElementById('admin-pw-input').value;
+      const correct = getAdminPassword();
+      if (input === correct) {
+        localStorage.setItem(ADMIN_SESSION_KEY, Date.now().toString());
+        document.getElementById('login-overlay').style.display = 'none';
+        loadData();
+      } else {
+        const errEl = document.getElementById('login-error-msg');
+        errEl.textContent = '密码错误，请重试';
+        document.getElementById('admin-pw-input').value = '';
+        document.getElementById('admin-pw-input').focus();
+        setTimeout(() => { errEl.textContent = ''; }, 3000);
+      }
+    }
+
+    function adminLogout() {
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      location.reload();
+    }
+
+    // 页面加载时检查登录状态
+    if (isAdminLoggedIn()) {
+      document.getElementById('login-overlay').style.display = 'none';
+      loadData();
+    } else {
+      // 聚焦密码输入框
+      setTimeout(() => document.getElementById('admin-pw-input').focus(), 100);
+    }
+  </script>
+  
+  <!-- 腾讯云 COS 自动配置脚本（已移除，因包含敏感信息） -->
+  <!-- <script src="setup-cos-config.js"></script> -->
+  
+</body>
+</html>

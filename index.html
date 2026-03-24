@@ -1,0 +1,3108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>市场活动全流程管理系统</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #818cf8;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --sidebar-w: 240px;
+  }
+  body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    width: var(--sidebar-w); background: #1e1b4b; color: #c7d2fe;
+    display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+  }
+  .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid #312e81; }
+  .sidebar-logo h1 { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.4; }
+  .sidebar-logo span { font-size: 12px; color: #a5b4fc; }
+  .sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+  .nav-section { margin-bottom: 8px; }
+  .nav-section-title { font-size: 10px; font-weight: 600; color: #6366f1; text-transform: uppercase; letter-spacing: 1px; padding: 6px 20px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; transition: all .2s; font-size: 14px; border-left: 3px solid transparent; }
+  .nav-item:hover { background: #312e81; color: #fff; }
+  .nav-item.active { background: #312e81; color: #fff; border-left-color: #818cf8; }
+  .nav-item .icon { width: 18px; text-align: center; font-size: 16px; }
+
+  /* ===== MAIN ===== */
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .topbar-left h2 { font-size: 18px; font-weight: 700; }
+  .topbar-left p { font-size: 12px; color: var(--text-muted); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 500; transition: all .2s; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #4338ca; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #059669; }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { background: var(--bg); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  .content { padding: 28px; flex: 1; }
+
+  /* ===== CARDS ===== */
+  .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+  /* ===== GRID ===== */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  /* ===== STAT CARDS ===== */
+  .stat-card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
+  .stat-card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .change { font-size: 12px; margin-top: 4px; }
+  .stat-card .change.up { color: var(--success); }
+  .stat-card .change.down { color: var(--danger); }
+
+  /* ===== PHASE BADGES ===== */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .badge-plan { background: #ede9fe; color: #7c3aed; }
+  .badge-exec { background: #fef3c7; color: #d97706; }
+  .badge-review { background: #d1fae5; color: #059669; }
+  .badge-done { background: #e0e7ff; color: #4338ca; }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-wrap { background: #f1f5f9; border-radius: 99px; height: 8px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 99px; transition: width .4s; }
+  .progress-primary { background: var(--primary); }
+  .progress-success { background: var(--success); }
+  .progress-warning { background: var(--warning); }
+
+  /* ===== TIMELINE ===== */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-item { position: relative; margin-bottom: 20px; }
+  .timeline-dot { position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px var(--border); }
+  .timeline-dot.done { background: var(--success); box-shadow: 0 0 0 2px var(--success); }
+  .timeline-dot.active { background: var(--primary); box-shadow: 0 0 0 2px var(--primary); }
+  .timeline-dot.pending { background: #e2e8f0; }
+  .timeline-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .timeline-desc { font-size: 12px; color: var(--text-muted); }
+
+  /* ===== TABLE ===== */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { background: #f8fafc; color: var(--text-muted); font-size: 12px; font-weight: 600; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  /* ===== FORM ===== */
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+  .form-control { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #fff; color: var(--text); outline: none; transition: border .2s; }
+  .form-control:focus { border-color: var(--primary); }
+  select.form-control { cursor: pointer; }
+  textarea.form-control { resize: vertical; min-height: 80px; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px; width: 560px; max-width: 95vw; max-height: 90vh; overflow-y: auto; transform: scale(.95); transition: transform .2s; }
+  .modal-overlay.show .modal { transform: scale(1); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .modal-title { font-size: 18px; font-weight: 700; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); padding: 4px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+
+  /* ===== TABS ===== */
+  .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+  .tab { padding: 10px 18px; font-size: 14px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
+  .tab:hover { color: var(--primary); }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* ===== CHART ===== */
+  .chart-container { position: relative; height: 220px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 12px; height: 180px; padding: 0 8px; }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .bar { width: 100%; border-radius: 6px 6px 0 0; transition: height .5s; cursor: pointer; position: relative; }
+  .bar:hover::after { content: attr(data-val); position: absolute; top: -24px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
+  .bar-label { font-size: 11px; color: var(--text-muted); text-align: center; }
+
+  /* ===== RADAR ===== */
+  .radar-wrap { display: flex; align-items: center; justify-content: center; }
+
+  /* ===== MISC ===== */
+  .section-gap { margin-bottom: 20px; }
+  .flex { display: flex; }
+  .flex-center { display: flex; align-items: center; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-20 { margin-top: 20px; }
+  .mb-16 { margin-bottom: 16px; }
+  .text-muted { color: var(--text-muted); font-size: 13px; }
+  .text-sm { font-size: 12px; }
+  .fw-600 { font-weight: 600; }
+  .color-success { color: var(--success); }
+  .color-warning { color: var(--warning); }
+  .color-danger { color: var(--danger); }
+  .color-primary { color: var(--primary); }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* 活动卡片 */
+  .activity-card {
+    background: var(--card); border-radius: 12px; border: 1px solid var(--border);
+    padding: 18px; transition: box-shadow .2s; cursor: pointer;
+  }
+  .activity-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+  .activity-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .activity-card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .activity-card-meta { font-size: 12px; color: var(--text-muted); }
+  .activity-card-progress { margin-top: 12px; }
+  .activity-card-footer { margin-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+
+  /* 通知点 */
+  .notify-dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; }
+
+  /* 评分 */
+  .score-ring { width: 80px; height: 80px; position: relative; display: inline-flex; align-items: center; justify-content: center; }
+  .score-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+  .score-ring .score-val { font-size: 20px; font-weight: 700; }
+
+  /* 标签 */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: #f1f5f9; color: var(--text-muted); margin-right: 4px; }
+
+  /* 清单 */
+  .checklist-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
+  .checklist-item label { font-size: 14px; cursor: pointer; flex: 1; }
+  .checklist-item label.checked { text-decoration: line-through; color: var(--text-muted); }
+
+  /* KPI 指标 */
+  .kpi-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .kpi-row:last-child { border-bottom: none; }
+  .kpi-label { flex: 1; font-size: 14px; }
+  .kpi-target { width: 80px; text-align: right; font-size: 13px; color: var(--text-muted); }
+  .kpi-actual { width: 80px; text-align: right; font-size: 13px; font-weight: 600; }
+  .kpi-rate { width: 60px; text-align: right; font-size: 13px; }
+
+  /* 总览仪表盘 */
+  .dashboard-phase { display: flex; align-items: center; gap: 12px; padding: 14px; background: var(--bg); border-radius: 10px; }
+  .phase-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .phase-icon.plan { background: #ede9fe; }
+  .phase-icon.exec { background: #fef3c7; }
+  .phase-icon.review { background: #d1fae5; }
+
+  @media (max-width: 768px) {
+    .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  /* ===== 全局搜索 ===== */
+  .search-wrap { position: relative; }
+  .search-input {
+    width: 260px; padding: 8px 14px 8px 36px;
+    border: 1px solid var(--border); border-radius: 20px;
+    font-size: 14px; background: var(--bg); color: var(--text);
+    outline: none; transition: all .2s;
+  }
+  .search-input:focus { border-color: var(--primary); background: #fff; width: 320px; box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px; pointer-events: none; }
+  .search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; display: none; }
+  .search-clear.show { display: block; }
+  .search-dropdown {
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.12); z-index: 300;
+    max-height: 420px; overflow-y: auto; display: none;
+  }
+  .search-dropdown.show { display: block; }
+  .search-result-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: #f8fafc; }
+  .search-result-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .search-result-body { flex: 1; min-width: 0; }
+  .search-result-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .search-result-title mark { background: #fef9c3; color: inherit; border-radius: 2px; }
+  .search-result-meta { font-size: 12px; color: var(--text-muted); }
+  .search-result-type { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .search-empty { padding: 32px; text-align: center; color: var(--text-muted); font-size: 14px; }
+  .search-section-title { padding: 8px 16px 4px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; background: #f8fafc; }
+
+  /* ===== 文件附件 ===== */
+  .file-stage-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .file-stage-btn {
+    padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border);
+    font-size: 13px; cursor: pointer; background: #fff; color: var(--text-muted);
+    transition: all .15s;
+  }
+  .file-stage-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .file-upload-area {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 28px;
+    text-align: center; cursor: pointer; transition: all .2s; background: #fafafa;
+  }
+  .file-upload-area:hover, .file-upload-area.dragover { border-color: var(--primary); background: #eef2ff; }
+  .file-upload-area .upload-icon { font-size: 36px; margin-bottom: 8px; }
+  .file-upload-area p { font-size: 14px; color: var(--text-muted); }
+  .file-upload-area strong { color: var(--primary); }
+  .file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+  .file-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: #f8fafc; border-radius: 10px;
+    border: 1px solid var(--border); transition: box-shadow .15s;
+  }
+  .file-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .file-item-icon { font-size: 24px; flex-shrink: 0; }
+  .file-item-body { flex: 1; min-width: 0; }
+  .file-item-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-item-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .file-item-stage { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; margin-left: 6px; }
+  .file-item-stage.plan { background: #ede9fe; color: #7c3aed; }
+  .file-item-stage.exec { background: #fef3c7; color: #d97706; }
+  .file-item-stage.review { background: #d1fae5; color: #059669; }
+  .file-item-actions { display: flex; gap: 6px; }
+  .file-preview-img { max-width: 100%; max-height: 300px; border-radius: 8px; margin-top: 8px; }
+  .img-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+  .file-count-badge { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; background: var(--primary); color: #fff; border-radius: 50%; font-size: 11px; font-weight: 700; margin-left: 4px; }
+
+  /* 删除按钮 */
+  .btn-delete {
+    opacity: 0; transition: opacity .2s; background: none; border: none; cursor: pointer;
+    font-size: 16px; padding: 4px; margin-left: 8px;
+  }
+  .dashboard-phase:hover .btn-delete { opacity: 1; }
+  .btn-delete:hover { transform: scale(1.1); }
+
+  /* 预算明细项 */
+  .budget-item {
+    display: flex; gap: 8px; align-items: center;
+    padding: 10px; background: #f8fafc; border-radius: 8px;
+    margin-bottom: 8px; border: 1px solid var(--border);
+  }
+  .budget-item input { flex: 1; }
+  .budget-item select { width: 120px; }
+  .budget-item .budget-amount { width: 140px; }
+  .budget-item .btn-remove {
+    background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;
+    width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+  }
+  .budget-item .btn-remove:hover { background: #fee2e2; }
+
+  /* 预算明细展示 */
+  .budget-detail-section { margin-bottom: 16px; }
+  .budget-detail-title {
+    font-size: 14px; font-weight: 600; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .budget-detail-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  .budget-detail-table th, .budget-detail-table td {
+    padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  .budget-detail-table th { background: #f8fafc; font-weight: 600; color: var(--text-muted); }
+  .budget-detail-table .amount { text-align: right; font-weight: 600; }
+  .budget-summary-row { background: #f0fdf4 !important; font-weight: 700; }
+  .budget-source-hq { color: #7c3aed; }
+  .budget-source-sub { color: #0891b2; }
+
+
+
+  /* ===== 日历视图 ===== */
+  .calendar-wrap { user-select: none; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cal-nav { background: none; border: 1px solid var(--border); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+  .cal-nav:hover { background: var(--bg); }
+  .cal-month { font-size: 15px; font-weight: 700; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-dow { text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 4px 0; }
+  .cal-day {
+    min-height: 38px; padding: 3px; border-radius: 6px; font-size: 12px;
+    cursor: default; transition: background .15s; position: relative;
+  }
+  .cal-day.other-month { color: #cbd5e1; }
+  .cal-day.today { background: #eef2ff; font-weight: 700; color: var(--primary); }
+  .cal-day.has-event { cursor: pointer; }
+  .cal-day.has-event:hover { background: #f1f5f9; }
+  .cal-day-num { font-size: 12px; text-align: right; padding-right: 2px; margin-bottom: 2px; }
+  .cal-events { display: flex; flex-direction: column; gap: 1px; }
+  .cal-event-dot {
+    font-size: 10px; padding: 1px 4px; border-radius: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.4;
+  }
+  .cal-event-dot.type-start { background: #dbeafe; color: #1d4ed8; }
+  .cal-event-dot.type-end   { background: #fce7f3; color: #be185d; }
+  .cal-event-dot.type-mile  { background: #fef9c3; color: #92400e; }
+  .cal-legend { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
+  .cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+  .cal-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* ===== 负责人分析 ===== */
+  .owner-filter-bar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 16px; background: var(--bg); border-radius: 12px; margin-bottom: 20px;
+  }
+  .owner-avatar {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--primary);
+    color: #fff; font-size: 15px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .2s; border: 3px solid transparent;
+    flex-shrink: 0;
+  }
+  .owner-avatar:hover { transform: scale(1.08); }
+  .owner-avatar.selected { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.25); transform: scale(1.1); }
+  .owner-avatar.all { background: #64748b; }
+  .owner-info { flex: 1; min-width: 200px; }
+  .owner-name { font-size: 16px; font-weight: 700; }
+  .owner-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .date-range-bar {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); padding: 12px 16px; border-radius: 10px; margin-bottom: 20px;
+  }
+  .date-range-bar label { font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .date-range-bar input { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+  .date-range-bar input:focus { border-color: var(--primary); }
+  .date-quick-btn { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; cursor: pointer; background: #fff; transition: all .15s; }
+  .date-quick-btn.active, .date-quick-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .owner-activity-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 12px; cursor: pointer; transition: box-shadow .2s;
+  }
+  .owner-activity-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+</style>
+
+<style>
+  /* ===== 登录遮罩 ===== */
+  #login-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-card {
+    background: #fff; border-radius: 20px; padding: 48px 40px;
+    width: 380px; max-width: 90vw;
+    box-shadow: 0 24px 64px rgba(0,0,0,.35);
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .login-logo { text-align: center; }
+  .login-logo h1 { font-size: 20px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+  .login-logo p { font-size: 13px; color: #64748b; }
+  .login-form { display: flex; flex-direction: column; gap: 14px; }
+  .login-field { display: flex; flex-direction: column; gap: 6px; }
+  .login-field label { font-size: 13px; font-weight: 600; color: #374151; }
+  .login-field input {
+    padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 14px; outline: none; transition: border-color .2s;
+    font-family: inherit;
+  }
+  .login-field input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+  .login-btn {
+    padding: 12px; border-radius: 10px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff; font-size: 15px; font-weight: 700;
+    transition: opacity .2s; margin-top: 4px;
+  }
+  .login-btn:hover { opacity: .88; }
+  .login-error {
+    color: #ef4444; font-size: 13px; text-align: center;
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: 8px; padding: 8px 12px; display: none;
+  }
+</style>
+
+<!-- 腾讯云 COS 存储适配器 (可配置版本，无硬编码密钥) -->
+<script src="cos-adapter-configurable.js"></script>
+</head>
+<body>
+
+<!-- ===== 登录遮罩 ===== -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div style="font-size:40px;margin-bottom:8px">🎯</div>
+      <h1>市场活动管理系统</h1>
+      <p>请输入密码以继续</p>
+    </div>
+    <div class="login-form">
+      <div class="login-field">
+        <label>密码</label>
+        <input type="password" id="login-pwd" placeholder="请输入密码"
+          onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      <div class="login-error" id="login-error">密码错误，请重新输入</div>
+      <button class="login-btn" onclick="doLogin()">登 录</button>
+    </div>
+  </div>
+</div>
+
+<!-- 修改密码弹窗 -->
+<div id="modal-change-password" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>🔒 修改密码</h3>
+      <button class="modal-close" onclick="closeModal('modal-change-password')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px">
+        <label class="form-label">当前密码</label>
+        <input class="form-input" type="password" id="current-pwd" placeholder="请输入当前密码">
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="form-label">新密码</label>
+        <input class="form-input" type="password" id="new-pwd" placeholder="请输入新密码">
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="form-label">确认新密码</label>
+        <input class="form-input" type="password" id="confirm-pwd" placeholder="请再次输入新密码">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-change-password')">取消</button>
+      <button class="btn btn-primary" onclick="saveNewPassword()">保存</button>
+    </div>
+  </div>
+</div>
+
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>📊 活动管理系统</h1>
+    <span>Market Campaign Manager</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-section-title">总览</div>
+      <div class="nav-item active" onclick="goto('dashboard')">
+        <span class="icon">🏠</span> 仪表盘
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">流程管理</div>
+      <div class="nav-item" onclick="goto('plan')">
+        <span class="icon">📋</span> 前期策划
+      </div>
+      <div class="nav-item" onclick="goto('exec')">
+        <span class="icon">⚡</span> 中期执行
+      </div>
+      <div class="nav-item" onclick="goto('review')">
+        <span class="icon">🔍</span> 后期复盘
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">数据分析</div>
+      <div class="nav-item" onclick="goto('analysis')">
+        <span class="icon">📈</span> 效果分析
+      </div>
+      <div class="nav-item" onclick="goto('owner')">
+        <span class="icon">👤</span> 负责人分析
+      </div>
+      <div class="nav-item" onclick="goto('activities')">
+        <span class="icon">📁</span> 活动档案
+      </div>
+    </div>
+  </nav>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h2 id="page-title">仪表盘</h2>
+      <p id="page-sub">市场活动全流程监控与管理</p>
+    </div>
+    <div class="topbar-right">
+      <!-- 全局搜索 -->
+      <div class="search-wrap" id="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="global-search" placeholder="搜索活动、负责人、文件…"
+          oninput="onSearchInput(this.value)" onfocus="onSearchFocus()" onblur="onSearchBlur()">
+        <button class="search-clear" id="search-clear-btn" onclick="clearSearch()">×</button>
+        <div class="search-dropdown" id="search-dropdown"></div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="openChangePasswordModal()">🔒 修改密码</button>
+      <button class="btn btn-primary" onclick="openNewActivity()">＋ 新建活动</button>
+    </div>
+  </div>
+
+  <!-- 加载提示遮罩 -->
+  <div id="loading-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center">
+    <div style="font-size:48px;margin-bottom:20px">🔄</div>
+    <div style="font-size:16px;color:#64748b" id="loading-text">正在加载数据...</div>
+    <div style="font-size:12px;color:#94a3b8;margin-top:8px">首次加载可能需要 10 秒左右</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== 仪表盘 ===== -->
+    <div id="page-dashboard" class="page active">
+      <div class="grid-4 section-gap">
+        <div class="stat-card">
+          <div class="label">📋 活动总数</div>
+          <div class="value color-primary" id="stat-total">-</div>
+          <div class="change text-muted">累计已创建</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">👥 线下参与总人数</div>
+          <div class="value color-success" id="stat-participants">-</div>
+          <div class="change text-muted">实际参与人数</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">🌐 线上覆盖总人数</div>
+          <div class="value color-info" id="stat-coverage">-</div>
+          <div class="change text-muted">线上触达人数</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">💼 商机总数</div>
+          <div class="value color-warning" id="stat-leads">-</div>
+          <div class="change text-muted">累计商机数量</div>
+        </div>
+      </div>
+
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗂 活动流程概览</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;" id="dashboard-activity-list">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📅 近期关键节点</div>
+          </div>
+          <div class="calendar-wrap" id="dashboard-calendar"></div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💰 预算执行概况</div></div>
+          <div style="text-align:center;padding:8px 0">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">本季度总预算</div>
+            <div style="font-size:32px;font-weight:700;color:var(--primary)">¥ 485,000</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">已支出 ¥ 312,800 <span class="color-warning">（64.5%）</span></div>
+          </div>
+          <div class="mt-16">
+            <div class="flex-between text-sm mb-16">
+              <span>预算使用率</span><span class="fw-600">64.5%</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar progress-warning" style="width:64.5%"></div></div>
+          </div>
+          <div class="mt-16" style="display:flex;flex-direction:column;gap:8px;">
+            <div class="flex-between text-sm"><span>活动策划费</span><span>¥ 85,000</span></div>
+            <div class="flex-between text-sm"><span>物料制作费</span><span>¥ 120,000</span></div>
+            <div class="flex-between text-sm"><span>媒体投放费</span><span>¥ 180,000</span></div>
+            <div class="flex-between text-sm"><span>人员差旅费</span><span>¥ 27,800</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 各活动进度</div></div>
+          <div class="bar-chart" id="progress-chart"></div>
+          <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;flex-wrap:wrap;" id="progress-chart-labels"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚠️ 风险预警</div></div>
+          <div id="risk-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 前期策划 ===== -->
+    <div id="page-plan" class="page">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab(this,'plan')">📋 策划清单</div>
+        <div class="tab" onclick="switchTab(this,'plan')">📝 策划模板</div>
+      </div>
+      <div id="plan-tab-0">
+        <div class="flex-between mb-16">
+          <div class="text-muted">共 <strong id="plan-count">0</strong> 个策划中活动</div>
+          <button class="btn btn-primary btn-sm" onclick="openNewActivity()">＋ 新建活动策划</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;" id="plan-list"></div>
+      </div>
+      <div id="plan-tab-1" style="display:none;">
+        <div class="grid-3" style="gap:16px;">
+          <div class="card" style="cursor:pointer" onclick="useTemplate('brand')">
+            <div style="font-size:32px;margin-bottom:10px;">🎯</div>
+            <div class="fw-600 mb-16">品牌发布活动</div>
+            <div class="text-muted" style="font-size:13px;">新品发布、品牌升级等大型发布会活动模板，包含媒体邀请、现场布置、直播等节点</div>
+            <div class="mt-16"><button class="btn btn-outline btn-sm">使用此模板</button></div>
+          </div>
+          <div class="card" style="cursor:pointer" onclick="useTemplate('promo')">
+            <div style="font-size:32px;margin-bottom:10px;">🛍️</div>
+            <div class="fw-600 mb-16">促销推广活动</div>
+            <div class="text-muted" style="font-size:13px;">节日促销、限时特惠等营销活动，涵盖线上投放、渠道分发、用户触达全流程</div>
+            <div class="mt-16"><button class="btn btn-outline btn-sm">使用此模板</button></div>
+          </div>
+          <div class="card" style="cursor:pointer" onclick="useTemplate('expo')">
+            <div style="font-size:32px;margin-bottom:10px;">🏛️</div>
+            <div class="fw-600 mb-16">展会参展活动</div>
+            <div class="text-muted" style="font-size:13px;">行业展会、峰会等参展活动，包含展位设计、物料准备、人员安排等标准流程</div>
+            <div class="mt-16"><button class="btn btn-outline btn-sm">使用此模板</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 中期执行 ===== -->
+    <div id="page-exec" class="page">
+      <div class="flex-between mb-16">
+        <div class="text-muted">共 <strong id="exec-count">0</strong> 个执行中活动</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;" id="exec-list"></div>
+    </div>
+
+    <!-- ===== 后期复盘 ===== -->
+    <div id="page-review" class="page">
+      <div class="flex-between mb-16">
+        <div class="text-muted">共 <strong id="review-count">0</strong> 个待/已复盘活动</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;" id="review-list"></div>
+    </div>
+
+    <!-- ===== 效果分析 ===== -->
+    <div id="page-analysis" class="page">
+      <!-- 工具栏 -->
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px">
+      </div>
+      <div class="grid-4 section-gap" id="analysis-stats">
+        <!-- 将由 JavaScript 动态生成 -->
+      </div>
+
+      <div class="grid-2 section-gap">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 各活动 ROI 对比</div></div>
+          <div class="bar-chart" id="roi-chart" style="height:200px"></div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;" id="roi-labels"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📈 季度效果趋势</div></div>
+          <canvas id="trend-chart" width="100%" height="200"></canvas>
+          <svg id="trend-svg" viewBox="0 0 460 200" style="width:100%;height:200px;"></svg>
+        </div>
+      </div>
+
+      <!-- 地市分析 -->
+      <div class="card section-gap">
+        <div class="card-header">
+          <div class="card-title">🗺️ 广西地市活动分布</div>
+        </div>
+        <div id="city-analysis-content"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">🏆 活动效果排行</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>排名</th><th>活动名称</th><th>类型</th><th>地市</th>
+                <th>实际参与</th><th>线上覆盖</th><th>商机</th><th>ROI</th><th>满意度</th><th>综合评分</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 活动档案 ===== -->
+    <div id="page-activities" class="page">
+      <div class="flex-between mb-16">
+        <div style="display:flex;gap:8px;">
+          <select class="form-control" style="width:120px;" onchange="filterActivities(this.value)" id="filter-status">
+            <option value="all">全部状态</option>
+            <option value="策划中">策划中</option>
+            <option value="执行中">执行中</option>
+            <option value="复盘中">复盘中</option>
+            <option value="已完成">已完成</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="exportActivitiesToExcel()">📥 导出 Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="openNewActivity()">＋ 新建活动</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>活动名称</th><th>类型</th><th>地市</th><th>时间</th><th>负责人</th><th>预算</th><th>状态</th><th>进度</th><th>操作</th></tr>
+            </thead>
+            <tbody id="activities-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 负责人分析 ===== -->
+    <div id="page-owner" class="page">
+      <!-- 负责人选择栏 -->
+      <div class="owner-filter-bar" id="owner-avatar-bar"></div>
+
+      <!-- 时间段筛选 -->
+      <div class="date-range-bar">
+        <label>📅 时间段：</label>
+        <input type="date" id="owner-date-start" onchange="renderOwnerAnalysis()">
+        <span style="color:var(--text-muted)">至</span>
+        <input type="date" id="owner-date-end" onchange="renderOwnerAnalysis()">
+        <button class="date-quick-btn" onclick="setQuickRange('all')">全部</button>
+        <button class="date-quick-btn" onclick="setQuickRange('3m')">近3月</button>
+        <button class="date-quick-btn" onclick="setQuickRange('6m')">近6月</button>
+        <button class="date-quick-btn" onclick="setQuickRange('1y')">近1年</button>
+        <button class="btn btn-outline btn-sm" onclick="renderOwnerAnalysis()" style="margin-left:4px">筛选</button>
+      </div>
+
+      <!-- 分析内容区 -->
+      <div id="owner-analysis-content"></div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ===== 新建活动弹窗 ===== -->
+<div class="modal-overlay" id="modal-new">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📋 新建市场活动</div>
+      <button class="modal-close" onclick="closeModal('modal-new')">×</button>
+    </div>
+    <div class="form-group">
+      <label>活动名称 *</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="form-control" id="new-name" placeholder="例：2026年Q2品牌焕新发布会" style="flex:1">
+      </div>
+      <div id="ai-plan-result"></div>
+    </div>
+    <div class="grid-2" style="gap:12px">
+      <div class="form-group">
+        <label>活动类型</label>
+        <div style="display:flex;gap:8px">
+          <input class="form-control" id="new-type" list="activity-type-list" placeholder="选择或输入新类型">
+          <datalist id="activity-type-list">
+            <option value="品牌活动">
+            <option value="促销活动">
+            <option value="展会活动">
+            <option value="用户活动">
+            <option value="线上活动">
+            <option value="线下活动">
+            <option value="其他">
+          </datalist>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>负责人</label>
+        <input class="form-control" id="new-owner" placeholder="负责人姓名">
+      </div>
+    </div>
+    <!-- 广西地区选择 -->
+    <div class="grid-2" style="gap:12px">
+      <div class="form-group">
+        <label>📍 地市</label>
+        <select class="form-control" id="new-city" onchange="updateDistrictOptions()">
+          <option value="">请选择地市</option>
+          <option value="南宁市">南宁市</option>
+          <option value="柳州市">柳州市</option>
+          <option value="桂林市">桂林市</option>
+          <option value="梧州市">梧州市</option>
+          <option value="北海市">北海市</option>
+          <option value="防城港市">防城港市</option>
+          <option value="钦州市">钦州市</option>
+          <option value="贵港市">贵港市</option>
+          <option value="玉林市">玉林市</option>
+          <option value="百色市">百色市</option>
+          <option value="贺州市">贺州市</option>
+          <option value="河池市">河池市</option>
+          <option value="来宾市">来宾市</option>
+          <option value="崇左市">崇左市</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🏘️ 区县</label>
+        <select class="form-control" id="new-district">
+          <option value="">请先选择地市</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2" style="gap:12px">
+      <div class="form-group">
+        <label>活动开始日期</label>
+        <input class="form-control" type="date" id="new-start">
+      </div>
+      <div class="form-group">
+        <label>活动结束日期</label>
+        <input class="form-control" type="date" id="new-end">
+      </div>
+    </div>
+
+    <!-- 预算类型选择 -->
+    <div class="form-group">
+      <label>预算类型</label>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn" id="budget-type-has" onclick="toggleBudgetType('has')" 
+          style="flex:1;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px">
+          💰 有预算
+        </button>
+        <button type="button" class="btn" id="budget-type-none" onclick="toggleBudgetType('none')" 
+          style="flex:1;background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px">
+          ✨ 无花费
+        </button>
+      </div>
+    </div>
+
+    <!-- 预算明细 -->
+    <div id="budget-section" class="form-group">
+      <label>预算明细（必填）</label>
+      <div id="budget-items">
+        <!-- 预算项会动态生成 -->
+      </div>
+      <button type="button" class="btn btn-outline" style="margin-top:8px" onclick="addBudgetItem()">+ 添加预算项</button>
+    </div>
+    
+    <!-- 特殊费用 -->
+    <div id="special-fee-section" class="grid-2" style="gap:12px;margin-top:8px">
+      <div class="form-group">
+        <label>🏗️ 售后搭建费用（元）</label>
+        <input class="form-control" type="number" id="new-setup-fee" placeholder="展台搭建、舞台搭建等" value="0">
+      </div>
+      <div class="form-group">
+        <label>🚚 物流运输费用（元）</label>
+        <input class="form-control" type="number" id="new-logistics-fee" placeholder="物料运输、设备运输等" value="0">
+      </div>
+    </div>
+    
+    <!-- 预算汇总显示 -->
+    <div style="background:#f8fafc;padding:12px;border-radius:8px;margin-top:8px">
+      <div class="flex-between" style="margin-bottom:8px">
+        <span>💰 预算合计：</span>
+        <span id="budget-total" style="font-size:18px;font-weight:700;color:var(--primary)">¥0</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted)">
+        <span id="budget-hq">总部：¥0</span> · 
+        <span id="budget-subsidiary">子公司：¥0</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>核心目标</label>
+      <textarea class="form-control" id="new-goal" placeholder="例：线下参与人数达到200人，线上覆盖人数达到5000人，获取商机50个..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>活动简介</label>
+      <textarea class="form-control" id="new-desc" placeholder="活动背景、主要内容说明..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-new')">取消</button>
+      <button class="btn btn-primary" onclick="createActivity()">创建活动</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 活动详情弹窗 ===== -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal" style="width:760px">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-title">活动详情</div>
+      <button class="modal-close" onclick="closeModal('modal-detail')">×</button>
+    </div>
+    <div id="detail-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" style="color:#ef4444;border-color:#fecaca;background:#fef2f2" onclick="doDeleteActivity(currentDetailId)">🗑️ 删除</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-detail')">关闭</button>
+      <button class="btn btn-primary" id="detail-action-btn">推进阶段</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 文件预览弹窗 ===== -->
+<div class="modal-overlay" id="modal-file-preview">
+  <div class="modal" style="width:680px">
+    <div class="modal-header">
+      <div class="modal-title" id="file-preview-title">文件预览</div>
+      <button class="modal-close" onclick="closeModal('modal-file-preview')">×</button>
+    </div>
+    <div id="file-preview-body" style="text-align:center"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-file-preview')">关闭</button>
+      <button class="btn btn-primary" id="file-download-btn">⬇ 下载文件</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 腾讯云 COS 数据层配置 =====
+const STORAGE_KEY = 'market_activities_data_frontend';
+var currentDataVersion = null;
+
+// ===== 获取数据：先试腾讯云 COS，失败则用本地 =====
+async function getJsonBinData(retryCount = 0) {
+  console.log('🔄 开始从腾讯云 COS 加载数据...');
+
+  // 检查 COS 适配器是否已配置
+  if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+    console.warn('⚠️ 腾讯云 COS 适配器未加载，检查是否已配置');
+    
+    // 回退到本地存储
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      console.log('✅ 使用本地缓存数据');
+      return JSON.parse(stored);
+    }
+    
+    console.log('⚠️ 没有本地数据，使用空数据');
+    return { activities: [], files: {} };
+  }
+
+  // 1. 尝试从腾讯云 COS 加载
+  try {
+    const data = await window.MarketActivityCOS.adapter.getData();
+    console.log('✅ 腾讯云 COS 数据加载成功');
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return data;
+  } catch (err) {
+    console.log('⚠️ 腾讯云 COS 连接失败，使用本地数据:', err.message);
+  }
+
+  // 2. 回退到本地存储
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    console.log('✅ 使用本地缓存数据');
+    return JSON.parse(stored);
+  }
+
+  // 3. 都没有则返回空
+  console.log('⚠️ 没有本地数据，使用空数据');
+  return { activities: [], files: {} };
+}
+
+// ===== 保存数据：先存本地，再异步同步到腾讯云 COS =====
+async function saveJsonBinData(data, retryCount = 0) {
+  console.log('💾 开始保存数据到腾讯云 COS...');
+
+  // 1. 立即写本地（保证不丢数据）
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  localStorage.setItem('mcm_activities_backup', JSON.stringify(data.activities || []));
+  if (data.files) {
+    localStorage.setItem('mcm_files_backup', JSON.stringify(data.files));
+  }
+  console.log('✅ 数据已保存到本地');
+
+  // 2. 异步同步到腾讯云 COS（不阻塞用户）
+  setTimeout(async () => {
+    try {
+      if (!window.MarketActivityCOS || !window.MarketActivityCOS.adapter) {
+        console.warn('⚠️ 腾讯云 COS 适配器未加载，仅保存到本地');
+        return;
+      }
+      
+      await window.MarketActivityCOS.adapter.saveData(data);
+      console.log('✅ 数据已同步到腾讯云 COS');
+    } catch (err) {
+      console.log('⚠️ 腾讯云 COS 同步失败（本地已保存）:', err.message);
+    }
+  }, 100);
+
+}
+
+// ===== 文件存储（localStorage，Base64）=====
+// fileStore: { activityId: { plan:[], exec:[], review:[] } }
+// 每条: { id, name, size, type, stage, uploadTime, dataUrl }
+function loadFileStore() {
+  return fileStore || {};
+}
+async function saveFileStore(store) {
+  fileStore = store;
+  await syncData();
+}
+var fileStore = loadFileStore();
+
+function getFiles(activityId, stage) {
+  const key = String(activityId);
+  if(!fileStore[key]) return [];
+  if(stage) return fileStore[key][stage] || [];
+  return [...(fileStore[key].plan||[]), ...(fileStore[key].exec||[]), ...(fileStore[key].review||[])];
+}
+
+function addFile(activityId, stage, fileObj) {
+  const key = String(activityId);
+  if(!fileStore[key]) fileStore[key] = {plan:[], exec:[], review:[]};
+  if(!fileStore[key][stage]) fileStore[key][stage] = [];
+  fileStore[key][stage].push(fileObj);
+  saveFileStore(fileStore);
+}
+
+function deleteFile(activityId, stage, fileId) {
+  const key = String(activityId);
+  if(!fileStore[key] || !fileStore[key][stage]) return;
+  fileStore[key][stage] = fileStore[key][stage].filter(f=>f.id!==fileId);
+  saveFileStore(fileStore);
+}
+
+function fileIcon(type, name) {
+  if(type.startsWith('image/')) return '🖼️';
+  if(type.includes('pdf')) return '📄';
+  if(type.includes('word') || name.endsWith('.docx') || name.endsWith('.doc')) return '📝';
+  if(type.includes('excel') || type.includes('spreadsheet') || name.endsWith('.xlsx') || name.endsWith('.xls')) return '📊';
+  if(type.includes('powerpoint') || name.endsWith('.pptx') || name.endsWith('.ppt')) return '📑';
+  if(type.includes('zip') || type.includes('rar')) return '🗜️';
+  if(type.includes('video')) return '🎬';
+  if(type.includes('audio')) return '🎵';
+  return '📎';
+}
+
+function formatSize(bytes) {
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+const stageLabel = {plan:'前期策划', exec:'中期执行', review:'后期复盘'};
+let currentFileStage = 'plan';   // 当前文件面板阶段
+let currentDetailId = null;
+
+// ===== 数据模型（从腾讯云 COS 加载）=====
+var activities = [];
+
+// 初始化：从腾讯云 COS 加载数据
+async function initData() {
+  const loadingOverlay = document.getElementById('loading-overlay');
+  const loadingText = document.getElementById('loading-text');
+
+  try {
+    loadingText.textContent = '正在连接服务器...';
+    const data = await getJsonBinData();
+    activities = data.activities || [];
+    fileStore = data.files || {};
+    console.log('✅ 数据加载成功', activities.length, '个活动');
+    
+    // 数据加载成功后，尝试同步离线队列
+    if (syncQueue.queue.length > 0) {
+      loadingText.textContent = '正在同步离线数据...';
+      console.log(`🔄 发现 ${syncQueue.queue.length} 项待同步任务，开始同步...`);
+      await syncQueue.syncAll();
+    }
+  } catch (err) {
+    console.error('❌ 数据加载失败:', err.message);
+    loadingText.textContent = '加载失败，使用本地备份数据...';
+    // 使用本地备份
+    activities = JSON.parse(localStorage.getItem('mcm_activities_backup') || '[]');
+    fileStore = JSON.parse(localStorage.getItem('mcm_files_backup') || '{}');
+    
+    // 离线状态下也提示用户有待同步的队列
+    if (syncQueue.queue.length > 0) {
+      console.warn(`⚠️ [离线] 检测到 ${syncQueue.queue.length} 项待同步任务，将在网络恢复时自动同步`);
+      loadingText.textContent = `本地模式 • 有 ${syncQueue.queue.length} 项待同步`;
+    }
+    
+    await new Promise(r => setTimeout(r, 1000)); // 让用户看到提示
+  } finally {
+    // 隐藏加载提示
+    loadingOverlay.style.display = 'none';
+  }
+}
+
+// ===== 离线队列系统 =====
+class OfflineSyncQueue {
+  constructor() {
+    this.queue = JSON.parse(localStorage.getItem('mcm_sync_queue') || '[]');
+    this.isSyncing = false;
+    this.syncStats = {
+      total: 0,
+      success: 0,
+      failed: 0
+    };
+    this.startAutoSync();
+    this.setupNetworkListener();
+    console.log(`📋 初始化离线队列，当前待同步: ${this.queue.length} 项`);
+  }
+
+  // 添加待同步任务
+  addTask(task) {
+    const newTask = {
+      id: Date.now() + Math.random(),
+      type: task.type,  // 'save' | 'delete'
+      data: task.data,
+      timestamp: Date.now(),
+      retries: 0,
+      lastError: null
+    };
+    this.queue.push(newTask);
+    this.saveQueue();
+    console.log(`📋 [队列] 添加任务 (${this.queue.length} 项待同步)`, task.type);
+    this.updateQueueUI();
+  }
+
+  // 自动同步（每 5 秒检查一次）
+  startAutoSync() {
+    setInterval(async () => {
+      if (this.queue.length > 0 && !this.isSyncing && navigator.onLine) {
+        console.log('🔄 [队列] 自动同步检查...');
+        await this.syncAll();
+      }
+    }, 5000);
+  }
+
+  // 监听网络状态
+  setupNetworkListener() {
+    window.addEventListener('online', async () => {
+      console.log('🌐 [网络] 连接已恢复！');
+      if (this.queue.length > 0) {
+        console.log(`🔄 [队列] 开始同步 ${this.queue.length} 项待同步任务...`);
+        await this.syncAll();
+      }
+    });
+
+    window.addEventListener('offline', () => {
+      console.log('📡 [网络] 连接已断开，已切换到离线模式');
+      this.updateQueueUI();
+    });
+  }
+
+  // 同步所有待处理任务
+  async syncAll() {
+    if (this.isSyncing || this.queue.length === 0) return;
+    
+    this.isSyncing = true;
+    this.syncStats = { total: this.queue.length, success: 0, failed: 0 };
+    console.log(`🚀 [队列] 开始同步 ${this.syncStats.total} 项任务`);
+    
+    while (this.queue.length > 0) {
+      const task = this.queue[0];
+      try {
+        if (task.type === 'save') {
+          // 增量保存：只上传变化的数据
+          await this.incrementalSave(task.data);
+        } else if (task.type === 'delete') {
+          await deleteActivity(task.data.id);
+        }
+        
+        this.queue.shift();
+        this.syncStats.success++;
+        this.saveQueue();
+        console.log(`✅ [队列] 任务同步成功 (剩余: ${this.queue.length}/${this.syncStats.total})`);
+        this.updateQueueUI();
+      } catch (err) {
+        task.retries++;
+        task.lastError = err.message;
+        
+        if (task.retries > 5) {
+          console.warn(`⚠️ [队列] 任务已放弃，重试 5 次仍失败: ${task.type}`);
+          this.queue.shift();
+          this.syncStats.failed++;
+        } else {
+          console.warn(`⚠️ [队列] 任务失败 (重试 ${task.retries}/5): ${err.message}`);
+        }
+        
+        this.saveQueue();
+        this.updateQueueUI();
+        break;  // 失败就停止，等待下一个周期
+      }
+    }
+    
+    this.isSyncing = false;
+    
+    if (this.queue.length === 0) {
+      console.log(`✨ [队列] 所有任务同步完成！(成功: ${this.syncStats.success}, 失败: ${this.syncStats.failed})`);
+      this.updateQueueUI();
+    }
+  }
+
+  // 增量保存：只上传修改的活动
+  async incrementalSave(activityData) {
+    console.log(`📤 [增量] 上传单个活动: ${activityData.name || activityData.id}`);
+    
+    // 获取服务器最新数据
+    const serverData = await getJsonBinData();
+    
+    // 找到这个活动的索引
+    const index = serverData.activities.findIndex(a => String(a.id) === String(activityData.id));
+    if (index >= 0) {
+      serverData.activities[index] = activityData;
+    } else {
+      serverData.activities.push(activityData);
+    }
+    
+    // 只上传合并后的数据
+    await saveJsonBinData(serverData);
+    console.log(`✅ [增量] 单个活动上传成功`);
+  }
+
+  // 更新 UI 显示队列状态
+  updateQueueUI() {
+    const queueIndicator = document.getElementById('sync-queue-indicator');
+    if (!queueIndicator) {
+      // 创建队列指示器
+      const indicator = document.createElement('div');
+      indicator.id = 'sync-queue-indicator';
+      indicator.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: ${this.queue.length > 0 ? '#fbbf24' : '#10b981'};
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 999;
+        display: ${navigator.onLine ? 'block' : 'none'};
+        cursor: pointer;
+        transition: all 0.3s;
+      `;
+      document.body.appendChild(indicator);
+    }
+    
+    const indicator = document.getElementById('sync-queue-indicator');
+    if (navigator.onLine) {
+      indicator.style.display = 'block';
+      if (this.queue.length > 0) {
+        indicator.style.background = '#fbbf24';
+        indicator.textContent = `⏳ ${this.queue.length} 项待同步`;
+        indicator.style.animation = 'pulse 1s infinite';
+      } else if (this.isSyncing) {
+        indicator.style.background = '#3b82f6';
+        indicator.textContent = '🔄 同步中...';
+      } else {
+        indicator.style.background = '#10b981';
+        indicator.textContent = '✅ 已同步';
+      }
+    } else {
+      indicator.style.display = 'none';
+    }
+  }
+
+  saveQueue() {
+    localStorage.setItem('mcm_sync_queue', JSON.stringify(this.queue));
+  }
+
+  // 获取队列状态
+  getStatus() {
+    return {
+      pending: this.queue.length,
+      isSyncing: this.isSyncing,
+      isOnline: navigator.onLine,
+      stats: this.syncStats
+    };
+  }
+}
+
+// 初始化离线队列
+const syncQueue = new OfflineSyncQueue();
+
+// 添加 pulse 动画
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+`;
+document.head.appendChild(style);
+
+// 保存数据到腾讯云 COS（改进版）
+async function syncData() {
+  try {
+    console.log('💾 [同步] 开始保存数据到服务器...');
+    await saveJsonBinData({ activities, files: fileStore });
+    console.log('✅ [同步] 数据同步成功');
+    // 本地备份
+    localStorage.setItem('mcm_activities_backup', JSON.stringify(activities));
+    localStorage.setItem('mcm_files_backup', JSON.stringify(fileStore));
+  } catch (err) {
+    console.error('❌ [同步] 数据同步失败:', err.message);
+    console.warn('⚠️ [离线] 加入离线队列，等待网络恢复...');
+    
+    // 将失败的保存操作加入离线队列
+    syncQueue.addTask({
+      type: 'save',
+      data: { activities, files: fileStore }
+    });
+    
+    // 不再弹出 alert，而是显示离线提示
+    const msg = document.createElement('div');
+    msg.style.cssText = `
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ef4444;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      animation: slideDown 0.3s ease-out;
+    `;
+    msg.textContent = '⚠️ 网络连接失败，数据已保存到离线队列，待网络恢复后自动同步';
+    document.body.appendChild(msg);
+    
+    setTimeout(() => msg.remove(), 5000);
+  }
+}
+
+// 初始化调用
+initData().then(() => {
+  renderDashboard(); // 初始加载仪表盘
+});
+
+// 离线队列调试接口
+window.getOfflineStatus = function() {
+  const status = syncQueue.getStatus();
+  console.table({
+    '网络连接': status.isOnline ? '✅ 在线' : '❌ 离线',
+    '待同步任务': status.pending,
+    '正在同步': status.isSyncing ? '是' : '否',
+    '成功计数': status.stats.success,
+    '失败计数': status.stats.failed,
+    '总任务数': status.stats.total
+  });
+  return status;
+};
+
+window.manualSync = async function() {
+  console.log('🔄 手动触发离线队列同步...');
+  await syncQueue.syncAll();
+};
+
+window.clearOfflineQueue = function() {
+  if (confirm('确定要清空所有待同步的离线任务吗？')) {
+    syncQueue.queue = [];
+    syncQueue.saveQueue();
+    syncQueue.updateQueueUI();
+    console.log('✅ 离线队列已清空');
+  }
+};
+
+console.log('💡 离线队列命令:');
+console.log('  getOfflineStatus()  - 查看离线队列状态');
+console.log('  manualSync()        - 手动同步待同步任务');
+console.log('  clearOfflineQueue() - 清空离线队列');
+
+// ===== 活动数据操作 =====
+async function getActivities() {
+  return activities;
+}
+
+async function saveActivity(data) {
+  // 1. 先更新内存数据
+  const index = activities.findIndex(a => String(a.id) === String(data.id));
+  if (index >= 0) {
+    activities[index] = { ...activities[index], ...data, id: String(data.id) };
+  } else {
+    activities.push({ id: String(Date.now()), ...data });
+  }
+  
+  // 2. 本地备份（确保本地数据总是安全的）
+  localStorage.setItem('mcm_activities_backup', JSON.stringify(activities));
+  console.log(`✅ [本地] 活动已保存到本地 (${data.name || data.id})`);
+  
+  // 3. 尝试同步到服务器
+  try {
+    await syncData();
+  } catch (err) {
+    // 同步失败时，将活动加入离线队列
+    console.warn('⚠️ [离线] 同步失败，已加入离线队列');
+    syncQueue.addTask({
+      type: 'save',
+      data: { ...activities[activities.findIndex(a => String(a.id) === String(data.id))] }
+    });
+  }
+  
+  return data;
+}
+
+async function deleteActivity(id) {
+  const index = activities.findIndex(a => String(a.id) === String(id));
+  if (index === -1) throw new Error('活动不存在');
+  activities.splice(index, 1);
+  
+  // 本地备份
+  localStorage.setItem('mcm_activities_backup', JSON.stringify(activities));
+  console.log(`✅ [本地] 活动已删除并保存到本地`);
+  
+  // 尝试同步到服务器
+  try {
+    await syncData();
+  } catch (err) {
+    console.warn('⚠️ [离线] 删除同步失败，已加入离线队列');
+    syncQueue.addTask({
+      type: 'delete',
+      data: { id }
+    });
+  }
+  
+  return { success: true };
+}
+
+// ===== 效果分析渲染 =====
+function renderAnalysis() {
+  const statsDiv = document.getElementById('analysis-stats');
+  if (!statsDiv) return;
+  
+  const totalParticipants = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('参与'))?.actual||0),0);
+  const totalCoverage = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('覆盖'))?.actual||0),0);
+  const totalLeads = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('商机'))?.actual||0),0);
+  
+  statsDiv.innerHTML = `
+    <div class="stat-card">
+      <div class="label">📋 活动总数</div>
+      <div class="value color-primary">${activities.length}</div>
+      <div class="change text-muted">累计已创建</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">👥 线下参与总人数</div>
+      <div class="value color-success">${totalParticipants}</div>
+      <div class="change text-muted">实际参与人数</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🌐 线上覆盖总人数</div>
+      <div class="value color-info">${totalCoverage}</div>
+      <div class="change text-muted">线上触达人数</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">💼 商机总数</div>
+      <div class="value color-warning">${totalLeads}</div>
+      <div class="change text-muted">累计商机数量</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">💸 平均 ROI</div>
+      <div class="value color-warning">3.2x</div>
+      <div class="change up">↑ 0.4x vs 上季度</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">⭐ 平均满意度</div>
+      <div class="value" style="color:#f59e0b">4.6</div>
+      <div class="change">/ 5.0 分</div>
+    </div>
+  `;
+}
+
+// ===== 路由 =====
+const pageTitles = {
+  dashboard: ['仪表盘','市场活动全流程监控与管理'],
+  plan: ['前期策划','活动方案规划与目标设定'],
+  exec: ['中期执行','任务追踪与进度实时监控'],
+  review: ['后期复盘','活动效果总结与问题归因'],
+  analysis: ['效果分析','多维数据对比与趋势洞察'],
+  owner: ['负责人分析','按负责人查看活动数据与效果'],
+  activities: ['活动档案','所有活动记录与查询']
+};
+
+function goto(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`.nav-item[onclick="goto('${page}')"]`).classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[page][0];
+  document.getElementById('page-sub').textContent = pageTitles[page][1];
+  renderPage(page);
+}
+
+function renderPage(page) {
+  if(page === 'dashboard') renderDashboard();
+  if(page === 'plan') renderPlan();
+  if(page === 'exec') renderExec();
+  if(page === 'review') renderReview();
+  if(page === 'analysis') renderAnalysis();
+  if(page === 'owner') renderOwnerPage();
+  if(page === 'activities') renderActivities();
+}
+
+// ===== 仪表盘 =====
+function renderDashboard() {
+  document.getElementById('stat-total').textContent = activities.length;
+  document.getElementById('stat-participants').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('参与'))?.actual||0),0);
+  document.getElementById('stat-coverage').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('覆盖'))?.actual||0),0);
+  document.getElementById('stat-leads').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('商机'))?.actual||0),0);
+
+  // 活动列表
+  const list = document.getElementById('dashboard-activity-list');
+  list.innerHTML = activities.map(a => `
+    <div class="dashboard-phase" style="cursor:pointer" onclick="openDetail('${a.id}')">
+      <div class="phase-icon ${a.status==='策划中'?'plan':a.status==='执行中'?'exec':'review'}">
+        ${a.status==='策划中'?'📋':a.status==='执行中'?'⚡':a.status==='复盘中'?'🔍':'✅'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="flex-between">
+          <div class="fw-600" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">${a.name}</div>
+          ${statusBadge(a.status)}
+        </div>
+        <div class="mt-8">
+          <div class="progress-wrap"><div class="progress-bar ${a.status==='执行中'?'progress-warning':a.progress===100?'progress-success':'progress-primary'}" style="width:${a.progress}%"></div></div>
+        </div>
+        <div class="text-sm color-text-muted mt-8" style="color:var(--text-muted)">${a.owner} · ${a.start} ~ ${a.end}</div>
+      </div>
+      <button class="btn-delete" onclick="event.stopPropagation();doDeleteActivity('${a.id}')" title="删除活动">🗑️</button>
+    </div>
+  `).join('');
+
+  // 日历
+  renderCalendar();
+
+  // 进度条形图
+  const chart = document.getElementById('progress-chart');
+  const labels = document.getElementById('progress-chart-labels');
+  const colors = ['#4f46e5','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899'];
+  chart.innerHTML = activities.map((a,i) => `
+    <div class="bar-group">
+      <div class="bar" style="background:${colors[i]};height:${a.progress*1.6}px" data-val="${a.progress}%"></div>
+    </div>
+  `).join('');
+  labels.innerHTML = activities.map((a,i) => `
+    <div class="flex-center gap-8 text-sm"><div style="width:8px;height:8px;border-radius:2px;background:${colors[i]}"></div><span>${a.name.substring(0,6)}...</span></div>
+  `).join('');
+
+  // 风险
+  const risks = activities.flatMap(a => a.risks.map(r => ({...r, activity: a.name})));
+  document.getElementById('risk-list').innerHTML = risks.length === 0
+    ? '<div class="text-muted" style="text-align:center;padding:20px">暂无风险预警 🎉</div>'
+    : risks.map(r => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:${r.level==='高'?'#fef2f2':r.level==='中'?'#fffbeb':'#f0fdf4'};border-radius:8px;">
+        <div class="badge ${r.level==='高'?'badge-exec':r.level==='中'?'badge-plan':'badge-review'}">${r.level}风险</div>
+        <div style="font-size:13px;flex:1">${r.text}</div>
+        <div class="text-sm" style="color:var(--text-muted);white-space:nowrap">${r.activity.substring(0,6)}</div>
+      </div>
+    `).join('');
+}
+
+// ===== 策划页 =====
+function renderPlan() {
+  const plans = activities.filter(a => a.status === '策划中');
+  document.getElementById('plan-count').textContent = plans.length;
+  document.getElementById('plan-list').innerHTML = plans.map(a => activityDetailCard(a)).join('');
+}
+
+// ===== 执行页 =====
+function renderExec() {
+  const execs = activities.filter(a => a.status === '执行中');
+  document.getElementById('exec-count').textContent = execs.length;
+  document.getElementById('exec-list').innerHTML = execs.map(a => activityDetailCard(a)).join('');
+}
+
+// ===== 复盘页 =====
+function renderReview() {
+  const reviews = activities.filter(a => a.status === '复盘中' || a.status === '已完成');
+  document.getElementById('review-count').textContent = reviews.length;
+  document.getElementById('review-list').innerHTML = reviews.map(a => reviewCard(a)).join('');
+}
+
+function reviewCard(a) {
+  const doneRatio = a.kpis.filter(k=>k.actual>=k.target).length + '/' + a.kpis.length;
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="card-title">${a.name}</div>
+          ${statusBadge(a.status)}
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">查看详情</button>
+      </div>
+      <div class="grid-2" style="gap:16px">
+        <div>
+          <div class="text-sm fw-600 mb-16" style="margin-bottom:10px">📊 KPI 达成情况（${doneRatio} 达标）</div>
+          ${a.kpis.map(k => `
+            <div class="kpi-row">
+              <div class="kpi-label">${k.name}</div>
+              <div class="kpi-target">目标 ${k.target}${k.unit}</div>
+              <div class="kpi-actual ${k.actual>=k.target?'color-success':'color-danger'}">${k.actual||'-'}${k.actual?k.unit:''}</div>
+              <div class="kpi-rate ${k.actual>=k.target?'color-success':'color-warning'}">${k.actual?Math.round(k.actual/k.target*100)+'%':'-'}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div>
+          ${a.review ? `
+            <div class="text-sm fw-600" style="margin-bottom:10px">📝 复盘总结</div>
+            <div style="background:#f8fafc;border-radius:8px;padding:12px;font-size:13px;margin-bottom:10px">${a.review.summary}</div>
+            <div class="text-sm fw-600" style="margin-bottom:6px">💡 经验沉淀</div>
+            <div style="background:#f0fdf4;border-radius:8px;padding:12px;font-size:13px;">${a.review.lessons}</div>
+          ` : `
+            <div style="text-align:center;padding:30px;color:var(--text-muted)">
+              <div style="font-size:36px;margin-bottom:8px">📝</div>
+              <div>尚未填写复盘总结</div>
+              <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openDetail('${a.id}')">填写复盘</button>
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== 分析页 =====
+function renderAnalysis() {
+  const done = activities.filter(a => a.roi !== null);
+
+  // 统计卡片
+  const statsDiv = document.getElementById('analysis-stats');
+  if (statsDiv) {
+    const totalParticipants = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('参与'))?.actual||0),0);
+    const totalCoverage = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('覆盖'))?.actual||0),0);
+    const totalLeads = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('商机'))?.actual||0),0);
+    statsDiv.innerHTML = `
+      <div class="stat-card"><div class="label">📋 活动总数</div><div class="value color-primary">${activities.length}</div><div class="change text-muted">累计已创建</div></div>
+      <div class="stat-card"><div class="label">👥 线下参与总人数</div><div class="value color-success">${totalParticipants}</div><div class="change text-muted">实际参与人数</div></div>
+      <div class="stat-card"><div class="label">🌐 线上覆盖总人数</div><div class="value color-info">${totalCoverage}</div><div class="change text-muted">线上触达人数</div></div>
+      <div class="stat-card"><div class="label">💼 商机总数</div><div class="value color-warning">${totalLeads}</div><div class="change text-muted">累计商机数量</div></div>
+      <div class="stat-card"><div class="label">💸 平均 ROI</div><div class="value color-warning">${done.length>0?(done.reduce((s,a)=>s+(a.roi||0),0)/done.length).toFixed(1)+'x':'-'}</div><div class="change text-muted">已复盘活动</div></div>
+      <div class="stat-card"><div class="label">⭐ 平均满意度</div><div class="value" style="color:#f59e0b">${done.filter(a=>a.satisfaction).length>0?(done.filter(a=>a.satisfaction).reduce((s,a)=>s+(a.satisfaction||0),0)/done.filter(a=>a.satisfaction).length).toFixed(1):'-'}</div><div class="change">/ 5.0 分</div></div>
+    `;
+  }
+
+  // ROI 条形图
+  const roiChart = document.getElementById('roi-chart');
+  const roiLabels = document.getElementById('roi-labels');
+  const colors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899'];
+  const maxRoi = Math.max(...done.map(a=>a.roi||0), 4);
+  roiChart.innerHTML = done.map((a,i) => `
+    <div class="bar-group">
+      <div class="bar" style="background:${colors[i%colors.length]};height:${(a.roi/maxRoi)*180}px" data-val="${a.roi}x ROI"></div>
+    </div>
+  `).join('');
+  roiLabels.innerHTML = done.map((a,i) => `
+    <div class="flex-center gap-8 text-sm"><div style="width:8px;height:8px;border-radius:2px;background:${colors[i%colors.length]}"></div><span>${a.name.substring(0,6)}</span></div>
+  `).join('');
+
+  // 趋势折线
+  const svg = document.getElementById('trend-svg');
+  const trendData = [2.1,2.6,2.4,3.0,2.9,3.2,3.8];
+  const w=460,h=180,pad=30;
+  const pts = trendData.map((v,i)=>{
+    const x = pad + i*(w-pad*2)/(trendData.length-1);
+    const y = h - pad - (v/5)*(h-pad*2);
+    return {x,y,v};
+  });
+  const pathD = pts.map((p,i)=>i===0?`M${p.x},${p.y}`:`L${p.x},${p.y}`).join(' ');
+  const areaD = `M${pts[0].x},${h-pad} ` + pts.map(p=>`L${p.x},${p.y}`).join(' ') + ` L${pts[pts.length-1].x},${h-pad} Z`;
+  svg.innerHTML = `
+    <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4f46e5" stop-opacity=".3"/><stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/></linearGradient></defs>
+    <path d="${areaD}" fill="url(#g1)"/>
+    <path d="${pathD}" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="4" fill="#4f46e5"/><text x="${p.x}" y="${p.y-10}" text-anchor="middle" font-size="11" fill="#64748b">${p.v}x</text>`).join('')}
+    ${['Q4\'24','Q1\'25','Q2\'25','Q3\'25','Q4\'25','Q1\'26','Q2\'26'].map((l,i)=>{
+      const x=pad+i*(w-pad*2)/(trendData.length-1);
+      return `<text x="${x}" y="${h-8}" text-anchor="middle" font-size="11" fill="#94a3b8">${l}</text>`;
+    }).join('')}
+  `;
+
+  // 地市分析
+  renderCityAnalysis();
+
+  // 排行榜
+  const tbody = document.getElementById('ranking-table');
+  const ranked = [...done].sort((a,b)=>b.roi-a.roi);
+  tbody.innerHTML = ranked.map((a,i) => {
+    const medals = ['🥇','🥈','🥉'];
+    const offline = a.kpis?.find(k=>k.name.includes('参与'));
+    const online = a.kpis?.find(k=>k.name.includes('覆盖'));
+    const leads = a.kpis?.find(k=>k.name.includes('商机'));
+    return `<tr>
+      <td>${medals[i]||i+1}</td>
+      <td class="fw-600">${a.name}</td>
+      <td><span class="tag">${a.type||'-'}</span></td>
+      <td class="text-sm" style="color:var(--text-muted)">${a.city||'-'}</td>
+      <td>${offline?offline.actual+offline.unit:'-'}</td>
+      <td>${online?online.actual+online.unit:'-'}</td>
+      <td>${leads?leads.actual+leads.unit:'-'}</td>
+      <td class="color-success fw-600">${a.roi}x</td>
+      <td>${a.satisfaction}⭐</td>
+      <td><div style="display:inline-flex;align-items:center;gap:6px"><div class="progress-wrap" style="width:60px"><div class="progress-bar progress-success" style="width:${(a.roi/4)*100}%"></div></div><span class="text-sm">${Math.round((a.roi/4)*100)}分</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// 地市分析
+function renderCityAnalysis() {
+  const container = document.getElementById('city-analysis-content');
+  if (!container) return;
+
+  // 按地市汇总
+  const cityMap = {};
+  activities.forEach(a => {
+    const city = a.city || '未指定地市';
+    if (!cityMap[city]) cityMap[city] = { count: 0, participants: 0, coverage: 0, leads: 0, budgets: 0 };
+    cityMap[city].count++;
+    cityMap[city].participants += a.kpis?.find(k=>k.name.includes('参与'))?.actual || 0;
+    cityMap[city].coverage += a.kpis?.find(k=>k.name.includes('覆盖'))?.actual || 0;
+    cityMap[city].leads += a.kpis?.find(k=>k.name.includes('商机'))?.actual || 0;
+    cityMap[city].budgets += a.budget || 0;
+  });
+
+  const cities = Object.entries(cityMap).sort((a,b) => b[1].count - a[1].count);
+
+  if (cities.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted)">暂无活动数据，创建活动时选择地市后即可查看分析</div>';
+    return;
+  }
+
+  const maxCount = Math.max(...cities.map(([,v])=>v.count), 1);
+  const barColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16','#a855f7','#ef4444','#0ea5e9','#d946ef'];
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- 左：柱状图 -->
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:12px">活动数量分布</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${cities.map(([city, stat], i) => `
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:72px;font-size:12px;color:var(--text-muted);text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${city}">${city.replace('市','')}</div>
+              <div style="flex:1;background:#f1f5f9;border-radius:4px;overflow:hidden;height:20px">
+                <div style="width:${(stat.count/maxCount)*100}%;background:${barColors[i%barColors.length]};height:100%;border-radius:4px;transition:width .4s"></div>
+              </div>
+              <div style="width:28px;font-size:12px;font-weight:600;color:var(--text)">${stat.count}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <!-- 右：数据表 -->
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:12px">各地市 KPI 汇总</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#f8fafc">
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">地市</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)">活动数</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)">参与人数</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)">商机数</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)">预算(万)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cities.map(([city, stat]) => `
+              <tr>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${city}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:600">${stat.count}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${stat.participants||'-'}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${stat.leads||'-'}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${stat.budgets>0?(stat.budgets/10000).toFixed(1):'-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ===== 档案页 =====
+function renderActivities(filter='all') {
+  const list = filter==='all' ? activities : activities.filter(a=>a.status===filter);
+  document.getElementById('activities-table').innerHTML = list.map(a => `
+    <tr>
+      <td class="fw-600">${a.name}</td>
+      <td><span class="tag">${a.type||'-'}</span></td>
+      <td class="text-sm" style="color:var(--text-muted)">${a.city||'-'}${a.district?(' · '+a.district):''}</td>
+      <td class="text-sm" style="color:var(--text-muted)">${a.start} ~ ${a.end}</td>
+      <td>${a.owner}</td>
+      <td>¥${Number(a.budget||0).toLocaleString()}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;width:120px">
+          <div class="progress-wrap" style="flex:1"><div class="progress-bar ${a.progress===100?'progress-success':'progress-primary'}" style="width:${a.progress}%"></div></div>
+          <span class="text-sm">${a.progress}%</span>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">详情</button>
+          ${a.status!=='已完成'?`<button class="btn btn-success btn-sm" onclick="advanceActivity('${a.id}')">推进</button>`:''}
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterActivities(val) { renderActivities(val); }
+
+// ===== 活动卡片 =====
+function activityDetailCard(a) {
+  const doneTasks = a.tasks.filter(t=>t.done).length;
+  return `
+    <div class="card">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="card-title">${a.name}</div>
+          ${statusBadge(a.status)}
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">查看详情</button>
+          ${a.status==='策划中'?`<button class="btn btn-success btn-sm" onclick="advanceActivity('${a.id}')">转为执行中</button>`:''}
+          ${a.status==='执行中'?`<button class="btn btn-primary btn-sm" onclick="advanceActivity('${a.id}')">进入复盘</button>`:''}
+        </div>
+      </div>
+      <div class="grid-3" style="gap:16px">
+        <div>
+          <div class="text-sm fw-600" style="margin-bottom:8px">📌 核心目标</div>
+          <div class="text-sm" style="color:var(--text-muted)">${a.goal}</div>
+          <div class="mt-16">
+            <div class="flex-between text-sm mb-16" style="margin-bottom:6px">
+              <span>整体进度</span><span class="fw-600">${a.progress}%</span>
+            </div>
+            <div class="progress-wrap"><div class="progress-bar ${a.status==='执行中'?'progress-warning':'progress-primary'}" style="width:${a.progress}%"></div></div>
+          </div>
+          <div class="mt-16 text-sm" style="color:var(--text-muted)">
+            📅 ${a.start} ~ ${a.end}<br>
+            👤 ${a.owner}<br>
+            ${a.hasBudget === false ? '✨ 无花费活动' : `💰 预算 ¥${Number(a.budget).toLocaleString()} / 已支出 ¥${Number(a.spent).toLocaleString()}`}
+          </div>
+        </div>
+        <div>
+          <div class="text-sm fw-600" style="margin-bottom:8px">✅ 执行任务（${doneTasks}/${a.tasks.length}）</div>
+          ${a.tasks.map((t,i) => `
+            <div class="checklist-item">
+              <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${a.id}',${i},this.checked)">
+              <label class="${t.done?'checked':''}">${t.name}</label>
+            </div>
+          `).join('')}
+        </div>
+        <div>
+          <div class="text-sm fw-600" style="margin-bottom:8px">📊 KPI 追踪</div>
+          ${a.kpis.map(k => `
+            <div class="kpi-row">
+              <div class="kpi-label">${k.name}</div>
+              <div class="kpi-target">${k.target}${k.unit}</div>
+              <div class="kpi-actual ${k.actual&&k.actual>=k.target?'color-success':k.actual>0?'color-warning':''}">${k.actual||'-'}${k.actual?k.unit:''}</div>
+            </div>
+          `).join('')}
+          ${a.risks.length?`
+            <div class="text-sm fw-600 mt-16" style="margin-top:12px;margin-bottom:8px">⚠️ 风险提示</div>
+            ${a.risks.map(r=>`<div style="font-size:12px;color:${r.level==='高'?'var(--danger)':'var(--warning)'};padding:4px 0">● ${r.text}</div>`).join('')}
+          `:''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== 预算明细渲染 =====
+function renderBudgetDetail(a) {
+  // 如果活动标记为无花费，显示提示
+  if (a.hasBudget === false) {
+    return `<div class="form-group" style="background:#f0fdf4;padding:12px;border-radius:8px;color:#15803d;font-size:13px;border:1px solid #dcfce7">
+      ✨ 此活动无花费，无需预算申报
+    </div>`;
+  }
+  
+  const items = a.budgetItems || [];
+  if(!items || items.length === 0) {
+    return `<div class="form-group" style="color:var(--text-muted);font-size:13px">暂无预算明细</div>`;
+  }
+  
+  const hqItems = items.filter(i => i.source === 'hq');
+  const subItems = items.filter(i => i.source === 'subsidiary');
+  const hqTotal = hqItems.reduce((sum, i) => sum + i.amount, 0);
+  const subTotal = subItems.reduce((sum, i) => sum + i.amount, 0);
+  
+  return `
+    <div class="budget-detail-section">
+      <div class="budget-detail-title">📊 预算明细 Breakdown</div>
+      <table class="budget-detail-table">
+        <thead>
+          <tr>
+            <th>预算项</th>
+            <th>费用归属</th>
+            <th class="amount">金额</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(item => `
+            <tr>
+              <td>${item.name}</td>
+              <td><span class="${item.source === 'hq' ? 'budget-source-hq' : 'budget-source-sub'}">
+                ${item.source === 'hq' ? '🏢 总部' : '🏭 子公司'}
+              </span></td>
+              <td class="amount">¥ ${Number(item.amount).toLocaleString()}</td>
+            </tr>
+          `).join('')}
+          <tr class="budget-summary-row">
+            <td colspan="2">💰 预算合计</td>
+            <td class="amount">¥ ${Number(a.budget).toLocaleString()}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+        <span class="budget-source-hq">🏢 总部合计：¥ ${hqTotal.toLocaleString()}</span>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <span class="budget-source-sub">🏭 子公司合计：¥ ${subTotal.toLocaleString()}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ===== 详情弹窗 =====
+function openDetail(id) {
+  const a = activities.find(x=>String(x.id)===String(id));
+  if(!a) { console.error('openDetail: 找不到活动 id=', id); return; }
+  currentDetailId = String(id);
+  currentFileStage = a.status==='策划中'?'plan': a.status==='执行中'?'exec':'review';
+  document.getElementById('detail-title').textContent = a.name;
+  const btn = document.getElementById('detail-action-btn');
+  btn.disabled = false;
+  if(a.status==='策划中') { btn.textContent='转为执行中'; btn.className='btn btn-success'; }
+  else if(a.status==='执行中') { btn.textContent='进入复盘阶段'; btn.className='btn btn-primary'; }
+  else if(a.status==='复盘中') { btn.textContent='标记已完成'; btn.className='btn btn-success'; }
+  else { btn.textContent='已完成'; btn.className='btn btn-outline'; btn.disabled=true; }
+  btn.onclick = () => { advanceActivity(id); closeModal('modal-detail'); };
+
+  const doneTasks = a.tasks.filter(t=>t.done).length;
+  const totalFiles = getFiles(id).length;
+  document.getElementById('detail-content').innerHTML = `
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab active" onclick="detailTab(this,0)">基本信息</div>
+      <div class="tab" onclick="detailTab(this,1)">任务清单</div>
+      <div class="tab" onclick="detailTab(this,2)">KPI 追踪</div>
+      <div class="tab" onclick="detailTab(this,3)">复盘总结</div>
+      <div class="tab" onclick="detailTab(this,4)">📎 文件附件${totalFiles>0?`<span class="file-count-badge">${totalFiles}</span>`:''}</div>
+    </div>
+    <div id="dtab-0">
+      <div class="grid-2" style="gap:12px">
+        <div class="form-group"><label>活动类型</label><div class="form-control" style="background:#f8fafc">${a.type}</div></div>
+        <div class="form-group"><label>负责人</label><div class="form-control" style="background:#f8fafc">${a.owner}</div></div>
+        <div class="form-group"><label>开始日期</label><div class="form-control" style="background:#f8fafc">${a.start}</div></div>
+        <div class="form-group"><label>结束日期</label><div class="form-control" style="background:#f8fafc">${a.end}</div></div>
+        <div class="form-group"><label>总预算</label><div class="form-control" style="background:#f8fafc;font-weight:700;color:var(--primary)">¥ ${Number(a.budget).toLocaleString()}</div></div>
+        <div class="form-group"><label>已支出</label><div class="form-control" style="background:#f8fafc">¥ ${Number(a.spent).toLocaleString()}</div></div>
+      </div>
+      
+      <!-- 预算明细展示 -->
+      ${renderBudgetDetail(a)}
+      
+      <div class="form-group"><label>核心目标</label><div class="form-control" style="background:#f8fafc;min-height:60px">${a.goal}</div></div>
+      <div class="form-group"><label>活动简介</label><div class="form-control" style="background:#f8fafc;min-height:60px">${a.desc}</div></div>
+    </div>
+    <div id="dtab-1" style="display:none">
+      <div class="text-muted mb-16" style="margin-bottom:12px">已完成 ${doneTasks}/${a.tasks.length} 项任务</div>
+      ${a.tasks.map((t,i)=>`
+        <div class="checklist-item">
+          <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${a.id}',${i},this.checked)">
+          <label class="${t.done?'checked':''}">${t.name}</label>
+          <span class="badge ${t.done?'badge-done':'badge-plan'}">${t.done?'已完成':'待完成'}</span>
+        </div>
+      `).join('')}
+    </div>
+    <div id="dtab-2" style="display:none">
+      ${a.kpis.map((k,i)=>`
+        <div class="kpi-row">
+          <div class="kpi-label fw-600">${k.name}</div>
+          <div style="flex:1;padding:0 16px">
+            <div class="progress-wrap"><div class="progress-bar ${k.actual>=k.target?'progress-success':k.actual>0?'progress-warning':'progress-primary'}" style="width:${k.actual?Math.min(k.actual/k.target*100,100):0}%"></div></div>
+          </div>
+          <div class="kpi-target">目标 ${k.target}${k.unit}</div>
+          <div><input type="number" class="form-control" style="width:90px;padding:4px 8px" value="${k.actual||''}" placeholder="实际" onchange="updateKpi('${a.id}',${i},this.value)"></div>
+          <span style="margin-left:4px;font-size:13px">${k.unit}</span>
+        </div>
+      `).join('')}
+    </div>
+    <div id="dtab-3" style="display:none">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn-ai" onclick="aiGenerateReview('${a.id}')">✨ AI 自动生成复盘</button>
+      </div>
+      <div class="form-group">
+        <label>活动总结</label>
+        <textarea class="form-control" id="review-summary" placeholder="总结活动整体表现，哪些超预期，哪些未达标...">${a.review?.summary||''}</textarea>
+      </div>
+      <div class="form-group">
+        <label>经验沉淀</label>
+        <textarea class="form-control" id="review-lessons" placeholder="记录可复用的经验、需要避免的坑...">${a.review?.lessons||''}</textarea>
+      </div>
+      <div class="form-group">
+        <label>综合评分（1-5分）</label>
+        <input type="number" class="form-control" id="review-score" min="1" max="5" step="0.1" value="${a.review?.score||''}" placeholder="4.5">
+      </div>
+      <button class="btn btn-primary" onclick="saveReview('${a.id}')">💾 保存复盘</button>
+    </div>
+    <div id="dtab-4" style="display:none">
+      ${renderFilePanel(id)}
+    </div>
+  `;
+  showModal('modal-detail');
+}
+
+// ===== 文件面板渲染 =====
+function renderFilePanel(activityId) {
+  const stages = [{key:'plan',label:'📋 前期策划'},{key:'exec',label:'⚡ 中期执行'},{key:'review',label:'🔍 后期复盘'}];
+  const files = getFiles(activityId, currentFileStage);
+  return `
+    <div class="file-stage-tabs">
+      ${stages.map(s=>`
+        <button class="file-stage-btn ${currentFileStage===s.key?'active':''}"
+          onclick="switchFileStage(${activityId},'${s.key}')">${s.label}
+          ${getFiles(activityId,s.key).length>0?`<span class="file-count-badge" style="background:${currentFileStage===s.key?'rgba(255,255,255,.4)':'var(--primary)'};">${getFiles(activityId,s.key).length}</span>`:''}
+        </button>
+      `).join('')}
+    </div>
+    <div id="file-panel-${activityId}">
+      <div class="file-upload-area" id="upload-drop-${activityId}"
+        onclick="document.getElementById('file-input-${activityId}').click()"
+        ondragover="onDragOver(event,${activityId})"
+        ondragleave="onDragLeave(event,${activityId})"
+        ondrop="onDrop(event,${activityId})">
+        <input type="file" id="file-input-${activityId}" style="display:none" multiple
+          accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.mp4,.txt"
+          onchange="onFileInputChange(event,${activityId})">
+        <div class="upload-icon">📂</div>
+        <p><strong>点击上传</strong> 或将文件拖放到此处</p>
+        <p style="margin-top:4px;font-size:12px;">支持 Word · Excel · PPT · PDF · 图片 · 视频 · 压缩包</p>
+      </div>
+      <div class="file-list" id="file-list-${activityId}">
+        ${renderFileList(activityId, currentFileStage)}
+      </div>
+    </div>
+  `;
+}
+
+function renderFileList(activityId, stage) {
+  const files = getFiles(activityId, stage);
+  if(files.length === 0) {
+    return `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px">
+      <div style="font-size:28px;margin-bottom:6px">📭</div>「${stageLabel[stage]}」阶段暂无文件，上传后会显示在这里
+    </div>`;
+  }
+  return files.map(f => `
+    <div class="file-item" id="fitem-${f.id}">
+      ${f.type.startsWith('image/') && f.dataUrl
+        ? `<img src="${f.dataUrl}" class="img-thumb" alt="${f.name}">`
+        : `<div class="file-item-icon">${fileIcon(f.type, f.name)}</div>`
+      }
+      <div class="file-item-body">
+        <div class="file-item-name" title="${f.name}">${f.name}</div>
+        <div class="file-item-meta">${formatSize(f.size)} · ${f.uploadTime}
+          <span class="file-item-stage ${stage}">${stageLabel[stage]}</span>
+        </div>
+      </div>
+      <div class="file-item-actions">
+        ${f.type.startsWith('image/') ? `<button class="btn btn-outline btn-sm" onclick="previewFile('${f.id}',${activityId},'${stage}')">👁 预览</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="downloadFile('${f.id}',${activityId},'${stage}')">⬇</button>
+        <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca" onclick="removeFile('${f.id}',${activityId},'${stage}')">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function switchFileStage(activityId, stage) {
+  currentFileStage = stage;
+  // 重新渲染文件面板区域
+  const panel = document.getElementById('dtab-4');
+  if(panel) panel.innerHTML = renderFilePanel(activityId);
+}
+
+function onFileInputChange(event, activityId) {
+  const files = Array.from(event.target.files);
+  handleFiles(files, activityId);
+  event.target.value = '';
+}
+
+function onDragOver(e, activityId) {
+  e.preventDefault();
+  document.getElementById('upload-drop-'+activityId)?.classList.add('dragover');
+}
+function onDragLeave(e, activityId) {
+  document.getElementById('upload-drop-'+activityId)?.classList.remove('dragover');
+}
+function onDrop(e, activityId) {
+  e.preventDefault();
+  document.getElementById('upload-drop-'+activityId)?.classList.remove('dragover');
+  const files = Array.from(e.dataTransfer.files);
+  handleFiles(files, activityId);
+}
+
+function handleFiles(files, activityId) {
+  files.forEach(file => {
+    const MAX = 8 * 1024 * 1024; // 8MB 限制
+    if(file.size > MAX) { alert(`「${file.name}」超过 8MB 限制，请压缩后上传`); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const fileObj = {
+        id: 'f' + Date.now() + Math.random().toString(36).slice(2,6),
+        name: file.name, size: file.size, type: file.type,
+        stage: currentFileStage,
+        uploadTime: new Date().toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),
+        dataUrl: e.target.result
+      };
+      addFile(activityId, currentFileStage, fileObj);
+      // 刷新文件列表
+      const listEl = document.getElementById('file-list-'+activityId);
+      if(listEl) listEl.innerHTML = renderFileList(activityId, currentFileStage);
+      // 更新 tab 上的徽标
+      refreshFileTabBadge(activityId);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeFile(fileId, activityId, stage) {
+  if(!confirm('确定删除此文件？')) return;
+  deleteFile(activityId, stage, fileId);
+  const listEl = document.getElementById('file-list-'+activityId);
+  if(listEl) listEl.innerHTML = renderFileList(activityId, currentFileStage);
+  refreshFileTabBadge(activityId);
+}
+
+function downloadFile(fileId, activityId, stage) {
+  const f = getFiles(activityId, stage).find(x=>x.id===fileId);
+  if(!f) return;
+  const a = document.createElement('a');
+  a.href = f.dataUrl; a.download = f.name; a.click();
+}
+
+function previewFile(fileId, activityId, stage) {
+  const f = getFiles(activityId, stage).find(x=>x.id===fileId);
+  if(!f) return;
+  document.getElementById('file-preview-title').textContent = f.name;
+  document.getElementById('file-preview-body').innerHTML = f.type.startsWith('image/')
+    ? `<img src="${f.dataUrl}" class="file-preview-img" alt="${f.name}">`
+    : `<div style="padding:30px;color:var(--text-muted)">该文件类型不支持在线预览，请下载后查看</div>`;
+  document.getElementById('file-download-btn').onclick = () => downloadFile(fileId, activityId, stage);
+  showModal('modal-file-preview');
+}
+
+function refreshFileTabBadge(activityId) {
+  const total = getFiles(activityId).length;
+  const tabs = document.querySelectorAll('#detail-content .tab');
+  if(tabs[4]) {
+    tabs[4].innerHTML = `📎 文件附件${total>0?`<span class="file-count-badge">${total}</span>`:''}`;
+  }
+}
+
+function detailTab(el, idx) {
+  el.closest('#detail-content').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  for(let i=0;i<5;i++){
+    const tab = document.getElementById('dtab-'+i);
+    if(tab) tab.style.display = i===idx?'block':'none';
+  }
+}
+
+async function saveReview(id) {
+  const index = activities.findIndex(x=>String(x.id)===String(id));
+  if(index===-1) return;
+  const a = activities[index];
+  const summary = document.getElementById('review-summary').value;
+  const lessons = document.getElementById('review-lessons').value;
+  const score = parseFloat(document.getElementById('review-score').value);
+  a.review = { summary, lessons, score: isNaN(score)?0:score };
+  a.satisfaction = a.review.score;
+  if(a.status === '复盘中') { a.status = '已完成'; a.progress = 100; }
+  await syncData();
+  alert('✅ 复盘总结已保存！');
+  closeModal('modal-detail');
+  renderPage(getCurrentPage());
+}
+
+async function updateKpi(aid, idx, val) {
+  const index = activities.findIndex(x=>String(x.id)===String(aid));
+  if(index===-1) return;
+  activities[index].kpis[idx].actual = parseFloat(val)||0;
+  await syncData();
+}
+
+async function toggleTask(aid, idx, checked) {
+  const index = activities.findIndex(x=>String(x.id)===String(aid));
+  if(index===-1) return;
+  activities[index].tasks[idx].done = checked;
+  const a = activities[index];
+  const done = a.tasks.filter(t=>t.done).length;
+  a.progress = Math.round(done/a.tasks.length*100);
+  await syncData();
+}
+
+// ===== 删除活动 =====
+async function doDeleteActivity(id) {
+  const a = activities.find(x=>String(x.id)===String(id));
+  if(!a) return;
+  if(!confirm(`确定要删除活动「${a.name}」吗？此操作不可恢复！`)) return;
+
+  // 删除关联的文件
+  const key = String(id);
+  if(fileStore[key]) {
+    delete fileStore[key];
+  }
+
+  // 删除活动
+  await deleteActivity(id);
+
+  closeModal('modal-detail');
+  renderPage(getCurrentPage());
+  alert('✅ 活动已删除');
+}
+
+// ===== 推进阶段 =====
+async function advanceActivity(id) {
+  const index = activities.findIndex(x=>String(x.id)===String(id));
+  if(index===-1) return;
+  const a = activities[index];
+  const map = {'策划中':'执行中','执行中':'复盘中','复盘中':'已完成'};
+  if(map[a.status]) {
+    a.status = map[a.status];
+    if(a.status==='执行中') a.progress = Math.max(a.progress, 30);
+    if(a.status==='复盘中') a.progress = Math.max(a.progress, 85);
+    if(a.status==='已完成') a.progress = 100;
+  }
+  await syncData();
+  renderPage(getCurrentPage());
+}
+
+// ===== 新建活动 =====
+// ===== 预算类型管理 =====
+var hasBudget = true; // 默认有预算
+
+function toggleBudgetType(type) {
+  hasBudget = (type === 'has');
+  const hasBtn = document.getElementById('budget-type-has');
+  const noneBtn = document.getElementById('budget-type-none');
+  const budgetSection = document.getElementById('budget-section');
+  const specialFeeSection = document.getElementById('special-fee-section');
+  
+  if (hasBudget) {
+    // 显示预算部分
+    hasBtn.style.background = 'var(--primary)';
+    hasBtn.style.color = '#fff';
+    noneBtn.style.background = '#e2e8f0';
+    noneBtn.style.color = '#64748b';
+    budgetSection.style.display = 'block';
+    specialFeeSection.style.display = 'grid';
+  } else {
+    // 隐藏预算部分
+    hasBtn.style.background = '#e2e8f0';
+    hasBtn.style.color = '#64748b';
+    noneBtn.style.background = 'var(--success)';
+    noneBtn.style.color = '#fff';
+    budgetSection.style.display = 'none';
+    specialFeeSection.style.display = 'none';
+  }
+}
+
+// ===== 预算明细管理 =====
+var budgetItemCount = 0;
+
+function initBudgetItems() {
+  budgetItemCount = 0;
+  document.getElementById('budget-items').innerHTML = '';
+  // 添加两个默认预算项
+  addBudgetItem('媒体投放', 'hq');
+  addBudgetItem('活动执行', 'hq');
+  updateBudgetTotal();
+}
+
+function addBudgetItem(defaultName = '', defaultSource = 'hq') {
+  budgetItemCount++;
+  const container = document.getElementById('budget-items');
+  const id = budgetItemCount;
+  const html = `
+    <div class="budget-item" id="budget-item-${id}">
+      <input type="text" class="form-control" placeholder="预算项名称" 
+        value="${defaultName}" oninput="updateBudgetTotal()">
+      <select class="form-control" onchange="updateBudgetTotal()">
+        <option value="hq" ${defaultSource==='hq'?'selected':''}>🏢 总部</option>
+        <option value="subsidiary" ${defaultSource==='subsidiary'?'selected':''}>🏭 子公司</option>
+      </select>
+      <input type="number" class="form-control budget-amount" placeholder="金额" 
+        oninput="updateBudgetTotal()" value="0">
+      <button type="button" class="btn-remove" onclick="removeBudgetItem(${id})">×</button>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', html);
+}
+
+function removeBudgetItem(id) {
+  const item = document.getElementById('budget-item-' + id);
+  if(item) {
+    item.remove();
+    updateBudgetTotal();
+  }
+}
+
+function updateBudgetTotal() {
+  let total = 0;
+  let hqTotal = 0;
+  let subTotal = 0;
+  
+  const items = document.querySelectorAll('.budget-item');
+  items.forEach(item => {
+    const name = item.querySelector('input[type="text"]').value.trim();
+    const source = item.querySelector('select').value;
+    const amount = parseFloat(item.querySelector('.budget-amount').value) || 0;
+    
+    if(name && amount > 0) {
+      total += amount;
+      if(source === 'hq') hqTotal += amount;
+      else subTotal += amount;
+    }
+  });
+  
+  // 加上搭建费和物流费
+  const setupFee = parseFloat(document.getElementById('new-setup-fee')?.value) || 0;
+  const logisticsFee = parseFloat(document.getElementById('new-logistics-fee')?.value) || 0;
+  total += setupFee + logisticsFee;
+  hqTotal += setupFee;
+  subTotal += logisticsFee;
+  
+  document.getElementById('budget-total').textContent = '¥' + total.toLocaleString();
+  document.getElementById('budget-hq').textContent = '总部：¥' + hqTotal.toLocaleString();
+  document.getElementById('budget-subsidiary').textContent = '子公司：¥' + subTotal.toLocaleString();
+}
+
+function collectBudgetItems() {
+  const items = [];
+  const setupFee = parseFloat(document.getElementById('new-setup-fee')?.value) || 0;
+  const logisticsFee = parseFloat(document.getElementById('new-logistics-fee')?.value) || 0;
+  
+  document.querySelectorAll('.budget-item').forEach(item => {
+    const name = item.querySelector('input[type="text"]').value.trim();
+    const source = item.querySelector('select').value;
+    const amount = parseFloat(item.querySelector('.budget-amount').value) || 0;
+    
+    if(name && amount > 0) {
+      items.push({ name, source, amount });
+    }
+  });
+  
+  // 添加特殊费用
+  if(setupFee > 0) {
+    items.push({ name: '🏗️ 售后搭建费用', source: 'hq', amount: setupFee });
+  }
+  if(logisticsFee > 0) {
+    items.push({ name: '🚚 物流运输费用', source: 'subsidiary', amount: logisticsFee });
+  }
+  
+  return items;
+}
+
+function openNewActivity() { 
+  // 重置为有预算模式
+  hasBudget = true;
+  toggleBudgetType('has');
+  initBudgetItems();
+  showModal('modal-new'); 
+}
+
+async function createActivity() {
+  const name = document.getElementById('new-name').value.trim();
+  if(!name) { alert('请填写活动名称'); return; }
+  
+  let budgetItems = [];
+  let totalBudget = 0;
+  
+  // 如果选择了有预算，需要检查预算信息
+  if (hasBudget) {
+    budgetItems = collectBudgetItems();
+    totalBudget = budgetItems.reduce((sum, item) => sum + item.amount, 0);
+    if(totalBudget === 0) { alert('请填写至少一项预算明细'); return; }
+  }
+  
+  const newA = {
+    id: String(Date.now()),
+    name,
+    type: document.getElementById('new-type').value,
+    city: document.getElementById('new-city').value || '',
+    district: document.getElementById('new-district').value || '',
+    owner: document.getElementById('new-owner').value || '待定',
+    start: document.getElementById('new-start').value || '待定',
+    end: document.getElementById('new-end').value || '待定',
+    budget: totalBudget,
+    spent: 0,
+    hasBudget: hasBudget, // 记录是否有预算
+    status: '策划中',
+    progress: 10,
+    goal: document.getElementById('new-goal').value,
+    desc: document.getElementById('new-desc').value,
+    budgetItems: budgetItems,
+    kpis: window._aiPlanKpis || [
+      {name:'活动实际参与人数',target:0,actual:0,unit:'人'},
+      {name:'线上覆盖人数',target:0,actual:0,unit:'人'},
+      {name:'商机情况',target:0,actual:0,unit:'个'}
+    ],
+    tasks: window._aiPlanTasks || [{name:'制定活动方案',done:false},{name:'确认资源预算',done:false},{name:'启动执行',done:false},{name:'数据复盘',done:false}],
+    risks: window._aiPlanRisks || [], review: null, roi: null, satisfaction: null
+  };
+  // 清除 AI 临时数据
+  window._aiPlanTasks = null; window._aiPlanKpis = null; window._aiPlanRisks = null;
+  activities.unshift(newA);
+  await syncData();
+  closeModal('modal-new');
+  ['new-name','new-owner','new-start','new-end','new-goal','new-desc'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('new-city').value = '';
+  document.getElementById('new-district').innerHTML = '<option value="">请先选择地市</option>';
+  renderPage(getCurrentPage());
+  alert('✅ 活动创建成功！');
+}
+
+function useTemplate(type) {
+  const tpl = {
+    brand: {name:'新品发布活动',type:'品牌活动',goal:'新品曝光量达50万，媒体报道30篇',desc:'旗舰产品发布会，涵盖线上直播与线下体验'},
+    promo: {name:'节日促销活动',type:'促销活动',goal:'GMV同比增长25%，ROI>3x',desc:'全渠道节日促销整合活动'},
+    expo: {name:'行业展会参展',type:'展会活动',goal:'收集有效线索300条，品牌触达1万人',desc:'年度行业展会参展，展位展示与主题演讲'}
+  }[type];
+  document.getElementById('new-name').value = tpl.name;
+  document.getElementById('new-type').value = tpl.type;
+  document.getElementById('new-goal').value = tpl.goal;
+  document.getElementById('new-desc').value = tpl.desc;
+  showModal('modal-new');
+}
+
+// ===== 全局搜索 =====
+let searchBlurTimer = null;
+
+function highlight(text, keyword) {
+  if(!keyword || !text) return text || '';
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return String(text).replace(new RegExp(escaped,'gi'), m=>`<mark>${m}</mark>`);
+}
+
+function onSearchInput(val) {
+  const clearBtn = document.getElementById('search-clear-btn');
+  clearBtn.classList.toggle('show', val.length > 0);
+  if(!val.trim()) { hideSearchDropdown(); return; }
+  showSearchResults(val.trim());
+}
+
+function onSearchFocus() {
+  clearTimeout(searchBlurTimer);
+  const val = document.getElementById('global-search').value.trim();
+  if(val) showSearchResults(val);
+}
+
+function onSearchBlur() {
+  searchBlurTimer = setTimeout(hideSearchDropdown, 200);
+}
+
+function hideSearchDropdown() {
+  document.getElementById('search-dropdown').classList.remove('show');
+}
+
+function clearSearch() {
+  document.getElementById('global-search').value = '';
+  document.getElementById('search-clear-btn').classList.remove('show');
+  hideSearchDropdown();
+}
+
+function showSearchResults(keyword) {
+  const kw = keyword.toLowerCase();
+  const dropdown = document.getElementById('search-dropdown');
+  let html = '';
+
+  // 搜索活动
+  const matchedActivities = activities.filter(a =>
+    a.name.toLowerCase().includes(kw) ||
+    a.owner.toLowerCase().includes(kw) ||
+    a.type.toLowerCase().includes(kw) ||
+    (a.goal||'').toLowerCase().includes(kw) ||
+    (a.desc||'').toLowerCase().includes(kw) ||
+    a.status.includes(kw)
+  );
+
+  // 搜索文件
+  const matchedFiles = [];
+  activities.forEach(a => {
+    const allFiles = getFiles(a.id);
+    allFiles.forEach(f => {
+      if(f.name.toLowerCase().includes(kw)) {
+        matchedFiles.push({ file: f, activity: a });
+      }
+    });
+  });
+
+  // 搜索任务
+  const matchedTasks = [];
+  activities.forEach(a => {
+    a.tasks.forEach(t => {
+      if(t.name.toLowerCase().includes(kw)) {
+        matchedTasks.push({ task: t, activity: a });
+      }
+    });
+  });
+
+  if(matchedActivities.length === 0 && matchedFiles.length === 0 && matchedTasks.length === 0) {
+    html = `<div class="search-empty">🔍 未找到与「${keyword}」相关的内容</div>`;
+  } else {
+    if(matchedActivities.length > 0) {
+      html += `<div class="search-section-title">📌 活动（${matchedActivities.length}）</div>`;
+      html += matchedActivities.slice(0,5).map(a => `
+        <div class="search-result-item" onclick="clearSearch();openDetail('${a.id}')">
+          <div class="search-result-icon" style="background:${a.status==='策划中'?'#ede9fe':a.status==='执行中'?'#fef3c7':a.status==='复盘中'?'#d1fae5':'#e0e7ff'}">
+            ${a.status==='策划中'?'📋':a.status==='执行中'?'⚡':a.status==='复盘中'?'🔍':'✅'}
+          </div>
+          <div class="search-result-body">
+            <div class="search-result-title">${highlight(a.name, keyword)}</div>
+            <div class="search-result-meta">${highlight(a.owner, keyword)} · ${highlight(a.type, keyword)} · ${a.start}~${a.end}</div>
+          </div>
+          <div class="search-result-type">${statusBadge(a.status)}</div>
+        </div>
+      `).join('');
+    }
+
+    if(matchedFiles.length > 0) {
+      html += `<div class="search-section-title">📎 文件（${matchedFiles.length}）</div>`;
+      html += matchedFiles.slice(0,4).map(({file:f, activity:a}) => `
+        <div class="search-result-item" onclick="clearSearch();openDetail('${a.id}');setTimeout(()=>{const tabs=document.querySelectorAll('#detail-content .tab');if(tabs[4])tabs[4].click()},300)">
+          <div class="search-result-icon" style="background:#f1f5f9;font-size:20px">${fileIcon(f.type, f.name)}</div>
+          <div class="search-result-body">
+            <div class="search-result-title">${highlight(f.name, keyword)}</div>
+            <div class="search-result-meta">${a.name} · ${stageLabel[f.stage]} · ${formatSize(f.size)}</div>
+          </div>
+          <div class="search-result-type" style="font-size:11px;color:var(--text-muted)">${f.uploadTime}</div>
+        </div>
+      `).join('');
+    }
+
+    if(matchedTasks.length > 0) {
+      html += `<div class="search-section-title">✅ 任务（${matchedTasks.length}）</div>`;
+      html += matchedTasks.slice(0,3).map(({task:t, activity:a}) => `
+        <div class="search-result-item" onclick="clearSearch();openDetail('${a.id}');setTimeout(()=>{const tabs=document.querySelectorAll('#detail-content .tab');if(tabs[1])tabs[1].click()},300)">
+          <div class="search-result-icon" style="background:${t.done?'#d1fae5':'#f1f5f9'}">${t.done?'✅':'⬜'}</div>
+          <div class="search-result-body">
+            <div class="search-result-title">${highlight(t.name, keyword)}</div>
+            <div class="search-result-meta">所属活动：${a.name}</div>
+          </div>
+          <div class="search-result-type"><span class="badge ${t.done?'badge-done':'badge-plan'}">${t.done?'已完成':'待完成'}</span></div>
+        </div>
+      `).join('');
+    }
+  }
+
+  dropdown.innerHTML = html;
+  dropdown.classList.add('show');
+}
+
+// ===== 登录功能 =====
+var calYear, calMonth;
+
+(function initLogin() {
+  const authKey = 'mcm_auth_ts';
+  const SESSION_HOURS = 8;
+  const saved = localStorage.getItem(authKey);
+  const overlay = document.getElementById('login-overlay');
+
+  // 会话未过期，直接放行
+  if (saved && (Date.now() - parseInt(saved)) < SESSION_HOURS * 3600000) {
+    localStorage.setItem(authKey, Date.now().toString());
+    if (overlay) overlay.style.display = 'none';
+    return;
+  }
+
+  // 显示遮罩，聚焦密码框
+  if (overlay) overlay.style.display = 'flex';
+  setTimeout(() => {
+    const pwdInput = document.getElementById('login-pwd');
+    if (pwdInput) pwdInput.focus();
+  }, 50);
+})();
+
+function doLogin() {
+  const pwdInput = document.getElementById('login-pwd');
+  const errorEl  = document.getElementById('login-error');
+  const input    = (pwdInput ? pwdInput.value : '');
+  const correct  = localStorage.getItem('mcm_password') || 'admin123';
+
+  if (input === correct) {
+    localStorage.setItem('mcm_auth_ts', Date.now().toString());
+    const overlay = document.getElementById('login-overlay');
+    if (overlay) overlay.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
+  } else {
+    if (errorEl) errorEl.style.display = 'block';
+    if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
+  }
+}
+
+// ===== 修改密码功能 =====
+window.openChangePasswordModal = function() {
+  document.getElementById('current-pwd').value = '';
+  document.getElementById('new-pwd').value = '';
+  document.getElementById('confirm-pwd').value = '';
+  showModal('modal-change-password');
+};
+
+function saveNewPassword() {
+  const current  = document.getElementById('current-pwd').value;
+  const newPwd   = document.getElementById('new-pwd').value;
+  const confirm  = document.getElementById('confirm-pwd').value;
+  const correct  = localStorage.getItem('mcm_password') || 'admin123';
+
+  if (current !== correct) {
+    alert('当前密码不正确');
+    return;
+  }
+  if (!newPwd || newPwd.length < 4) {
+    alert('新密码不能少于4位');
+    return;
+  }
+  if (newPwd !== confirm) {
+    alert('两次输入的新密码不一致');
+    return;
+  }
+  localStorage.setItem('mcm_password', newPwd);
+  closeModal('modal-change-password');
+  alert('✅ 密码已修改成功');
+}
+
+// ===== 日历渲染 =====
+function getCalendarEvents() {
+  const events = {}; // { 'YYYY-MM-DD': [{title, type}] }
+  const add = (date, title, type) => {
+    if(!date || date === '待定') return;
+    if(!events[date]) events[date] = [];
+    events[date].push({title, type});
+  };
+  activities.forEach(a => {
+    add(a.start, a.name + ' 开始', 'start');
+    add(a.end,   a.name + ' 结束', 'end');
+  });
+  // 固定里程碑
+  const miles = [
+    {date:'2026-03-20', title:'新品发布嘉宾确认'},
+    {date:'2026-05-20', title:'618大促启动'},
+    {date:'2026-06-01', title:'新品发布直播'},
+    {date:'2026-07-01', title:'用户感恩节启动'},
+  ];
+  miles.forEach(m => add(m.date, m.title, 'mile'));
+  return events;
+}
+
+function renderCalendar(offsetMonth = 0) {
+  const el = document.getElementById('dashboard-calendar');
+  if(!el) return;
+  const today = new Date();
+  if(calYear === undefined) { calYear = today.getFullYear(); calMonth = today.getMonth(); }
+  calMonth += offsetMonth;
+  if(calMonth > 11) { calMonth = 0; calYear++; }
+  if(calMonth < 0)  { calMonth = 11; calYear--; }
+
+  const events = getCalendarEvents();
+  const firstDay = new Date(calYear, calMonth, 1);
+  const lastDay  = new Date(calYear, calMonth + 1, 0);
+  const startDow = firstDay.getDay(); // 0=Sun
+  const totalDays = lastDay.getDate();
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const dows = ['日','一','二','三','四','五','六'];
+  let html = `
+    <div class="cal-header">
+      <button class="cal-nav" onclick="renderCalendar(-1)">‹</button>
+      <div class="cal-month">${calYear} 年 ${calMonth + 1} 月</div>
+      <button class="cal-nav" onclick="renderCalendar(1)">›</button>
+    </div>
+    <div class="cal-grid">
+      ${dows.map(d => `<div class="cal-dow">${d}</div>`).join('')}
+  `;
+
+  // 上月补齐
+  const prevLast = new Date(calYear, calMonth, 0).getDate();
+  for(let i = startDow - 1; i >= 0; i--) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${prevLast - i}</div></div>`;
+  }
+  // 本月
+  for(let d = 1; d <= totalDays; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const evs = events[dateStr] || [];
+    const isToday = dateStr === todayStr;
+    const hasEv = evs.length > 0;
+    html += `<div class="cal-day ${isToday?'today':''} ${hasEv?'has-event':''}" ${hasEv?`title="${evs.map(e=>e.title).join('\n')}"`:''}">
+      <div class="cal-day-num">${d}</div>
+      <div class="cal-events">
+        ${evs.slice(0,2).map(e=>`<div class="cal-event-dot type-${e.type}">${e.title.substring(0,6)}</div>`).join('')}
+        ${evs.length > 2 ? `<div class="cal-event-dot" style="background:#f1f5f9;color:#64748b">+${evs.length-2}个</div>` : ''}
+      </div>
+    </div>`;
+  }
+  // 下月补齐
+  const totalCells = startDow + totalDays;
+  const remain = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for(let i = 1; i <= remain; i++) {
+    html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+  }
+
+  html += `</div>
+    <div class="cal-legend">
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#dbeafe"></div>活动开始</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fce7f3"></div>活动结束</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fef9c3"></div>关键节点</div>
+    </div>`;
+  el.innerHTML = html;
+}
+
+// ===== 负责人分析 =====
+let selectedOwner = 'all';
+
+function getOwners() {
+  return [...new Set(activities.map(a => a.owner))];
+}
+
+function ownerColor(name) {
+  const colors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+  let h = 0; for(let c of name) h = (h*31 + c.charCodeAt(0)) % colors.length;
+  return colors[h];
+}
+
+function renderOwnerPage() {
+  const owners = getOwners();
+  const bar = document.getElementById('owner-avatar-bar');
+  bar.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="selectOwner('all')">
+      <div class="owner-avatar all ${selectedOwner==='all'?'selected':''}">全</div>
+      <div style="font-size:11px;color:var(--text-muted)">全部</div>
+    </div>
+    ${owners.map(o => `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer" onclick="selectOwner('${o}')">
+        <div class="owner-avatar ${selectedOwner===o?'selected':''}" style="background:${ownerColor(o)}">${o.charAt(0)}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${o}</div>
+      </div>
+    `).join('')}
+    <div style="flex:1;min-width:120px">
+      ${selectedOwner !== 'all' ? `
+        <div class="owner-name">${selectedOwner}</div>
+        <div class="owner-meta">负责活动 ${activities.filter(a=>a.owner===selectedOwner).length} 个</div>
+      ` : `
+        <div class="owner-name">全部负责人</div>
+        <div class="owner-meta">共 ${owners.length} 人 · ${activities.length} 个活动</div>
+      `}
+    </div>
+  `;
+  renderOwnerAnalysis();
+}
+
+function selectOwner(name) {
+  selectedOwner = name;
+  renderOwnerPage();
+}
+
+function setQuickRange(range) {
+  const now = new Date();
+  let start, end = now.toISOString().slice(0,10);
+  if(range === 'all') { start = ''; end = ''; }
+  else if(range === '3m') { const d = new Date(now); d.setMonth(d.getMonth()-3); start = d.toISOString().slice(0,10); }
+  else if(range === '6m') { const d = new Date(now); d.setMonth(d.getMonth()-6); start = d.toISOString().slice(0,10); }
+  else if(range === '1y') { const d = new Date(now); d.setFullYear(d.getFullYear()-1); start = d.toISOString().slice(0,10); }
+  document.getElementById('owner-date-start').value = start || '';
+  document.getElementById('owner-date-end').value   = end || '';
+  document.querySelectorAll('.date-quick-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderOwnerAnalysis();
+}
+
+function renderOwnerAnalysis() {
+  const ds = document.getElementById('owner-date-start').value;
+  const de = document.getElementById('owner-date-end').value;
+  const content = document.getElementById('owner-analysis-content');
+
+  // 过滤活动
+  let filtered = selectedOwner === 'all' ? activities : activities.filter(a => a.owner === selectedOwner);
+  if(ds) filtered = filtered.filter(a => a.end >= ds || a.start >= ds);
+  if(de) filtered = filtered.filter(a => a.start <= de);
+
+  if(filtered.length === 0) {
+    content.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--text-muted)">
+      <div style="font-size:48px;margin-bottom:12px">🔍</div>
+      <div>该条件下暂无活动数据</div>
+    </div>`;
+    return;
+  }
+
+  const done = filtered.filter(a => a.roi !== null);
+  const avgRoi = done.length ? (done.reduce((s,a)=>s+a.roi,0)/done.length).toFixed(1) : '-';
+  const avgSat = done.filter(a=>a.satisfaction).length
+    ? (done.filter(a=>a.satisfaction).reduce((s,a)=>s+a.satisfaction,0)/done.filter(a=>a.satisfaction).length).toFixed(1) : '-';
+  const totalBudget = filtered.reduce((s,a)=>s+a.budget,0);
+  const totalSpent  = filtered.reduce((s,a)=>s+a.spent,0);
+
+  const colors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899'];
+
+  // 按负责人分组（全部模式下）
+  const showByOwner = selectedOwner === 'all';
+
+  // ROI 柱状图
+  const roiItems = done.slice(0, 8);
+  const maxRoi = Math.max(...roiItems.map(a=>a.roi||0), 4);
+  const roiBars = roiItems.map((a,i) => `
+    <div class="bar-group">
+      <div class="bar" style="background:${colors[i%colors.length]};height:${(a.roi/maxRoi)*160}px" data-val="${a.roi}x ROI"></div>
+      <div class="bar-label">${a.name.substring(0,5)}</div>
+    </div>
+  `).join('');
+
+  content.innerHTML = `
+    <!-- 汇总指标 -->
+    <div class="grid-4 section-gap">
+      <div class="stat-card">
+        <div class="label">📁 活动总数</div>
+        <div class="value color-primary">${filtered.length}</div>
+        <div class="change">已完成 ${done.length} 个</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">💰 总预算</div>
+        <div class="value color-warning" style="font-size:20px">¥${(totalBudget/10000).toFixed(1)}万</div>
+        <div class="change">已支出 ¥${(totalSpent/10000).toFixed(1)}万</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">💸 平均 ROI</div>
+        <div class="value color-success">${avgRoi}${avgRoi!=='-'?'x':''}</div>
+        <div class="change">基于 ${done.length} 个已完成活动</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">⭐ 平均满意度</div>
+        <div class="value" style="color:#f59e0b">${avgSat}</div>
+        <div class="change">${avgSat!=='-'?'/ 5.0 分':'-'}</div>
+      </div>
+    </div>
+
+    <div class="grid-2 section-gap">
+      <!-- ROI 对比 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">📊 活动 ROI 对比</div></div>
+        ${done.length > 0 ? `
+          <div class="bar-chart" style="height:200px;align-items:flex-end">${roiBars}</div>
+        ` : '<div style="text-align:center;padding:30px;color:var(--text-muted)">暂无已完成活动的 ROI 数据</div>'}
+      </div>
+      <!-- 预算执行 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">💰 预算执行情况</div></div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
+          ${filtered.map(a => {
+            const pct = a.budget > 0 ? Math.round(a.spent/a.budget*100) : 0;
+            return `
+              <div>
+                <div class="flex-between text-sm mb-16" style="margin-bottom:5px">
+                  <span class="fw-600">${a.name.substring(0,10)}</span>
+                  <span>${pct}% <span style="color:var(--text-muted);font-weight:400">¥${Number(a.spent).toLocaleString()} / ¥${Number(a.budget).toLocaleString()}</span></span>
+                </div>
+                <div class="progress-wrap"><div class="progress-bar ${pct>=100?'progress-danger':pct>=70?'progress-warning':'progress-success'}" style="width:${Math.min(pct,100)}%"></div></div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- 活动列表 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">📋 活动明细（${filtered.length} 个）</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>活动名称</th>
+              ${showByOwner ? '<th>负责人</th>' : ''}
+              <th>类型</th><th>时间</th><th>预算</th><th>状态</th><th>进度</th>
+              <th>ROI</th><th>满意度</th><th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(a => `
+              <tr>
+                <td class="fw-600">${a.name}</td>
+                ${showByOwner ? `<td><span style="display:inline-flex;align-items:center;gap:6px"><div style="width:24px;height:24px;border-radius:50%;background:${ownerColor(a.owner)};color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">${a.owner.charAt(0)}</div>${a.owner}</span></td>` : ''}
+                <td><span class="tag">${a.type}</span></td>
+                <td class="text-sm" style="color:var(--text-muted)">${a.start} ~ ${a.end}</td>
+                <td>¥${Number(a.budget).toLocaleString()}</td>
+                <td>${statusBadge(a.status)}</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:6px;width:100px">
+                    <div class="progress-wrap" style="flex:1"><div class="progress-bar ${a.progress===100?'progress-success':'progress-primary'}" style="width:${a.progress}%"></div></div>
+                    <span class="text-sm">${a.progress}%</span>
+                  </div>
+                </td>
+                <td class="${a.roi?'color-success fw-600':''}">${a.roi ? a.roi+'x' : '-'}</td>
+                <td>${a.satisfaction ? a.satisfaction+'⭐' : '-'}</td>
+                <td><button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">详情</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- KPI 汇总（仅单人模式） -->
+    ${!showByOwner && filtered.some(a=>a.kpis.length>0) ? `
+    <div class="card mt-20" style="margin-top:20px">
+      <div class="card-header"><div class="card-title">🎯 KPI 完成汇总</div></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${filtered.flatMap(a => a.kpis.filter(k=>k.actual>0).map(k => `
+          <div class="kpi-row">
+            <div class="kpi-label">${a.name.substring(0,8)} · ${k.name}</div>
+            <div class="kpi-target">目标 ${k.target}${k.unit}</div>
+            <div class="kpi-actual ${k.actual>=k.target?'color-success':'color-warning'}">${k.actual}${k.unit}</div>
+            <div class="kpi-rate ${k.actual>=k.target?'color-success':'color-warning'}">${Math.round(k.actual/k.target*100)}%</div>
+          </div>
+        `)).join('') || '<div style="color:var(--text-muted);text-align:center;padding:16px">暂无 KPI 实际数据</div>'}
+      </div>
+    </div>` : ''}
+  `;
+}
+
+// ===== 广西区县数据 =====
+const GX_DISTRICTS = {
+  '南宁市': ['兴宁区','青秀区','江南区','西乡塘区','良庆区','邕宁区','武鸣区','隆安县','马山县','上林县','宾阳县','横州市'],
+  '柳州市': ['城中区','鱼峰区','柳南区','柳北区','柳江区','柳城县','鹿寨县','融安县','融水苗族自治县','三江侗族自治县'],
+  '桂林市': ['秀峰区','叠彩区','象山区','七星区','雁山区','临桂区','阳朔县','灵川县','全州县','兴安县','永福县','灌阳县','龙胜各族自治县','资源县','平乐县','恭城瑶族自治县','荔浦市'],
+  '梧州市': ['万秀区','长洲区','龙圩区','苍梧县','藤县','蒙山县','岑溪市'],
+  '北海市': ['海城区','银海区','铁山港区','合浦县'],
+  '防城港市': ['港口区','防城区','上思县','东兴市'],
+  '钦州市': ['钦南区','钦北区','灵山县','浦北县'],
+  '贵港市': ['港北区','港南区','覃塘区','平南县','桂平市'],
+  '玉林市': ['玉州区','福绵区','容县','陆川县','博白县','兴业县','北流市'],
+  '百色市': ['右江区','田阳区','田东县','德保县','那坡县','凌云县','乐业县','田林县','西林县','隆林各族自治县','靖西市','平果市'],
+  '贺州市': ['八步区','平桂区','昭平县','钟山县','富川瑶族自治县'],
+  '河池市': ['金城江区','宜州区','南丹县','天峨县','凤山县','东兰县','罗城仫佬族自治县','环江毛南族自治县','巴马瑶族自治县','都安瑶族自治县','大化瑶族自治县'],
+  '来宾市': ['兴宾区','忻城县','象州县','武宣县','金秀瑶族自治县','合山市'],
+  '崇左市': ['江州区','扶绥县','宁明县','龙州县','大新县','天等县','凭祥市']
+};
+
+function updateDistrictOptions() {
+  const city = document.getElementById('new-city').value;
+  const districtSel = document.getElementById('new-district');
+  if (!city || !GX_DISTRICTS[city]) {
+    districtSel.innerHTML = '<option value="">请先选择地市</option>';
+    return;
+  }
+  districtSel.innerHTML = '<option value="">请选择区县（可选）</option>' +
+    GX_DISTRICTS[city].map(d => `<option value="${d}">${d}</option>`).join('');
+}
+
+// ===== Excel 导出功能 =====
+function exportActivitiesToExcel() {
+  const list = activities;
+  if (list.length === 0) { alert('暂无活动数据可导出'); return; }
+
+  // 构建 CSV（Excel 可直接打开）
+  const BOM = '\uFEFF'; // UTF-8 BOM，防止 Excel 乱码
+  const headers = ['活动名称','类型','地市','区县','负责人','开始日期','结束日期','预算(元)','已支出(元)','状态','进度(%)','线下参与','线上覆盖','商机数','ROI','满意度','核心目标'];
+
+  const rows = list.map(a => {
+    const offline = a.kpis ? (a.kpis.find(k=>k.name.includes('参与'))?.actual ?? '') : '';
+    const online  = a.kpis ? (a.kpis.find(k=>k.name.includes('覆盖'))?.actual ?? '') : '';
+    const leads   = a.kpis ? (a.kpis.find(k=>k.name.includes('商机'))?.actual ?? '') : '';
+    return [
+      a.name || '',
+      a.type || '',
+      a.city || '',
+      a.district || '',
+      a.owner || '',
+      a.start || '',
+      a.end || '',
+      a.budget || 0,
+      a.spent || 0,
+      a.status || '',
+      a.progress || 0,
+      offline,
+      online,
+      leads,
+      a.roi !== null && a.roi !== undefined ? a.roi : '',
+      a.satisfaction || '',
+      (a.goal || '').replace(/[\r\n,]/g, ' ')
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+  });
+
+  const csv = BOM + [headers.map(h=>`"${h}"`).join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `活动档案_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===== HELPERS =====
+function statusBadge(s) {
+  const map = {'策划中':'badge-plan','执行中':'badge-exec','复盘中':'badge-review','已完成':'badge-done'};
+  const icons = {'策划中':'📋','执行中':'⚡','复盘中':'🔍','已完成':'✅'};
+  return `<span class="badge ${map[s]||''}">${icons[s]||''} ${s}</span>`;
+}
+
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function switchTab(el, page) {
+  const tabs = el.closest('.tabs').querySelectorAll('.tab');
+  tabs.forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const idx = Array.from(tabs).indexOf(el);
+  const key = `${page}-tab-`;
+  for(let i=0;i<5;i++){
+    const tab = document.getElementById(key+i);
+    if(tab) tab.style.display = i===idx?'block':'none';
+  }
+}
+
+function getCurrentPage() {
+  const p = document.querySelector('.page.active');
+  return p ? p.id.replace('page-','') : 'dashboard';
+}
+
+// ===== 全局错误处理 =====
+window.addEventListener('error', function(e) {
+  console.error('全局错误:', e.message, 'at', e.filename, 'line', e.lineno);
+});
+
+// ===== INIT =====
+const _today = new Date();
+calYear = _today.getFullYear();
+calMonth = _today.getMonth();
+renderDashboard();
+
+// 点击遮罩关闭
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('show'); });
+});
+
+// 键盘快捷键
+document.addEventListener('keydown', e => {
+  // Ctrl+K / Cmd+K 聚焦搜索
+  if((e.ctrlKey||e.metaKey) && e.key==='k') {
+    e.preventDefault();
+    document.getElementById('global-search').focus();
+    document.getElementById('global-search').select();
+  }
+  // Esc 关闭搜索下拉
+  if(e.key==='Escape') {
+    hideSearchDropdown();
+    document.getElementById('global-search').blur();
+  }
+});
+
+// 点击页面其他区域关闭搜索
+document.addEventListener('click', e => {
+  if(!document.getElementById('search-wrap').contains(e.target)) {
+    hideSearchDropdown();
+  }
+});
+</script>
+
+  <!-- 腾讯云 COS 自动配置脚本（已移除，因包含敏感信息） -->
+  <!-- <script src="setup-cos-config.js"></script> -->
+
+  <!-- CORS 配置检查脚本（开发和调试用） -->
+  <!-- <script src="check-cors-config.js"></script> -->
+
+</body>
+</html>
