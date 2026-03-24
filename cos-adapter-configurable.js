@@ -1,28 +1,22 @@
 /**
- * 腾讯云 COS 适配器 - 无需外部 CDN 版本
- * 此版本不依赖腾讯云 COS JS SDK，使用原生 fetch API 与 COS 交互
- * 
- * 配置信息：
- * - SecretId: AKIDFOL4Zquqa7RXSAfy4yfARWN0PTQGwQiW
- * - SecretKey: hBRWTCh2A6oJcibIo6h9NQM5av51lIdm
- * - Bucket: nnqgcvte2026-1414699807
- * - Region: ap-guangzhou
+ * 腾讯云 COS 适配器 - 可配置版本
+ * 此版本不包含硬编码密钥，需要用户在使用时配置
  */
 
 (function() {
     'use strict';
     
-    console.log('🔧 加载无需 CDN 的腾讯云 COS 适配器...');
+    console.log('🔧 加载可配置的腾讯云 COS 适配器...');
     
-    // 配置信息 - 使用你的实际信息
-    const CONFIG = {
-        secretId: 'AKIDFOL4Zquqa7RXSAfy4yfARWN0PTQGwQiW',
-        secretKey: 'hBRWTCh2A6oJcibIo6h9NQM5av51lIdm',
-        bucket: 'nnqgcvte2026-1414699807',
-        region: 'ap-guangzhou',
-        endpoint: 'https://nnqgcvte2026-1414699807.cos.ap-guangzhou.myqcloud.com',
-        storageKey: 'data.json'
+    // 默认配置 - 不包含敏感信息
+    const DEFAULT_CONFIG = {
+        bucket: '',           // 存储桶名称，如：market-activity-system-xxxxxx
+        region: '',           // 存储区域，如：ap-beijing、ap-guangzhou
+        storageKey: 'data.json'  // 数据存储文件名
     };
+    
+    // 全局配置对象
+    let CONFIG = { ...DEFAULT_CONFIG };
     
     // HMAC SHA1 计算函数
     async function hmacSha1(key, message) {
@@ -44,16 +38,11 @@
         return btoa(String.fromCharCode.apply(null, hashArray));
     }
     
-    // 生成腾讯云 COS 签名
+    // 生成腾讯云 COS 签名（简化版，实际应在后端生成）
     function generateSignature(secretKey, stringToSign) {
         // 简化签名生成，实际生产环境应该使用后端服务生成签名
-        // 这里使用 base64 编码的简单方案
-        const timestamp = Math.floor(Date.now() / 1000);
-        const expire = timestamp + 300; // 5分钟有效
-        
-        // 返回一个固定签名用于演示
-        // 实际项目应在后端生成签名
-        return 'QmFzZTY0IFNpZ25hdHVyZSBGb3IgRGVtbw=='; // 示例签名
+        // 这里返回一个固定值用于演示
+        return 'QmFzZTY0U2lnbmF0dXJlRGVtbw==';
     }
     
     // 构建 COS REST API 请求
@@ -61,16 +50,26 @@
         const timestamp = Math.floor(Date.now() / 1000);
         const expire = timestamp + 300;
         
+        // 从 localStorage 获取配置
+        const userConfig = JSON.parse(localStorage.getItem('mcm_cos_config') || '{}');
+        const secretId = userConfig.secretId || '';
+        const secretKey = userConfig.secretKey || '';
+        
+        if (!secretId || !secretKey) {
+            throw new Error('腾讯云 COS 配置不完整，请先配置 SecretId 和 SecretKey');
+        }
+        
         // 构建签名
         const stringToSign = `${method}\n\n\n${expire}\n/${CONFIG.bucket}/${key}`;
-        const signature = generateSignature(CONFIG.secretKey, stringToSign);
+        const signature = generateSignature(secretKey, stringToSign);
         
         // 构建 URL
-        const url = `${CONFIG.endpoint}/${key}`;
+        const endpoint = `https://${CONFIG.bucket}.cos.${CONFIG.region}.myqcloud.com`;
+        const url = `${endpoint}/${key}`;
         
         // 构建 headers
         const headers = {
-            'Authorization': `q-sign-algorithm=sha1&q-ak=${CONFIG.secretId}&q-sign-time=${timestamp};${expire}&q-key-time=${timestamp};${expire}&q-header-list=&q-url-param-list=&q-signature=${signature}`
+            'Authorization': `q-sign-algorithm=sha1&q-ak=${secretId}&q-sign-time=${timestamp};${expire}&q-key-time=${timestamp};${expire}&q-header-list=&q-url-param-list=&q-signature=${signature}`
         };
         
         if (body && (method === 'PUT' || method === 'POST')) {
@@ -89,9 +88,42 @@
     
     // 数据适配器实现
     const adapter = {
+        // 配置适配器
+        configure: function(config) {
+            console.log('⚙️ 配置腾讯云 COS 适配器...', config);
+            
+            if (!config.bucket || !config.region) {
+                console.error('❌ 配置失败: 必须提供 bucket 和 region');
+                return false;
+            }
+            
+            CONFIG = { ...DEFAULT_CONFIG, ...config };
+            console.log('✅ 配置成功:', CONFIG);
+            
+            // 保存配置到 localStorage
+            localStorage.setItem('mcm_cos_adapter_config', JSON.stringify(CONFIG));
+            
+            return true;
+        },
+        
         // 获取数据
         getData: async function() {
             console.log('🔄 从腾讯云 COS 获取数据...');
+            
+            // 检查配置是否完整
+            if (!CONFIG.bucket || !CONFIG.region) {
+                console.warn('⚠️ 腾讯云 COS 适配器未配置，检查是否已调用 configure() 方法');
+                
+                // 回退到本地存储
+                const localData = localStorage.getItem('market_activities_data_frontend');
+                if (localData) {
+                    console.log('✅ 使用本地缓存数据');
+                    return JSON.parse(localData);
+                }
+                
+                console.log('⚠️ 没有本地数据，使用空数据');
+                return { activities: [], files: {} };
+            }
             
             try {
                 // 尝试从 COS 获取数据
@@ -163,6 +195,12 @@
             }
             console.log('✅ 数据已保存到本地');
             
+            // 检查配置是否完整
+            if (!CONFIG.bucket || !CONFIG.region) {
+                console.warn('⚠️ 腾讯云 COS 适配器未配置，仅保存到本地');
+                return true;
+            }
+            
             // 2. 异步保存到 COS
             setTimeout(async () => {
                 try {
@@ -204,6 +242,13 @@
         
         // 健康检查
         healthCheck: async function() {
+            if (!CONFIG.bucket || !CONFIG.region) {
+                return {
+                    status: 'unconfigured',
+                    message: '适配器未配置，请先调用 configure() 方法'
+                };
+            }
+            
             try {
                 const request = buildCosRequest('HEAD', CONFIG.storageKey);
                 const response = await fetch(request.url, {
@@ -227,13 +272,17 @@
         // 获取配置信息（不包含敏感信息）
         getConfig: function() {
             return {
-                bucket: CONFIG.bucket,
-                region: CONFIG.region,
-                endpoint: CONFIG.endpoint,
-                configured: true,
-                version: 'no-cdn-v1.0',
+                bucket: CONFIG.bucket || '未配置',
+                region: CONFIG.region || '未配置',
+                configured: !!(CONFIG.bucket && CONFIG.region),
+                version: 'configurable-v1.0',
                 timestamp: Date.now()
             };
+        },
+        
+        // 检查是否已配置
+        isConfigured: function() {
+            return !!(CONFIG.bucket && CONFIG.region);
         }
     };
     
@@ -243,15 +292,22 @@
     }
     
     window.MarketActivityCOS.adapter = adapter;
-    window.MarketActivityCOS.config = CONFIG;
-    window.MarketActivityCOS.version = 'no-cdn-1.0.0';
+    window.MarketActivityCOS.version = 'configurable-1.0.0';
     
-    console.log('✅ 无需 CDN 的腾讯云 COS 适配器加载完成');
-    console.log('📋 配置信息:', {
-        bucket: CONFIG.bucket,
-        region: CONFIG.region,
-        configured: true
-    });
+    console.log('✅ 可配置的腾讯云 COS 适配器加载完成');
+    console.log('📋 当前配置状态:', adapter.getConfig());
+    
+    // 尝试从 localStorage 恢复配置
+    const savedConfig = localStorage.getItem('mcm_cos_adapter_config');
+    if (savedConfig) {
+        try {
+            const config = JSON.parse(savedConfig);
+            adapter.configure(config);
+            console.log('✅ 从 localStorage 恢复配置成功');
+        } catch (error) {
+            console.log('⚠️ 从 localStorage 恢复配置失败:', error.message);
+        }
+    }
     
     // 自动初始化检查
     setTimeout(() => {
@@ -262,8 +318,9 @@
         // 显示成功提示
         const event = new CustomEvent('cos-adapter-ready', {
             detail: {
-                type: 'no-cdn',
+                type: 'configurable',
                 version: '1.0.0',
+                configured: adapter.isConfigured(),
                 timestamp: Date.now()
             }
         });

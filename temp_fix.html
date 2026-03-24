@@ -1,0 +1,43 @@
+<style>
+  /* ===== 登录遮罩 ===== */
+  #login-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-card {
+    background: #fff; border-radius: 20px; padding: 48px 40px;
+    width: 380px; max-width: 90vw;
+    box-shadow: 0 24px 64px rgba(0,0,0,.35);
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .login-logo { text-align: center; }
+  .login-logo h1 { font-size: 20px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+  .login-logo p { font-size: 13px; color: #64748b; }
+  .login-form { display: flex; flex-direction: column; gap: 14px; }
+  .login-field { display: flex; flex-direction: column; gap: 6px; }
+  .login-field label { font-size: 13px; font-weight: 600; color: #374151; }
+  .login-field input {
+    padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 14px; outline: none; transition: border-color .2s;
+    font-family: inherit;
+  }
+  .login-field input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+  .login-btn {
+    padding: 12px; border-radius: 10px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff; font-size: 15px; font-weight: 700;
+    transition: opacity .2s; margin-top: 4px;
+  }
+  .login-btn:hover { opacity: .88; }
+  .login-error {
+    color: #ef4444; font-size: 13px; text-align: center;
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: 8px; padding: 8px 12px; display: none;
+  }
+</style>
+
+<!-- 腾讯云 COS 存储适配器 (无需外部CDN) -->
+<!-- <script src="https://cos-js-sdk-v5.myqcloud.com/cos-js-sdk-v5.min.js"></script> -->
+<!-- <script src="market-activity-cos-adapter.js"></script> -->
+<script src="cos-adapter-no-cdn.js"></script>

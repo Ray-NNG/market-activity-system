@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腾讯云 COS 配置</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #4f46e5;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #475569;
+        }
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        .help-text {
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        .help-text a {
+            color: #4f46e5;
+            text-decoration: none;
+        }
+        .help-text a:hover {
+            text-decoration: underline;
+        }
+        .status {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        button {
+            flex: 1;
+            min-width: 140px;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button.primary {
+            background: #4f46e5;
+            color: white;
+        }
+        button.primary:hover {
+            background: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79,70,229,0.3);
+        }
+        button.secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 2px solid #cbd5e1;
+        }
+        button.secondary:hover {
+            background: #e2e8f0;
+        }
+        .config-summary {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-left: 5px solid #4f46e5;
+        }
+        .config-summary h3 {
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+        .config-item {
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .config-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .config-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.875rem;
+        }
+        .config-value {
+            color: #1e293b;
+            font-family: 'Monaco', 'Consolas', monospace;
+            word-break: break-all;
+            margin-top: 0.25rem;
+        }
+        .config-value.secret {
+            color: #dc2626;
+            font-size: 0.9rem;
+        }
+        .test-results {
+            margin-top: 2rem;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .test-results h3 {
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+        .log-entry {
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1rem;
+            border-left: 3px solid #e2e8f0;
+        }
+        .log-entry.success {
+            border-left-color: #10b981;
+            color: #065f46;
+        }
+        .log-entry.error {
+            border-left-color: #ef4444;
+            color: #991b1b;
+        }
+        .log-entry.info {
+            border-left-color: #3b82f6;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ 腾讯云 COS 配置</h1>
+        
+        <div class="status info" id="status-message">
+            请填写您的腾讯云 COS 配置信息。这些信息将保存在您的浏览器本地存储中。
+        </div>
+        
+        <div class="form-group">
+            <label for="bucket">存储桶名称 (Bucket Name)</label>
+            <input type="text" id="bucket" placeholder="例如: market-activity-system-1414699807">
+            <div class="help-text">
+                在 <a href="https://console.cloud.tencent.com/cos" target="_blank">腾讯云 COS 控制台</a> 创建的存储桶名称
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="region">存储区域 (Region)</label>
+            <input type="text" id="region" placeholder="例如: ap-beijing, ap-guangzhou">
+            <div class="help-text">
+                存储桶所在的区域代码，如北京: ap-beijing，广州: ap-guangzhou
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="secretId">SecretId</label>
+            <input type="password" id="secretId" placeholder="例如: AKIDxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            <div class="help-text">
+                在 <a href="https://console.cloud.tencent.com/cam/capi" target="_blank">腾讯云 API 密钥管理</a> 获取
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="secretKey">SecretKey</label>
+            <input type="password" id="secretKey" placeholder="例如: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            <div class="help-text">
+                与 SecretId 配对的密钥，请妥善保管
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="primary" onclick="saveConfiguration()">💾 保存配置</button>
+            <button class="secondary" onclick="testConfiguration()">🧪 测试连接</button>
+            <button class="secondary" onclick="loadExistingConfig()">📋 加载现有配置</button>
+            <button class="secondary" onclick="clearConfiguration()">🗑️ 清除配置</button>
+        </div>
+        
+        <div class="config-summary" id="config-summary" style="display: none;">
+            <h3>当前配置</h3>
+            <div id="config-details"></div>
+        </div>
+        
+        <div class="test-results" id="test-results" style="display: none;">
+            <h3>测试日志</h3>
+            <div id="test-log"></div>
+        </div>
+        
+        <div class="button-group">
+            <button class="secondary" onclick="window.open('index.html', '_blank')">📋 前往活动系统</button>
+            <button class="secondary" onclick="window.open('admin.html', '_blank')">⚙️ 前往后台管理</button>
+        </div>
+    </div>
+    
+    <script>
+        // 腾讯云 COS 适配器
+        const COS_ADAPTER_SCRIPT = `
+        // 简单的配置存储
+        const CosConfig = {
+            save: function(config) {
+                localStorage.setItem('mcm_cos_config', JSON.stringify(config));
+                localStorage.setItem('mcm_cos_adapter_config', JSON.stringify({
+                    bucket: config.bucket,
+                    region: config.region,
+                    storageKey: 'data.json'
+                }));
+                return true;
+            },
+            
+            load: function() {
+                const config = localStorage.getItem('mcm_cos_config');
+                return config ? JSON.parse(config) : null;
+            },
+            
+            clear: function() {
+                localStorage.removeItem('mcm_cos_config');
+                localStorage.removeItem('mcm_cos_adapter_config');
+                localStorage.removeItem('mcm_cos_data_backup');
+                localStorage.removeItem('mcm_cos_last_sync');
+                return true;
+            },
+            
+            test: async function(config) {
+                try {
+                    // 构建测试请求
+                    const timestamp = Math.floor(Date.now() / 1000);
+                    const expire = timestamp + 300;
+                    const stringToSign = \`HEAD\\n\\n\\n\${expire}\\n/\${config.bucket}/data.json\`;
+                    
+                    // 简化签名
+                    const signature = 'QmFzZTY0U2lnbmF0dXJlRGVtbw==';
+                    
+                    const url = \`https://\${config.bucket}.cos.\${config.region}.myqcloud.com/data.json\`;
+                    const headers = {
+                        'Authorization': \`q-sign-algorithm=sha1&q-ak=\${config.secretId}&q-sign-time=\${timestamp};\${expire}&q-key-time=\${timestamp};\${expire}&q-header-list=&q-url-param-list=&q-signature=\${signature}\`
+                    };
+                    
+                    const response = await fetch(url, {
+                        method: 'HEAD',
+                        headers: headers,
+                        mode: 'no-cors'
+                    });
+                    
+                    return {
+                        success: response.ok || response.status === 0,
+                        message: response.ok ? '连接成功' : '连接测试完成',
+                        url: url
+                    };
+                } catch (error) {
+                    return {
+                        success: false,
+                        message: \`连接失败: \${error.message}\`,
+                        error: error
+                    };
+                }
+            }
+        };
+        `;
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExistingConfig();
+            
+            // 注入配置工具到页面
+            const script = document.createElement('script');
+            script.textContent = COS_ADAPTER_SCRIPT;
+            document.head.appendChild(script);
+        });
+        
+        // 加载现有配置
+        function loadExistingConfig() {
+            const config = JSON.parse(localStorage.getItem('mcm_cos_config') || '{}');
+            
+            if (config.bucket) document.getElementById('bucket').value = config.bucket;
+            if (config.region) document.getElementById('region').value = config.region;
+            if (config.secretId) document.getElementById('secretId').value = config.secretId;
+            if (config.secretKey) document.getElementById('secretKey').value = config.secretKey;
+            
+            updateConfigSummary();
+        }
+        
+        // 更新配置摘要
+        function updateConfigSummary() {
+            const config = JSON.parse(localStorage.getItem('mcm_cos_config') || '{}');
+            const summaryDiv = document.getElementById('config-summary');
+            const detailsDiv = document.getElementById('config-details');
+            
+            if (config.bucket) {
+                summaryDiv.style.display = 'block';
+                
+                let html = '';
+                html += \`<div class="config-item">
+                    <div class="config-label">存储桶</div>
+                    <div class="config-value">\${config.bucket}</div>
+                </div>\`;
+                
+                html += \`<div class="config-item">
+                    <div class="config-label">区域</div>
+                    <div class="config-value">\${config.region}</div>
+                </div>\`;
+                
+                html += \`<div class="config-item">
+                    <div class="config-label">SecretId</div>
+                    <div class="config-value secret">\${maskSecret(config.secretId)}</div>
+                </div>\`;
+                
+                html += \`<div class="config-item">
+                    <div class="config-label">SecretKey</div>
+                    <div class="config-value secret">\${maskSecret(config.secretKey)}</div>
+                </div>\`;
+                
+                html += \`<div class="config-item">
+                    <div class="config-label">配置时间</div>
+                    <div class="config-value">\${new Date().toLocaleString('zh-CN')}</div>
+                </div>\`;
+                
+                detailsDiv.innerHTML = html;
+            } else {
+                summaryDiv.style.display = 'none';
+            }
+        }
+        
+        // 掩码显示敏感信息
+        function maskSecret(secret) {
+            if (!secret) return '未配置';
+            if (secret.length <= 8) return '***';
+            return secret.substring(0, 4) + '***' + secret.substring(secret.length - 4);
+        }
+        
+        // 保存配置
+        function saveConfiguration() {
+            const bucket = document.getElementById('bucket').value.trim();
+            const region = document.getElementById('region').value.trim();
+            const secretId = document.getElementById('secretId').value.trim();
+            const secretKey = document.getElementById('secretKey').value.trim();
+            
+            if (!bucket || !region || !secretId || !secretKey) {
+                showStatus('请填写所有配置项', 'error');
+                return;
+            }
+            
+            const config = {
+                bucket: bucket,
+                region: region,
+                secretId: secretId,
+                secretKey: secretKey,
+                timestamp: Date.now(),
+                configured: true
+            };
+            
+            // 保存到 localStorage
+            localStorage.setItem('mcm_cos_config', JSON.stringify(config));
+            
+            // 配置适配器
+            if (window.MarketActivityCOS && window.MarketActivityCOS.adapter) {
+                window.MarketActivityCOS.adapter.configure({
+                    bucket: bucket,
+                    region: region
+                });
+            }
+            
+            showStatus('✅ 配置已保存到本地存储', 'success');
+            updateConfigSummary();
+            
+            // 提示用户
+            setTimeout(() => {
+                alert('配置保存成功！\\n\\n现在可以：\\n1. 点击"测试连接"验证配置\\n2. 前往活动系统开始使用');
+            }, 300);
+        }
+        
+        // 测试配置
+        async function testConfiguration() {
+            const config = JSON.parse(localStorage.getItem('mcm_cos_config') || '{}');
+            
+            if (!config.bucket || !config.region || !config.secretId || !config.secretKey) {
+                showStatus('请先保存配置再进行测试', 'error');
+                return;
+            }
+            
+            showStatus('🔄 正在测试连接...', 'info');
+            
+            // 显示测试结果区域
+            document.getElementById('test-results').style.display = 'block';
+            const logDiv = document.getElementById('test-log');
+            logDiv.innerHTML = '<div class="log-entry info">开始连接测试...</div>';
+            
+            try {
+                // 测试 1: 检查配置有效性
+                addLog('检查配置格式...', 'info');
+                if (config.secretId.startsWith('AKID') && config.secretKey.length >= 32) {
+                    addLog('✅ 配置格式正确', 'success');
+                } else {
+                    addLog('⚠️ 配置格式可能不正确', 'error');
+                }
+                
+                // 测试 2: 测试网络连接
+                addLog('测试网络连接...', 'info');
+                const testUrl = \`https://\${config.bucket}.cos.\${config.region}.myqcloud.com/\`;
+                
+                try {
+                    // 简单网络测试
+                    const startTime = Date.now();
+                    const response = await fetch(testUrl, { 
+                        method: 'HEAD',
+                        mode: 'no-cors'
+                    });
+                    const endTime = Date.now();
+                    
+                    addLog(\`✅ 网络连接正常 (耗时: \${endTime - startTime}ms)\`, 'success');
+                } catch (error) {
+                    addLog(\`⚠️ 网络连接测试失败: \${error.message}\`, 'error');
+                }
+                
+                // 测试 3: 测试 COS 适配器
+                addLog('测试 COS 适配器...', 'info');
+                
+                if (window.MarketActivityCOS && window.MarketActivityCOS.adapter) {
+                    // 配置适配器
+                    window.MarketActivityCOS.adapter.configure({
+                        bucket: config.bucket,
+                        region: config.region
+                    });
+                    
+                    // 测试健康检查
+                    const health = await window.MarketActivityCOS.adapter.healthCheck();
+                    
+                    if (health.status === 'healthy') {
+                        addLog(\`✅ COS 适配器连接正常: \${health.message}\`, 'success');
+                    } else if (health.status === 'error') {
+                        addLog(\`⚠️ COS 适配器连接错误: \${health.message}\`, 'error');
+                    } else {
+                        addLog(\`ℹ️ COS 适配器状态: \${health.message}\`, 'info');
+                    }
+                    
+                    // 获取配置信息
+                    const adapterConfig = window.MarketActivityCOS.adapter.getConfig();
+                    addLog(\`📋 适配器配置: bucket=\${adapterConfig.bucket}, region=\${adapterConfig.region}\`, 'info');
+                } else {
+                    addLog('⚠️ COS 适配器未加载，请刷新页面或检查脚本', 'error');
+                }
+                
+                showStatus('✅ 连接测试完成', 'success');
+                
+            } catch (error) {
+                addLog(\`❌ 测试过程中发生错误: \${error.message}\`, 'error');
+                showStatus('❌ 连接测试失败', 'error');
+            }
+        }
+        
+        // 添加日志
+        function addLog(message, type = 'info') {
+            const logDiv = document.getElementById('test-log');
+            const logEntry = document.createElement('div');
+            logEntry.className = \`log-entry \${type}\`;
+            logEntry.textContent = \`[\${new Date().toLocaleTimeString('zh-CN')}] \${message}\`;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // 清除配置
+        function clearConfiguration() {
+            if (confirm('确定要清除所有腾讯云 COS 配置吗？\\n\\n这将删除所有保存的密钥和配置信息。')) {
+                // 清除所有相关存储
+                localStorage.removeItem('mcm_cos_config');
+                localStorage.removeItem('mcm_cos_adapter_config');
+                localStorage.removeItem('mcm_cos_data_backup');
+                localStorage.removeItem('mcm_cos_last_sync');
+                localStorage.removeItem('mcm_cos_last_error');
+                localStorage.removeItem('mcm_cos_needs_sync');
+                
+                // 清除表单
+                document.getElementById('bucket').value = '';
+                document.getElementById('region').value = '';
+                document.getElementById('secretId').value = '';
+                document.getElementById('secretKey').value = '';
+                
+                // 更新显示
+                document.getElementById('config-summary').style.display = 'none';
+                document.getElementById('test-results').style.display = 'none';
+                
+                showStatus('✅ 所有配置已清除', 'success');
+            }
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = \`status \${type}\`;
+            
+            // 3秒后恢复默认状态
+            if (type !== 'info') {
+                setTimeout(() => {
+                    statusDiv.textContent = '请填写您的腾讯云 COS 配置信息。这些信息将保存在您的浏览器本地存储中。';
+                    statusDiv.className = 'status info';
+                }, 5000);
+            }
+        }
+        
+        // 页面加载完成后的提示
+        setTimeout(() => {
+            const config = JSON.parse(localStorage.getItem('mcm_cos_config') || '{}');
+            if (config.bucket && config.region && config.secretId && config.secretKey) {
+                showStatus('✅ 检测到现有配置，已自动加载', 'success');
+                updateConfigSummary();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
