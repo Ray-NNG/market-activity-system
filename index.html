@@ -454,7 +454,7 @@
 (function() {
     'use strict';
     console.log('🔧 加载腾讯云 COS 适配器（纯JS签名版）...');
-    const CONFIG = { secretId: '', secretKey: '', bucket: '', region: '', storageKey: 'data.json' };
+    const CONFIG = { secretId: 'AKIDWq0xfvvgCevzpSxe9P5XkiR3RaU9Zjfm', secretKey: '8C6lBQQDl5C4h4D6jALGwNYT9aijYAao', bucket: 'nnqgcvte2026-1414699807', region: 'ap-guangzhou', storageKey: 'data.json' };
     function loadConfig() {
         try {
             const saved = localStorage.getItem('cos_config');
@@ -552,8 +552,9 @@
         const httpHash = _sha1(httpString);
         const stringToSign = `sha1\n${signTime}\n${httpHash}\n`;
         // Step3: Signature = HMAC-SHA1(SignKey字节, StringToSign) → hex
-        const signKeyBytes = signKey.match(/.{2}/g).map(h=>parseInt(h,16));
-        const signature = _hmacSha1(signKeyBytes, stringToSign);
+        // 注意：第二次HMAC的key是signKey的hex字符串本身（ASCII字节），不是hex转二进制
+        const signKeyStrBytes = strToBytes(signKey);
+        const signature = _hmacSha1(signKeyStrBytes, stringToSign);
 
         console.log('🔐 COS签名调试:', {
             method: method.toLowerCase(), uriPath, host,
