@@ -783,11 +783,11 @@
       </div>
 
       <div class="grid-2 section-gap">
-        <div class="card">
+        <div class="card" style="display:flex;flex-direction:column;">
           <div class="card-header">
             <div class="card-title">🗂 活动流程概览</div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:12px;" id="dashboard-activity-list">
+          <div style="height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px;" id="dashboard-activity-list">
           </div>
         </div>
 
@@ -799,7 +799,7 @@
         </div>
       </div>
 
-      <div class="grid-3">
+      <div class="grid-2 section-gap">
         <div class="card">
           <div class="card-header"><div class="card-title">💰 费用支出概况</div></div>
           <div style="text-align:center;padding:8px 0">
@@ -816,13 +816,7 @@
 
         <div class="card">
           <div class="card-header"><div class="card-title">📊 各活动进度</div></div>
-          <div class="bar-chart" id="progress-chart"></div>
-          <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;flex-wrap:wrap;" id="progress-chart-labels"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><div class="card-title">⚠️ 风险预警</div></div>
-          <div id="risk-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px" id="progress-chart"></div>
         </div>
       </div>
     </div>
@@ -1848,28 +1842,20 @@ function renderDashboard() {
   // 日历
   renderCalendar();
 
-  // 进度条形图
+  // 进度横向条状图
   const chart = document.getElementById('progress-chart');
-  const labels = document.getElementById('progress-chart-labels');
   const colors = ['#4f46e5','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899'];
-  chart.innerHTML = activities.map((a,i) => `
-    <div class="bar-group">
-      <div class="bar" style="background:${colors[i]};height:${a.progress*1.6}px" data-val="${a.progress}%"></div>
-    </div>
-  `).join('');
-  labels.innerHTML = activities.map((a,i) => `
-    <div class="flex-center gap-8 text-sm"><div style="width:8px;height:8px;border-radius:2px;background:${colors[i]}"></div><span>${a.name.substring(0,6)}...</span></div>
-  `).join('');
-
-  // 风险
-  const risks = activities.flatMap(a => a.risks.map(r => ({...r, activity: a.name})));
-  document.getElementById('risk-list').innerHTML = risks.length === 0
-    ? '<div class="text-muted" style="text-align:center;padding:20px">暂无风险预警 🎉</div>'
-    : risks.map(r => `
-      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:${r.level==='高'?'#fef2f2':r.level==='中'?'#fffbeb':'#f0fdf4'};border-radius:8px;">
-        <div class="badge ${r.level==='高'?'badge-exec':r.level==='中'?'badge-plan':'badge-review'}">${r.level}风险</div>
-        <div style="font-size:13px;flex:1">${r.text}</div>
-        <div class="text-sm" style="color:var(--text-muted);white-space:nowrap">${r.activity.substring(0,6)}</div>
+  chart.innerHTML = activities.length === 0
+    ? '<div class="text-muted" style="text-align:center;padding:20px">暂无活动数据</div>'
+    : activities.map((a,i) => `
+      <div>
+        <div class="flex-between text-sm" style="margin-bottom:4px">
+          <span style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</span>
+          <span style="color:${colors[i%colors.length]};font-weight:600">${a.progress}%</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar" style="background:${colors[i%colors.length]};width:${a.progress}%"></div>
+        </div>
       </div>
     `).join('');
 }
@@ -2333,7 +2319,49 @@ function openDetail(id) {
           <textarea class="form-control" id="review-experience" rows="4" placeholder="客户到场体验，邀约情况，客户满意度，现场互动反馈...">${a.review?.experience||''}</textarea>
         </div>
       </div>
-      <div class="form-group" style="max-width:200px">
+
+      <!-- 实际花费填写 -->
+      <div style="margin-top:20px;padding:16px;background:#f8fafc;border-radius:12px;border:1px solid var(--border)">
+        <div class="flex-between" style="margin-bottom:12px">
+          <div style="font-weight:600;font-size:15px">💸 实际花费（复盘填写）</div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addActualCostItem('${a.id}')">+ 添加费用项</button>
+        </div>
+        <!-- 预算对比提示 -->
+        ${(() => {
+          const allBudgetItems = [...(a.budgetItems||[])];
+          if(Number(a.setupFee)>0) allBudgetItems.push({name:'🏗️ 售后搭建费用', amount:a.setupFee, source:a.setupSource||'hq'});
+          if(Number(a.logisticsFee)>0) allBudgetItems.push({name:'🚚 物流运输费用', amount:a.logisticsFee, source:a.logisticsSource||'subsidiary'});
+          if(allBudgetItems.length === 0) return '<div class="text-sm" style="color:var(--text-muted);margin-bottom:8px">（创建活动时未填写预算，可直接录入实际花费）</div>';
+          const totalBudget = allBudgetItems.reduce((s,x)=>s+(Number(x.amount)||0),0);
+          return `
+            <div style="margin-bottom:10px;padding:10px;background:#eef2ff;border-radius:8px;font-size:13px">
+              <div style="font-weight:600;color:#4338ca;margin-bottom:6px">📋 预算项（共 ¥${totalBudget.toLocaleString()}）</div>
+              ${allBudgetItems.map(x=>`<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #c7d2fe">
+                <span>${x.name}<span style="font-size:11px;color:#6366f1;margin-left:4px">${x.source==='hq'?'总部':'子公司'}</span></span>
+                <span style="font-weight:600">¥${Number(x.amount).toLocaleString()}</span>
+              </div>`).join('')}
+            </div>
+          `;
+        })()}
+        <div id="actual-cost-items-${a.id}">
+          ${(a.actualCosts||[]).map((c,i)=>`
+            <div class="budget-item" id="actual-cost-item-${a.id}-${i}">
+              <input class="form-control" type="text" placeholder="费用项名称" value="${c.name||''}" style="flex:1" oninput="updateActualCost('${a.id}',${i},'name',this.value)">
+              <select class="form-control" style="width:100px" onchange="updateActualCost('${a.id}',${i},'source',this.value)">
+                <option value="hq" ${(c.source||'hq')==='hq'?'selected':''}>总部</option>
+                <option value="subsidiary" ${c.source==='subsidiary'?'selected':''}>子公司</option>
+              </select>
+              <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="${c.amount||''}" style="width:140px" oninput="updateActualCost('${a.id}',${i},'amount',this.value)">
+              <button type="button" class="btn-remove" onclick="removeActualCost('${a.id}',${i})">×</button>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:10px;text-align:right;font-size:14px;font-weight:600;color:var(--primary)" id="actual-cost-total-${a.id}">
+          实际合计：¥${(a.actualCosts||[]).reduce((s,c)=>s+(Number(c.amount)||0),0).toLocaleString()}
+        </div>
+      </div>
+
+      <div class="form-group" style="max-width:200px;margin-top:16px">
         <label>综合评分（1-5分）</label>
         <input type="number" class="form-control" id="review-score" min="1" max="5" step="0.1" value="${a.review?.score||''}" placeholder="4.5">
       </div>
@@ -2344,6 +2372,68 @@ function openDetail(id) {
     </div>
   `;
   showModal('modal-detail');
+}
+
+// ===== 实际花费管理 =====
+function addActualCostItem(actId) {
+  const a = activities.find(x=>String(x.id)===String(actId));
+  if(!a) return;
+  if(!a.actualCosts) a.actualCosts = [];
+  const i = a.actualCosts.length;
+  a.actualCosts.push({name:'', source:'hq', amount:0});
+  const container = document.getElementById(`actual-cost-items-${actId}`);
+  if(!container) return;
+  const div = document.createElement('div');
+  div.className = 'budget-item';
+  div.id = `actual-cost-item-${actId}-${i}`;
+  div.innerHTML = `
+    <input class="form-control" type="text" placeholder="费用项名称" value="" style="flex:1" oninput="updateActualCost('${actId}',${i},'name',this.value)">
+    <select class="form-control" style="width:100px" onchange="updateActualCost('${actId}',${i},'source',this.value)">
+      <option value="hq">总部</option>
+      <option value="subsidiary">子公司</option>
+    </select>
+    <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="" style="width:140px" oninput="updateActualCost('${actId}',${i},'amount',this.value)">
+    <button type="button" class="btn-remove" onclick="removeActualCost('${actId}',${i})">×</button>
+  `;
+  container.appendChild(div);
+}
+
+function updateActualCost(actId, idx, field, val) {
+  const a = activities.find(x=>String(x.id)===String(actId));
+  if(!a || !a.actualCosts || !a.actualCosts[idx]) return;
+  if(field === 'amount') a.actualCosts[idx].amount = parseFloat(val)||0;
+  else a.actualCosts[idx][field] = val;
+  const totalEl = document.getElementById(`actual-cost-total-${actId}`);
+  if(totalEl) {
+    const total = a.actualCosts.reduce((s,c)=>s+(Number(c.amount)||0),0);
+    totalEl.textContent = `实际合计：¥${total.toLocaleString()}`;
+  }
+}
+
+function removeActualCost(actId, idx) {
+  const a = activities.find(x=>String(x.id)===String(actId));
+  if(!a || !a.actualCosts) return;
+  a.actualCosts.splice(idx, 1);
+  // 重新渲染实际花费区域（简单粗暴重新塞HTML）
+  const container = document.getElementById(`actual-cost-items-${actId}`);
+  if(container) {
+    container.innerHTML = a.actualCosts.map((c,i)=>`
+      <div class="budget-item" id="actual-cost-item-${actId}-${i}">
+        <input class="form-control" type="text" placeholder="费用项名称" value="${c.name||''}" style="flex:1" oninput="updateActualCost('${actId}',${i},'name',this.value)">
+        <select class="form-control" style="width:100px" onchange="updateActualCost('${actId}',${i},'source',this.value)">
+          <option value="hq" ${(c.source||'hq')==='hq'?'selected':''}>总部</option>
+          <option value="subsidiary" ${c.source==='subsidiary'?'selected':''}>子公司</option>
+        </select>
+        <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="${c.amount||''}" style="width:140px" oninput="updateActualCost('${actId}',${i},'amount',this.value)">
+        <button type="button" class="btn-remove" onclick="removeActualCost('${actId}',${i})">×</button>
+      </div>
+    `).join('');
+  }
+  const totalEl = document.getElementById(`actual-cost-total-${actId}`);
+  if(totalEl) {
+    const total = a.actualCosts.reduce((s,c)=>s+(Number(c.amount)||0),0);
+    totalEl.textContent = `实际合计：¥${total.toLocaleString()}`;
+  }
 }
 
 // ===== 文件面板渲染 =====
@@ -2664,6 +2754,8 @@ async function saveReview(id) {
   const score = parseFloat(document.getElementById('review-score').value);
   a.review = { overall, setup, presentation, experience, score: isNaN(score)?0:score };
   a.satisfaction = a.review.score;
+  // 保存实际花费（actualCosts 由 updateActualCost 实时维护，此处直接使用）
+  if(!a.actualCosts) a.actualCosts = [];
   if(a.status === '复盘中') { a.status = '已完成'; a.progress = 100; }
   await syncData();
   alert('✅ 复盘总结已保存！');
@@ -2799,8 +2891,7 @@ function updateBudgetTotal() {
   let hqTotal = 0;
   let subTotal = 0;
   
-  const items = document.querySelectorAll('.budget-item');
-  items.forEach(item => {
+  document.querySelectorAll('#budget-items .budget-item').forEach(item => {
     const name = item.querySelector('input[type="text"]').value.trim();
     const source = item.querySelector('select').value;
     const amount = parseFloat(item.querySelector('.budget-amount').value) || 0;
@@ -2828,10 +2919,8 @@ function updateBudgetTotal() {
 
 function collectBudgetItems() {
   const items = [];
-  const setupFee = parseFloat(document.getElementById('new-setup-fee')?.value) || 0;
-  const logisticsFee = parseFloat(document.getElementById('new-logistics-fee')?.value) || 0;
   
-  document.querySelectorAll('.budget-item').forEach(item => {
+  document.querySelectorAll('#budget-items .budget-item').forEach(item => {
     const name = item.querySelector('input[type="text"]').value.trim();
     const source = item.querySelector('select').value;
     const amount = parseFloat(item.querySelector('.budget-amount').value) || 0;
@@ -2840,16 +2929,6 @@ function collectBudgetItems() {
       items.push({ name, source, amount });
     }
   });
-  
-  // 添加特殊费用（各自读取来源选项）
-  const setupSource = document.getElementById('new-setup-source')?.value || 'hq';
-  const logisticsSource = document.getElementById('new-logistics-source')?.value || 'subsidiary';
-  if(setupFee > 0) {
-    items.push({ name: '🏗️ 售后搭建费用', source: setupSource, amount: setupFee });
-  }
-  if(logisticsFee > 0) {
-    items.push({ name: '🚚 物流运输费用', source: logisticsSource, amount: logisticsFee });
-  }
   
   return items;
 }
@@ -2868,12 +2947,18 @@ async function createActivity() {
   
   let budgetItems = [];
   let totalBudget = 0;
+  let setupFee = 0, setupSource = 'hq', logisticsFee = 0, logisticsSource = 'subsidiary';
   
   // 如果选择了有预算，需要检查预算信息
   if (hasBudget) {
     budgetItems = collectBudgetItems();
     totalBudget = budgetItems.reduce((sum, item) => sum + item.amount, 0);
     if(totalBudget === 0) { alert('请填写至少一项预算明细'); return; }
+    // 单独记录搭建费和物流费（用于复盘预算对比）
+    setupFee = parseFloat(document.getElementById('new-setup-fee')?.value) || 0;
+    setupSource = document.getElementById('new-setup-source')?.value || 'hq';
+    logisticsFee = parseFloat(document.getElementById('new-logistics-fee')?.value) || 0;
+    logisticsSource = document.getElementById('new-logistics-source')?.value || 'subsidiary';
   }
   
   const newA = {
@@ -2888,11 +2973,13 @@ async function createActivity() {
     budget: totalBudget,
     spent: 0,
     hasBudget: hasBudget, // 记录是否有预算
+    setupFee, setupSource, logisticsFee, logisticsSource,
     status: '策划中',
     progress: 10,
     goal: document.getElementById('new-goal').value,
     desc: document.getElementById('new-desc').value,
     budgetItems: budgetItems,
+    actualCosts: [],
     kpis: window._aiPlanKpis || [
       {name:'活动实际参与人数',target:0,actual:0,unit:'人'},
       {name:'线上覆盖人数',target:0,actual:0,unit:'人'},
@@ -3411,15 +3498,15 @@ function updateBudgetStats() {
 // ===== 日历渲染 =====
 function getCalendarEvents() {
   const events = {}; // { 'YYYY-MM-DD': [{title, type}] }
-  const add = (date, title, type) => {
+  const add = (date, title, type, actId) => {
     if(!date || date === '待定') return;
     if(!events[date]) events[date] = [];
-    events[date].push({title, type});
+    events[date].push({title, type, actId});
   };
   // 只显示真实活动的日期节点，不添加硬编码的里程碑
   activities.forEach(a => {
-    add(a.start, a.name + ' 开始', 'start');
-    add(a.end,   a.name + ' 结束', 'end');
+    add(a.start, a.name + ' 开始', 'start', a.id);
+    add(a.end,   a.name + ' 结束', 'end', a.id);
   });
   return events;
 }
@@ -3462,7 +3549,9 @@ function renderCalendar(offsetMonth = 0) {
     const evs = events[dateStr] || [];
     const isToday = dateStr === todayStr;
     const hasEv = evs.length > 0;
-    html += `<div class="cal-day ${isToday?'today':''} ${hasEv?'has-event':''}" ${hasEv?`title="${evs.map(e=>e.title).join('\n')}"`:''}">
+    // 点击有事件的日期 → 跳转到第一个活动，或弹出多活动选择
+    const clickAttr = hasEv ? `onclick="calDayClick(${JSON.stringify(evs).replace(/"/g,'&quot;')})"` : '';
+    html += `<div class="cal-day ${isToday?'today':''} ${hasEv?'has-event':''}" ${clickAttr}>
       <div class="cal-day-num">${d}</div>
       <div class="cal-events">
         ${evs.slice(0,2).map(e=>`<div class="cal-event-dot type-${e.type}">${e.title.substring(0,6)}</div>`).join('')}
@@ -3486,7 +3575,24 @@ function renderCalendar(offsetMonth = 0) {
   el.innerHTML = html;
 }
 
-// ===== 负责人分析 =====
+// ===== 日历节点点击跳转活动 =====
+function calDayClick(evs) {
+  if(!evs || evs.length === 0) return;
+  if(evs.length === 1) {
+    // 只有一个活动，直接跳转
+    openDetail(evs[0].actId);
+    return;
+  }
+  // 多个活动，弹出选择提示
+  const names = evs.map((e,i) => `${i+1}. ${e.title}`).join('\n');
+  const idx = prompt(`该日期有 ${evs.length} 个活动节点，请输入序号跳转：\n\n${names}`);
+  const n = parseInt(idx);
+  if(n >= 1 && n <= evs.length) {
+    openDetail(evs[n-1].actId);
+  }
+}
+
+
 let selectedOwner = 'all';
 
 function getOwners() {
@@ -3610,33 +3716,27 @@ function renderOwnerAnalysis() {
       </div>
     </div>
 
-    <div class="grid-2 section-gap">
-      <!-- ROI 对比 -->
-      <div class="card">
-        <div class="card-header"><div class="card-title">📊 活动 ROI 对比</div></div>
-        ${done.length > 0 ? `
-          <div class="bar-chart" style="height:200px;align-items:flex-end">${roiBars}</div>
-        ` : '<div style="text-align:center;padding:30px;color:var(--text-muted)">暂无已完成活动的 ROI 数据</div>'}
-      </div>
-      <!-- 预算执行 -->
-      <div class="card">
+    <!-- 预算执行 -->
+    <div class="card section-gap">
         <div class="card-header"><div class="card-title">💰 预算执行情况</div></div>
         <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
           ${filtered.map(a => {
-            const pct = a.budget > 0 ? Math.round(a.spent/a.budget*100) : 0;
+            const totalBudget = (a.budgetItems||[]).reduce((s,x)=>s+(Number(x.amount)||0),0)
+              + (Number(a.setupFee)||0) + (Number(a.logisticsFee)||0);
+            const totalActual = (a.actualCosts||[]).reduce((s,x)=>s+(Number(x.amount)||0),0);
+            const pct = totalBudget > 0 ? Math.round(totalActual/totalBudget*100) : 0;
             return `
               <div>
                 <div class="flex-between text-sm mb-16" style="margin-bottom:5px">
-                  <span class="fw-600">${a.name.substring(0,10)}</span>
-                  <span>${pct}% <span style="color:var(--text-muted);font-weight:400">¥${Number(a.spent).toLocaleString()} / ¥${Number(a.budget).toLocaleString()}</span></span>
+                  <span class="fw-600">${a.name.substring(0,12)}</span>
+                  <span>${pct}% <span style="color:var(--text-muted);font-weight:400">实际 ¥${totalActual.toLocaleString()} / 预算 ¥${totalBudget.toLocaleString()}</span></span>
                 </div>
                 <div class="progress-wrap"><div class="progress-bar ${pct>=100?'progress-danger':pct>=70?'progress-warning':'progress-success'}" style="width:${Math.min(pct,100)}%"></div></div>
               </div>
             `;
-          }).join('')}
+          }).join('') || '<div class="text-muted" style="text-align:center;padding:20px">暂无预算数据</div>'}
         </div>
       </div>
-    </div>
 
     <!-- 活动列表 -->
     <div class="card">
