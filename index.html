@@ -2340,46 +2340,54 @@ function openDetail(id) {
         </div>
       </div>
 
-      <!-- 实际花费填写 -->
-      <div style="margin-top:20px;padding:16px;background:#f8fafc;border-radius:12px;border:1px solid var(--border)">
-        <div class="flex-between" style="margin-bottom:12px">
-          <div style="font-weight:600;font-size:15px">💸 实际花费（复盘填写）</div>
-          <button type="button" class="btn btn-outline btn-sm" onclick="addActualCostItem('${a.id}')">+ 添加费用项</button>
-        </div>
-        <!-- 预算对比提示 -->
-        ${(() => {
-          const allBudgetItems = [...(a.budgetItems||[])];
-          if(Number(a.setupFee)>0) allBudgetItems.push({name:'🏗️ 售后搭建费用', amount:a.setupFee, source:a.setupSource||'hq'});
-          if(Number(a.logisticsFee)>0) allBudgetItems.push({name:'🚚 物流运输费用', amount:a.logisticsFee, source:a.logisticsSource||'subsidiary'});
-          if(allBudgetItems.length === 0) return '<div class="text-sm" style="color:var(--text-muted);margin-bottom:8px">（创建活动时未填写预算，可直接录入实际花费）</div>';
-          const totalBudget = allBudgetItems.reduce((s,x)=>s+(Number(x.amount)||0),0);
-          return `
-            <div style="margin-bottom:10px;padding:10px;background:#eef2ff;border-radius:8px;font-size:13px">
-              <div style="font-weight:600;color:#4338ca;margin-bottom:6px">📋 预算项（共 ¥${totalBudget.toLocaleString()}）</div>
-              ${allBudgetItems.map(x=>`<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #c7d2fe">
-                <span>${x.name}<span style="font-size:11px;color:#6366f1;margin-left:4px">${x.source==='hq'?'总部':'子公司'}</span></span>
-                <span style="font-weight:600">¥${Number(x.amount).toLocaleString()}</span>
-              </div>`).join('')}
+      <!-- 预算 vs 实际花费 左右对比 -->
+      ${(() => {
+        const allBudgetItems = [...(a.budgetItems||[])];
+        if(Number(a.setupFee)>0) allBudgetItems.push({name:'🏗️ 售后搭建费用', amount:a.setupFee, source:a.setupSource||'hq'});
+        if(Number(a.logisticsFee)>0) allBudgetItems.push({name:'🚚 物流运输费用', amount:a.logisticsFee, source:a.logisticsSource||'subsidiary'});
+        const totalBudget = allBudgetItems.reduce((s,x)=>s+(Number(x.amount)||0),0);
+        const totalActual = (a.actualCosts||[]).reduce((s,c)=>s+(Number(c.amount)||0),0);
+        return `
+        <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <!-- 左：预算（只读） -->
+          <div style="border:2px solid #06b6d4;border-radius:12px;padding:14px;background:#f0fdff">
+            <div style="font-weight:700;font-size:15px;color:#0891b2;margin-bottom:10px">📋 预算</div>
+            ${allBudgetItems.length === 0
+              ? `<div style="color:var(--text-muted);font-size:13px;padding:8px 0">（创建活动时未填写预算）</div>`
+              : `<div style="font-weight:600;color:#0e7490;font-size:13px;margin-bottom:8px;padding:6px 8px;background:#cffafe;border-radius:6px">预算项（共 ¥${totalBudget.toLocaleString()}）</div>
+                ${allBudgetItems.map(x=>`
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 8px;margin-bottom:4px;background:#fff;border:1px solid #a5f3fc;border-radius:6px;font-size:13px">
+                    <span>${x.name} <span style="font-size:11px;color:#0891b2;background:#e0f7fa;padding:1px 5px;border-radius:4px;margin-left:3px">${x.source==='hq'?'总部':'子公司'}</span></span>
+                    <span style="font-weight:600;color:#0e7490">¥${Number(x.amount).toLocaleString()}</span>
+                  </div>
+                `).join('')}`
+            }
+          </div>
+          <!-- 右：实际花费（可编辑） -->
+          <div style="border:2px solid #f59e0b;border-radius:12px;padding:14px;background:#fffdf0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <div style="font-weight:700;font-size:15px;color:#d97706">💸 实际花费</div>
+              <button type="button" style="font-size:12px;padding:4px 10px;border:1px solid #f59e0b;border-radius:6px;background:#fff;color:#d97706;cursor:pointer;white-space:nowrap" onclick="addActualCostItem('${a.id}')">+ 添加费用项</button>
             </div>
-          `;
-        })()}
-        <div id="actual-cost-items-${a.id}">
-          ${(a.actualCosts||[]).map((c,i)=>`
-            <div class="budget-item" id="actual-cost-item-${a.id}-${i}">
-              <input class="form-control" type="text" placeholder="费用项名称" value="${c.name||''}" style="flex:1" oninput="updateActualCost('${a.id}',${i},'name',this.value)">
-              <select class="form-control" style="width:100px" onchange="updateActualCost('${a.id}',${i},'source',this.value)">
-                <option value="hq" ${(c.source||'hq')==='hq'?'selected':''}>总部</option>
-                <option value="subsidiary" ${c.source==='subsidiary'?'selected':''}>子公司</option>
-              </select>
-              <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="${c.amount||''}" style="width:140px" oninput="updateActualCost('${a.id}',${i},'amount',this.value)">
-              <button type="button" class="btn-remove" onclick="removeActualCost('${a.id}',${i})">×</button>
+            <div id="actual-cost-items-${a.id}">
+              ${(a.actualCosts||[]).map((c,i)=>`
+                <div class="budget-item" id="actual-cost-item-${a.id}-${i}" style="margin-bottom:6px;background:#fff;border:1px solid #fcd34d;border-radius:6px;padding:6px 8px">
+                  <input class="form-control" type="text" placeholder="费用项名称" value="${c.name||''}" style="flex:1;min-width:0;border:1px solid #e5e7eb;border-radius:5px;padding:4px 8px;font-size:13px" oninput="updateActualCost('${a.id}',${i},'name',this.value)">
+                  <select class="form-control" style="width:80px;border:1px solid #e5e7eb;border-radius:5px;padding:4px 6px;font-size:13px" onchange="updateActualCost('${a.id}',${i},'source',this.value)">
+                    <option value="hq" ${(c.source||'hq')==='hq'?'selected':''}>总部</option>
+                    <option value="subsidiary" ${c.source==='subsidiary'?'selected':''}>子公司</option>
+                  </select>
+                  <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="${c.amount||''}" style="width:110px;border:1px solid #e5e7eb;border-radius:5px;padding:4px 8px;font-size:13px" oninput="updateActualCost('${a.id}',${i},'amount',this.value)">
+                  <button type="button" class="btn-remove" onclick="removeActualCost('${a.id}',${i})">×</button>
+                </div>
+              `).join('')}
             </div>
-          `).join('')}
-        </div>
-        <div style="margin-top:10px;text-align:right;font-size:14px;font-weight:600;color:var(--primary)" id="actual-cost-total-${a.id}">
-          实际合计：¥${(a.actualCosts||[]).reduce((s,c)=>s+(Number(c.amount)||0),0).toLocaleString()}
-        </div>
-      </div>
+            <div style="margin-top:8px;text-align:right;font-size:14px;font-weight:700;color:#d97706;padding-top:8px;border-top:1px dashed #fcd34d" id="actual-cost-total-${a.id}">
+              实际合计：¥${totalActual.toLocaleString()}
+            </div>
+          </div>
+        </div>`;
+      })()}
 
       <div class="form-group" style="max-width:200px;margin-top:16px">
         <label>综合评分（1-5分）</label>
@@ -2406,13 +2414,14 @@ function addActualCostItem(actId) {
   const div = document.createElement('div');
   div.className = 'budget-item';
   div.id = `actual-cost-item-${actId}-${i}`;
+  div.style.cssText = 'margin-bottom:6px;background:#fff;border:1px solid #fcd34d;border-radius:6px;padding:6px 8px';
   div.innerHTML = `
-    <input class="form-control" type="text" placeholder="费用项名称" value="" style="flex:1" oninput="updateActualCost('${actId}',${i},'name',this.value)">
-    <select class="form-control" style="width:100px" onchange="updateActualCost('${actId}',${i},'source',this.value)">
+    <input class="form-control" type="text" placeholder="费用项名称" value="" style="flex:1;min-width:0;border:1px solid #e5e7eb;border-radius:5px;padding:4px 8px;font-size:13px" oninput="updateActualCost('${actId}',${i},'name',this.value)">
+    <select class="form-control" style="width:80px;border:1px solid #e5e7eb;border-radius:5px;padding:4px 6px;font-size:13px" onchange="updateActualCost('${actId}',${i},'source',this.value)">
       <option value="hq">总部</option>
       <option value="subsidiary">子公司</option>
     </select>
-    <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="" style="width:140px" oninput="updateActualCost('${actId}',${i},'amount',this.value)">
+    <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="" style="width:110px;border:1px solid #e5e7eb;border-radius:5px;padding:4px 8px;font-size:13px" oninput="updateActualCost('${actId}',${i},'amount',this.value)">
     <button type="button" class="btn-remove" onclick="removeActualCost('${actId}',${i})">×</button>
   `;
   container.appendChild(div);
@@ -2438,13 +2447,13 @@ function removeActualCost(actId, idx) {
   const container = document.getElementById(`actual-cost-items-${actId}`);
   if(container) {
     container.innerHTML = a.actualCosts.map((c,i)=>`
-      <div class="budget-item" id="actual-cost-item-${actId}-${i}">
-        <input class="form-control" type="text" placeholder="费用项名称" value="${c.name||''}" style="flex:1" oninput="updateActualCost('${actId}',${i},'name',this.value)">
-        <select class="form-control" style="width:100px" onchange="updateActualCost('${actId}',${i},'source',this.value)">
+      <div class="budget-item" id="actual-cost-item-${actId}-${i}" style="margin-bottom:6px;background:#fff;border:1px solid #fcd34d;border-radius:6px;padding:6px 8px">
+        <input class="form-control" type="text" placeholder="费用项名称" value="${c.name||''}" style="flex:1;min-width:0;border:1px solid #e5e7eb;border-radius:5px;padding:4px 8px;font-size:13px" oninput="updateActualCost('${actId}',${i},'name',this.value)">
+        <select class="form-control" style="width:80px;border:1px solid #e5e7eb;border-radius:5px;padding:4px 6px;font-size:13px" onchange="updateActualCost('${actId}',${i},'source',this.value)">
           <option value="hq" ${(c.source||'hq')==='hq'?'selected':''}>总部</option>
           <option value="subsidiary" ${c.source==='subsidiary'?'selected':''}>子公司</option>
         </select>
-        <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="${c.amount||''}" style="width:140px" oninput="updateActualCost('${actId}',${i},'amount',this.value)">
+        <input class="form-control budget-amount" type="number" placeholder="金额（元）" value="${c.amount||''}" style="width:110px;border:1px solid #e5e7eb;border-radius:5px;padding:4px 8px;font-size:13px" oninput="updateActualCost('${actId}',${i},'amount',this.value)">
         <button type="button" class="btn-remove" onclick="removeActualCost('${actId}',${i})">×</button>
       </div>
     `).join('');
