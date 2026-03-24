@@ -454,7 +454,8 @@
 (function() {
     'use strict';
     console.log('🔧 加载腾讯云 COS 适配器（纯JS签名版）...');
-    const CONFIG = { secretId: 'AKIDWq0xfvvgCevzpSxe9P5XkiR3RaU9Zjfm', secretKey: '8C6lBQQDl5C4h4D6jALGwNYT9aijYAao', bucket: 'nnqgcvte2026-1414699807', region: 'ap-guangzhou', storageKey: 'data.json' };
+    // 默认配置为空，实际密钥从 localStorage 的 cos_config 读取（通过设置页面保存）
+    const CONFIG = { secretId: '', secretKey: '', bucket: 'nnqgcvte2026-1414699807', region: 'ap-guangzhou', storageKey: 'data.json' };
     function loadConfig() {
         try {
             const saved = localStorage.getItem('cos_config');
