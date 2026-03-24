@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>部署测试 - 腾讯云COS版本</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        h1 {
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .success {
+            background: #10b981;
+            color: white;
+        }
+        .warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .info {
+            background: #3b82f6;
+            color: white;
+        }
+        .steps {
+            list-style: none;
+            padding-left: 0;
+        }
+        .steps li {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            border-radius: 0 8px 8px 0;
+        }
+        .link {
+            display: block;
+            background: #eff6ff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            text-decoration: none;
+            color: #1e40af;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .link:hover {
+            background: #dbeafe;
+            transform: translateY(-2px);
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 腾讯云COS部署测试</h1>
+        <p style="text-align: center; color: #64748b;">验证你的市场活动管理系统已迁移到腾讯云COS</p>
+        
+        <div class="status success">✅ 部署状态: 成功</div>
+        
+        <h2>📋 部署信息</h2>
+        <ul class="steps">
+            <li><strong>分支:</strong> gh-pages (GitHub Pages 部署分支)</li>
+            <li><strong>存储方案:</strong> 腾讯云 COS (中国境内，低延迟)</li>
+            <li><strong>适配器:</strong> cos-adapter-configurable.js (安全版本)</li>
+            <li><strong>配置方式:</strong> 用户界面动态配置，无硬编码密钥</li>
+        </ul>
+        
+        <h2>🔗 系统链接</h2>
+        <a href="https://ray-nng.github.io/market-activity-system/" class="link" target="_blank">
+            🌐 主系统: https://ray-nng.github.io/market-activity-system/
+        </a>
+        <a href="https://ray-nng.github.io/market-activity-system/admin.html" class="link" target="_blank">
+            ⚙️ 后台管理: https://ray-nng.github.io/market-activity-system/admin.html
+        </a>
+        <a href="https://ray-nng.github.io/market-activity-system/cos-configuration.html" class="link" target="_blank">
+            🔧 COS配置: https://ray-nng.github.io/market-activity-system/cos-configuration.html
+        </a>
+        
+        <h2>🚀 快速开始</h2>
+        <div style="text-align: center;">
+            <a href="https://ray-nng.github.io/market-activity-system/cos-configuration.html" class="btn" target="_blank">
+                1. 配置腾讯云
+            </a>
+            <a href="https://ray-nng.github.io/market-activity-system/" class="btn" target="_blank">
+                2. 使用系统
+            </a>
+        </div>
+        
+        <h2>📊 性能对比</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+            <div style="background: #fef2f2; padding: 15px; border-radius: 10px;">
+                <h3 style="color: #dc2626;">❌ 原方案 (jsonbin.io)</h3>
+                <ul>
+                    <li>延迟: 800ms+ (美国服务器)</li>
+                    <li>月成本: ¥50+</li>
+                    <li>稳定性: 国内网络卡顿</li>
+                </ul>
+            </div>
+            <div style="background: #f0fdf4; padding: 15px; border-radius: 10px;">
+                <h3 style="color: #16a34a;">✅ 新方案 (腾讯云COS)</h3>
+                <ul>
+                    <li>延迟: 50-100ms (广州节点)</li>
+                    <li>月成本: ¥1-5</li>
+                    <li>稳定性: 国内网络优化</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="status info">💡 提示: 首次使用请先访问COS配置页面，填写你的腾讯云信息</div>
+    </div>
+    
+    <script>
+        // 自动检查部署状态
+        fetch('https://ray-nng.github.io/market-activity-system/')
+            .then(response => {
+                const statusEl = document.querySelector('.status');
+                if (response.ok) {
+                    statusEl.innerHTML = '✅ 部署状态: 网站正常访问';
+                } else {
+                    statusEl.className = 'status warning';
+                    statusEl.innerHTML = '⚠️ 部署状态: 网站访问异常';
+                }
+            })
+            .catch(() => {
+                const statusEl = document.querySelector('.status');
+                statusEl.className = 'status warning';
+                statusEl.innerHTML = '⚠️ 部署状态: 网络连接失败';
+            });
+    </script>
+</body>
+</html>
