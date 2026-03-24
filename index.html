@@ -623,7 +623,7 @@
         } catch(e) { return { success: false, message: `连接失败: ${e.message}` }; }
     }
     if (!window.MarketActivityCOS) window.MarketActivityCOS = {};
-    window.MarketActivityCOS.adapter = { configure, getData, saveData, testConnection, isConfigured, loadConfig, getConfig: () => ({ ...CONFIG }) };
+    window.MarketActivityCOS.adapter = { configure, getData, saveData, testConnection, isConfigured, loadConfig, getConfig: () => ({ ...CONFIG }), buildRequest: buildCosRequest };
     window.MarketActivityCOS.version = 'inline-1.0.1';
     loadConfig();
     console.log('✅ COS 适配器已就绪，配置状态:', isConfigured());
@@ -2631,23 +2631,44 @@ async function uploadFileToCloud(fileId, activityId, stage) {
   }
   
   try {
-    // 腾讯云COS上传逻辑
-    const config = localStorage.getItem('cos_config');
-    if (!config) {
-      throw new Error('请先配置腾讯云 COS');
+    // 真实腾讯云 COS 上传
+    if (!window.MarketActivityCOS?.adapter) {
+      throw new Error('COS 适配器未加载，请刷新页面后重试');
     }
-    
-    // 模拟上传（实际需要实现真实的腾讯云COS上传）
-    // 这里需要调用腾讯云 COS SDK 或 REST API
+    const cfg = window.MarketActivityCOS.adapter.getConfig?.() || JSON.parse(localStorage.getItem('cos_config') || '{}');
+    if (!cfg.secretId || !cfg.secretKey || !cfg.bucket || !cfg.region) {
+      throw new Error('请先在【设置】页面配置腾讯云 COS 信息');
+    }
+
     console.log(`☁️ 开始上传文件: ${file.name} (${formatSize(file.size)})`);
-    
-    // 模拟上传延迟
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
+    // 将 dataUrl(base64) 转成二进制 Blob
+    const dataUrl = file.dataUrl;
+    if (!dataUrl) throw new Error('文件内容不存在，请重新选择文件');
+    const base64 = dataUrl.split(',')[1];
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const blob = new Blob([bytes], { type: file.type || 'application/octet-stream' });
+
+    // COS 对象路径：files/{activityId}/{stage}/{fileId}/{filename}
+    const cosKey = `files/${activityId}/${stage}/${file.id}/${encodeURIComponent(file.name)}`;
+    const req = window.MarketActivityCOS.adapter.buildRequest('PUT', cosKey, blob);
+    const res = await fetch(req.url, {
+      method: 'PUT',
+      headers: { ...req.headers, 'Content-Type': file.type || 'application/octet-stream' },
+      body: blob,
+      signal: AbortSignal.timeout(60000)
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`上传失败 (${res.status})：${errText.slice(0, 200)}`);
+    }
+
     // 标记为已上传
     file.cloudUploaded = true;
     file.cloudUploadTime = new Date().toISOString();
-    file.cloudUrl = `https://${JSON.parse(config).bucket}.cos.${JSON.parse(config).region}.myqcloud.com/${activityId}/${stage}/${file.id}`;
+    file.cloudUrl = `https://${cfg.bucket}.cos.${cfg.region}.myqcloud.com/${cosKey}`;
     
     // 保存到本地存储
     saveFileStore(fileStore);
