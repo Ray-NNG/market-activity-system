@@ -330,112 +330,7 @@
   .budget-source-hq { color: #7c3aed; }
   .budget-source-sub { color: #0891b2; }
 
-  /* ===== AI 样式 ===== */
-  /* AI 悬浮按钮 */
-  #ai-fab {
-    position: fixed; bottom: 28px; right: 28px; z-index: 500;
-    width: 54px; height: 54px; border-radius: 50%;
-    background: linear-gradient(135deg,#7c3aed,#4f46e5);
-    color:#fff; font-size:24px; border:none; cursor:pointer;
-    box-shadow: 0 6px 24px rgba(79,70,229,.45);
-    display:flex; align-items:center; justify-content:center;
-    transition: transform .2s, box-shadow .2s;
-  }
-  #ai-fab:hover { transform:scale(1.1); box-shadow:0 8px 32px rgba(79,70,229,.55); }
-  #ai-fab .fab-badge {
-    position:absolute; top:-4px; right:-4px;
-    width:18px;height:18px;border-radius:50%;
-    background:var(--danger);color:#fff;font-size:10px;font-weight:700;
-    display:none;align-items:center;justify-content:center;
-  }
 
-  /* AI 对话抽屉 */
-  #ai-drawer {
-    position:fixed; right:0; top:0; bottom:0; width:380px; z-index:490;
-    background:#fff; box-shadow:-4px 0 32px rgba(0,0,0,.12);
-    display:flex; flex-direction:column;
-    transform:translateX(100%); transition:transform .3s cubic-bezier(.4,0,.2,1);
-  }
-  #ai-drawer.open { transform:translateX(0); }
-  .ai-drawer-head {
-    padding:16px 20px; border-bottom:1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between;
-    background:linear-gradient(135deg,#7c3aed,#4f46e5); color:#fff; flex-shrink:0;
-  }
-  .ai-drawer-title { font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; }
-  .ai-drawer-close { background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1; }
-  .ai-messages {
-    flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px;
-  }
-  .ai-msg { display:flex; gap:10px; align-items:flex-start; }
-  .ai-msg.user { flex-direction:row-reverse; }
-  .ai-msg-avatar {
-    width:32px;height:32px;border-radius:50%;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;font-size:16px;
-  }
-  .ai-msg.ai .ai-msg-avatar { background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff; }
-  .ai-msg.user .ai-msg-avatar { background:#e0e7ff;color:#4f46e5; }
-  .ai-msg-bubble {
-    max-width:80%; padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.6;
-  }
-  .ai-msg.ai .ai-msg-bubble { background:#f8fafc; border:1px solid var(--border); }
-  .ai-msg.user .ai-msg-bubble { background:#4f46e5; color:#fff; }
-  .ai-msg-bubble.typing::after { content:'●●●'; animation:typing 1s infinite; font-size:10px; }
-  @keyframes typing { 0%,100%{opacity:.3} 50%{opacity:1} }
-  .ai-quick-btns { padding:8px 16px; display:flex; flex-wrap:wrap; gap:6px; border-top:1px solid var(--border); flex-shrink:0; }
-  .ai-quick-btn {
-    padding:5px 10px; border-radius:16px; border:1px solid var(--border);
-    font-size:12px; cursor:pointer; background:#fff; transition:all .15s; white-space:nowrap;
-  }
-  .ai-quick-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
-  .ai-input-bar { padding:12px 16px; border-top:1px solid var(--border); display:flex; gap:8px; flex-shrink:0; }
-  .ai-input {
-    flex:1; padding:9px 12px; border:1px solid var(--border); border-radius:20px;
-    font-size:13px; outline:none; resize:none; min-height:38px; max-height:100px;
-    font-family:inherit;
-  }
-  .ai-input:focus { border-color:var(--primary); }
-  .ai-send-btn {
-    width:38px;height:38px;border-radius:50%;background:var(--primary);color:#fff;
-    border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;
-    transition:background .2s; flex-shrink:0;
-  }
-  .ai-send-btn:hover { background:#4338ca; }
-  .ai-send-btn:disabled { background:#c7d2fe; cursor:not-allowed; }
-
-  /* AI Key 设置 */
-  .ai-key-bar {
-    padding:10px 16px; background:#fefce8; border-bottom:1px solid #fef08a;
-    display:flex; align-items:center; gap:8px; font-size:12px; flex-shrink:0;
-  }
-  .ai-key-input {
-    flex:1; padding:5px 10px; border:1px solid #fef08a; border-radius:8px;
-    font-size:12px; outline:none; font-family:monospace;
-  }
-  .ai-key-input:focus { border-color:var(--warning); }
-  .ai-key-save { padding:5px 10px; background:var(--warning); color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:12px; }
-
-  /* AI 内联按钮（新建活动/复盘区） */
-  .btn-ai {
-    display:inline-flex; align-items:center; gap:5px;
-    padding:7px 14px; border-radius:8px; border:none; cursor:pointer;
-    font-size:13px; font-weight:600;
-    background:linear-gradient(135deg,#7c3aed,#4f46e5); color:#fff;
-    transition:opacity .2s; white-space:nowrap;
-  }
-  .btn-ai:hover { opacity:.88; }
-  .btn-ai:disabled { opacity:.5; cursor:not-allowed; }
-
-  /* AI 生成结果卡片 */
-  .ai-result-card {
-    background:linear-gradient(135deg,#f5f3ff,#ede9fe);
-    border:1px solid #c4b5fd; border-radius:12px; padding:16px; margin-top:12px;
-  }
-  .ai-result-title { font-size:13px; font-weight:700; color:#7c3aed; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
-  .ai-result-section { margin-bottom:10px; }
-  .ai-result-section h4 { font-size:12px; font-weight:700; color:#5b21b6; margin-bottom:5px; }
-  .ai-result-section p, .ai-result-section li { font-size:13px; color:#1e293b; line-height:1.6; }
-  .ai-result-section ul { padding-left:16px; }
 
   /* ===== 日历视图 ===== */
   .calendar-wrap { user-select: none; }
@@ -500,8 +395,67 @@
   }
   .owner-activity-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
 </style>
+
+<style>
+  /* ===== 登录遮罩 ===== */
+  #login-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-card {
+    background: #fff; border-radius: 20px; padding: 48px 40px;
+    width: 380px; max-width: 90vw;
+    box-shadow: 0 24px 64px rgba(0,0,0,.35);
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .login-logo { text-align: center; }
+  .login-logo h1 { font-size: 20px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+  .login-logo p { font-size: 13px; color: #64748b; }
+  .login-form { display: flex; flex-direction: column; gap: 14px; }
+  .login-field { display: flex; flex-direction: column; gap: 6px; }
+  .login-field label { font-size: 13px; font-weight: 600; color: #374151; }
+  .login-field input {
+    padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 14px; outline: none; transition: border-color .2s;
+    font-family: inherit;
+  }
+  .login-field input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+  .login-btn {
+    padding: 12px; border-radius: 10px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    color: #fff; font-size: 15px; font-weight: 700;
+    transition: opacity .2s; margin-top: 4px;
+  }
+  .login-btn:hover { opacity: .88; }
+  .login-error {
+    color: #ef4444; font-size: 13px; text-align: center;
+    background: #fef2f2; border: 1px solid #fecaca;
+    border-radius: 8px; padding: 8px 12px; display: none;
+  }
+</style>
 </head>
 <body>
+
+<!-- ===== 登录遮罩 ===== -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div style="font-size:40px;margin-bottom:8px">🎯</div>
+      <h1>市场活动管理系统</h1>
+      <p>请输入密码以继续</p>
+    </div>
+    <div class="login-form">
+      <div class="login-field">
+        <label>密码</label>
+        <input type="password" id="login-pwd" placeholder="请输入密码"
+          onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      <div class="login-error" id="login-error">密码错误，请重新输入</div>
+      <button class="login-btn" onclick="doLogin()">登 录</button>
+    </div>
+  </div>
+</div>
 
 <!-- 修改密码弹窗 -->
 <div id="modal-change-password" class="modal-overlay" style="display:none">
@@ -733,11 +687,9 @@
 
     <!-- ===== 效果分析 ===== -->
     <div id="page-analysis" class="page">
-      <!-- AI 分析入口 -->
-      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-        <button class="btn-ai" onclick="aiAnalyzeAll()">✨ AI 智能效果分析</button>
+      <!-- 工具栏 -->
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px">
       </div>
-      <div id="ai-analysis-result" style="margin-bottom:20px"></div>
       <div class="grid-4 section-gap" id="analysis-stats">
         <!-- 将由 JavaScript 动态生成 -->
       </div>
@@ -755,13 +707,21 @@
         </div>
       </div>
 
+      <!-- 地市分析 -->
+      <div class="card section-gap">
+        <div class="card-header">
+          <div class="card-title">🗺️ 广西地市活动分布</div>
+        </div>
+        <div id="city-analysis-content"></div>
+      </div>
+
       <div class="card">
         <div class="card-header"><div class="card-title">🏆 活动效果排行</div></div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>排名</th><th>活动名称</th><th>类型</th>
+                <th>排名</th><th>活动名称</th><th>类型</th><th>地市</th>
                 <th>实际参与</th><th>线上覆盖</th><th>商机</th><th>ROI</th><th>满意度</th><th>综合评分</th>
               </tr>
             </thead>
@@ -783,13 +743,16 @@
             <option value="已完成">已完成</option>
           </select>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="openNewActivity()">＋ 新建活动</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline btn-sm" onclick="exportActivitiesToExcel()">📥 导出 Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="openNewActivity()">＋ 新建活动</button>
+        </div>
       </div>
       <div class="card">
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>活动名称</th><th>类型</th><th>时间</th><th>负责人</th><th>预算</th><th>状态</th><th>进度</th><th>操作</th></tr>
+              <tr><th>活动名称</th><th>类型</th><th>地市</th><th>时间</th><th>负责人</th><th>预算</th><th>状态</th><th>进度</th><th>操作</th></tr>
             </thead>
             <tbody id="activities-table"></tbody>
           </table>
@@ -833,7 +796,6 @@
       <label>活动名称 *</label>
       <div style="display:flex;gap:8px;align-items:center">
         <input class="form-control" id="new-name" placeholder="例：2026年Q2品牌焕新发布会" style="flex:1">
-        <button class="btn-ai" id="ai-gen-plan-btn" onclick="aiGeneratePlan()" title="输入活动名称后，AI自动补全策划内容">✨ AI 生成策划</button>
       </div>
       <div id="ai-plan-result"></div>
     </div>
@@ -856,6 +818,35 @@
       <div class="form-group">
         <label>负责人</label>
         <input class="form-control" id="new-owner" placeholder="负责人姓名">
+      </div>
+    </div>
+    <!-- 广西地区选择 -->
+    <div class="grid-2" style="gap:12px">
+      <div class="form-group">
+        <label>📍 地市</label>
+        <select class="form-control" id="new-city" onchange="updateDistrictOptions()">
+          <option value="">请选择地市</option>
+          <option value="南宁市">南宁市</option>
+          <option value="柳州市">柳州市</option>
+          <option value="桂林市">桂林市</option>
+          <option value="梧州市">梧州市</option>
+          <option value="北海市">北海市</option>
+          <option value="防城港市">防城港市</option>
+          <option value="钦州市">钦州市</option>
+          <option value="贵港市">贵港市</option>
+          <option value="玉林市">玉林市</option>
+          <option value="百色市">百色市</option>
+          <option value="贺州市">贺州市</option>
+          <option value="河池市">河池市</option>
+          <option value="来宾市">来宾市</option>
+          <option value="崇左市">崇左市</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>🏘️ 区县</label>
+        <select class="form-control" id="new-district">
+          <option value="">请先选择地市</option>
+        </select>
       </div>
     </div>
     <div class="grid-2" style="gap:12px">
@@ -959,47 +950,6 @@
       <button class="btn btn-outline" onclick="closeModal('modal-file-preview')">关闭</button>
       <button class="btn btn-primary" id="file-download-btn">⬇ 下载文件</button>
     </div>
-  </div>
-</div>
-
-<!-- ===== AI 悬浮按钮 ===== -->
-<button id="ai-fab" onclick="toggleAiDrawer()" title="AI 智能助手 (KIMI)">
-  🤖
-  <div class="fab-badge" id="ai-fab-badge">!</div>
-</button>
-
-<!-- ===== AI 对话抽屉 ===== -->
-<div id="ai-drawer">
-  <div class="ai-drawer-head">
-    <div class="ai-drawer-title">🤖 AI 智能助手 <span style="font-size:11px;opacity:.7;font-weight:400">powered by KIMI</span></div>
-    <button class="ai-drawer-close" onclick="toggleAiDrawer()">×</button>
-  </div>
-  <!-- API Key 配置栏 -->
-  <div class="ai-key-bar" id="ai-key-bar">
-    <span>🔑</span>
-    <input class="ai-key-input" id="ai-key-input" type="password" placeholder="粘贴你的 KIMI API Key（sk-...）">
-    <button class="ai-key-save" onclick="saveApiKey()">保存</button>
-  </div>
-  <!-- 消息区 -->
-  <div class="ai-messages" id="ai-messages">
-    <div class="ai-msg ai">
-      <div class="ai-msg-avatar">🤖</div>
-      <div class="ai-msg-bubble">你好！我是你的 AI 活动助手，基于 KIMI 驱动。<br><br>我可以帮你：<br>📝 生成活动策划方案<br>📊 分析活动效果数据<br>📋 撰写复盘总结<br>🔍 回答关于活动的任何问题<br><br>请先在上方填写 KIMI API Key，然后开始提问吧！</div>
-    </div>
-  </div>
-  <!-- 快捷提问 -->
-  <div class="ai-quick-btns" id="ai-quick-btns">
-    <button class="ai-quick-btn" onclick="quickAsk('分析一下本季度整体活动表现')">📊 整体表现分析</button>
-    <button class="ai-quick-btn" onclick="quickAsk('哪个活动ROI最高？原因是什么？')">💸 最高ROI活动</button>
-    <button class="ai-quick-btn" onclick="quickAsk('目前有哪些风险需要关注？')">⚠️ 风险汇总</button>
-    <button class="ai-quick-btn" onclick="quickAsk('给我一份下季度活动规划建议')">📅 下季度规划</button>
-  </div>
-  <!-- 输入栏 -->
-  <div class="ai-input-bar">
-    <textarea class="ai-input" id="ai-input" placeholder="问我任何关于活动的问题…" rows="1"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiMessage()}"
-      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-    <button class="ai-send-btn" id="ai-send-btn" onclick="sendAiMessage()">➤</button>
   </div>
 </div>
 
@@ -1716,6 +1666,22 @@ function reviewCard(a) {
 function renderAnalysis() {
   const done = activities.filter(a => a.roi !== null);
 
+  // 统计卡片
+  const statsDiv = document.getElementById('analysis-stats');
+  if (statsDiv) {
+    const totalParticipants = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('参与'))?.actual||0),0);
+    const totalCoverage = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('覆盖'))?.actual||0),0);
+    const totalLeads = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('商机'))?.actual||0),0);
+    statsDiv.innerHTML = `
+      <div class="stat-card"><div class="label">📋 活动总数</div><div class="value color-primary">${activities.length}</div><div class="change text-muted">累计已创建</div></div>
+      <div class="stat-card"><div class="label">👥 线下参与总人数</div><div class="value color-success">${totalParticipants}</div><div class="change text-muted">实际参与人数</div></div>
+      <div class="stat-card"><div class="label">🌐 线上覆盖总人数</div><div class="value color-info">${totalCoverage}</div><div class="change text-muted">线上触达人数</div></div>
+      <div class="stat-card"><div class="label">💼 商机总数</div><div class="value color-warning">${totalLeads}</div><div class="change text-muted">累计商机数量</div></div>
+      <div class="stat-card"><div class="label">💸 平均 ROI</div><div class="value color-warning">${done.length>0?(done.reduce((s,a)=>s+(a.roi||0),0)/done.length).toFixed(1)+'x':'-'}</div><div class="change text-muted">已复盘活动</div></div>
+      <div class="stat-card"><div class="label">⭐ 平均满意度</div><div class="value" style="color:#f59e0b">${done.filter(a=>a.satisfaction).length>0?(done.filter(a=>a.satisfaction).reduce((s,a)=>s+(a.satisfaction||0),0)/done.filter(a=>a.satisfaction).length).toFixed(1):'-'}</div><div class="change">/ 5.0 分</div></div>
+    `;
+  }
+
   // ROI 条形图
   const roiChart = document.getElementById('roi-chart');
   const roiLabels = document.getElementById('roi-labels');
@@ -1723,11 +1689,11 @@ function renderAnalysis() {
   const maxRoi = Math.max(...done.map(a=>a.roi||0), 4);
   roiChart.innerHTML = done.map((a,i) => `
     <div class="bar-group">
-      <div class="bar" style="background:${colors[i]};height:${(a.roi/maxRoi)*180}px" data-val="${a.roi}x ROI"></div>
+      <div class="bar" style="background:${colors[i%colors.length]};height:${(a.roi/maxRoi)*180}px" data-val="${a.roi}x ROI"></div>
     </div>
   `).join('');
   roiLabels.innerHTML = done.map((a,i) => `
-    <div class="flex-center gap-8 text-sm"><div style="width:8px;height:8px;border-radius:2px;background:${colors[i]}"></div><span>${a.name.substring(0,6)}</span></div>
+    <div class="flex-center gap-8 text-sm"><div style="width:8px;height:8px;border-radius:2px;background:${colors[i%colors.length]}"></div><span>${a.name.substring(0,6)}</span></div>
   `).join('');
 
   // 趋势折线
@@ -1752,18 +1718,22 @@ function renderAnalysis() {
     }).join('')}
   `;
 
+  // 地市分析
+  renderCityAnalysis();
+
   // 排行榜
   const tbody = document.getElementById('ranking-table');
   const ranked = [...done].sort((a,b)=>b.roi-a.roi);
   tbody.innerHTML = ranked.map((a,i) => {
     const medals = ['🥇','🥈','🥉'];
-    const offline = a.kpis.find(k=>k.name.includes('参与'));
-    const online = a.kpis.find(k=>k.name.includes('覆盖'));
-    const leads = a.kpis.find(k=>k.name.includes('商机'));
+    const offline = a.kpis?.find(k=>k.name.includes('参与'));
+    const online = a.kpis?.find(k=>k.name.includes('覆盖'));
+    const leads = a.kpis?.find(k=>k.name.includes('商机'));
     return `<tr>
       <td>${medals[i]||i+1}</td>
       <td class="fw-600">${a.name}</td>
-      <td><span class="tag">${a.type}</span></td>
+      <td><span class="tag">${a.type||'-'}</span></td>
+      <td class="text-sm" style="color:var(--text-muted)">${a.city||'-'}</td>
       <td>${offline?offline.actual+offline.unit:'-'}</td>
       <td>${online?online.actual+online.unit:'-'}</td>
       <td>${leads?leads.actual+leads.unit:'-'}</td>
@@ -1774,16 +1744,91 @@ function renderAnalysis() {
   }).join('');
 }
 
+// 地市分析
+function renderCityAnalysis() {
+  const container = document.getElementById('city-analysis-content');
+  if (!container) return;
+
+  // 按地市汇总
+  const cityMap = {};
+  activities.forEach(a => {
+    const city = a.city || '未指定地市';
+    if (!cityMap[city]) cityMap[city] = { count: 0, participants: 0, coverage: 0, leads: 0, budgets: 0 };
+    cityMap[city].count++;
+    cityMap[city].participants += a.kpis?.find(k=>k.name.includes('参与'))?.actual || 0;
+    cityMap[city].coverage += a.kpis?.find(k=>k.name.includes('覆盖'))?.actual || 0;
+    cityMap[city].leads += a.kpis?.find(k=>k.name.includes('商机'))?.actual || 0;
+    cityMap[city].budgets += a.budget || 0;
+  });
+
+  const cities = Object.entries(cityMap).sort((a,b) => b[1].count - a[1].count);
+
+  if (cities.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted)">暂无活动数据，创建活动时选择地市后即可查看分析</div>';
+    return;
+  }
+
+  const maxCount = Math.max(...cities.map(([,v])=>v.count), 1);
+  const barColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16','#a855f7','#ef4444','#0ea5e9','#d946ef'];
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- 左：柱状图 -->
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:12px">活动数量分布</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${cities.map(([city, stat], i) => `
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:72px;font-size:12px;color:var(--text-muted);text-align:right;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${city}">${city.replace('市','')}</div>
+              <div style="flex:1;background:#f1f5f9;border-radius:4px;overflow:hidden;height:20px">
+                <div style="width:${(stat.count/maxCount)*100}%;background:${barColors[i%barColors.length]};height:100%;border-radius:4px;transition:width .4s"></div>
+              </div>
+              <div style="width:28px;font-size:12px;font-weight:600;color:var(--text)">${stat.count}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <!-- 右：数据表 -->
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:12px">各地市 KPI 汇总</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#f8fafc">
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">地市</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)">活动数</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)">参与人数</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)">商机数</th>
+              <th style="padding:6px 8px;text-align:right;border-bottom:1px solid var(--border)">预算(万)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cities.map(([city, stat]) => `
+              <tr>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border)">${city}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-weight:600">${stat.count}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${stat.participants||'-'}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${stat.leads||'-'}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right">${stat.budgets>0?(stat.budgets/10000).toFixed(1):'-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
 // ===== 档案页 =====
 function renderActivities(filter='all') {
   const list = filter==='all' ? activities : activities.filter(a=>a.status===filter);
   document.getElementById('activities-table').innerHTML = list.map(a => `
     <tr>
       <td class="fw-600">${a.name}</td>
-      <td><span class="tag">${a.type}</span></td>
+      <td><span class="tag">${a.type||'-'}</span></td>
+      <td class="text-sm" style="color:var(--text-muted)">${a.city||'-'}${a.district?(' · '+a.district):''}</td>
       <td class="text-sm" style="color:var(--text-muted)">${a.start} ~ ${a.end}</td>
       <td>${a.owner}</td>
-      <td>¥${Number(a.budget).toLocaleString()}</td>
+      <td>¥${Number(a.budget||0).toLocaleString()}</td>
       <td>${statusBadge(a.status)}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;width:120px">
@@ -2383,6 +2428,8 @@ async function createActivity() {
     id: String(Date.now()),
     name,
     type: document.getElementById('new-type').value,
+    city: document.getElementById('new-city').value || '',
+    district: document.getElementById('new-district').value || '',
     owner: document.getElementById('new-owner').value || '待定',
     start: document.getElementById('new-start').value || '待定',
     end: document.getElementById('new-end').value || '待定',
@@ -2408,6 +2455,8 @@ async function createActivity() {
   await syncData();
   closeModal('modal-new');
   ['new-name','new-owner','new-start','new-end','new-goal','new-desc'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('new-city').value = '';
+  document.getElementById('new-district').innerHTML = '<option value="">请先选择地市</option>';
   renderPage(getCurrentPage());
   alert('✅ 活动创建成功！');
 }
@@ -2549,389 +2598,46 @@ function showSearchResults(keyword) {
   dropdown.classList.add('show');
 }
 
-// ===== AI 核心功能 (KIMI) =====
-const KIMI_BASE = 'https://api.moonshot.cn/v1';
-const KIMI_MODEL = 'moonshot-v1-8k';
-
-function getApiKey() {
-  return localStorage.getItem('mcm_kimi_key') || '';
-}
-
-function saveApiKey() {
-  const val = document.getElementById('ai-key-input').value.trim();
-  if(!val) { alert('请输入 API Key'); return; }
-  localStorage.setItem('mcm_kimi_key', val);
-  document.getElementById('ai-key-bar').style.background = '#f0fdf4';
-  document.getElementById('ai-key-bar').style.borderColor = '#bbf7d0';
-  document.getElementById('ai-key-bar').innerHTML = `<span>✅</span><span style="font-size:12px;color:#059669">API Key 已保存（${val.slice(0,8)}…）</span><button style="margin-left:auto;padding:4px 8px;border:1px solid #d1fae5;border-radius:6px;background:#fff;cursor:pointer;font-size:11px" onclick="clearApiKey()">更换</button>`;
-  document.getElementById('ai-fab-badge').style.display = 'none';
-  appendAiMsg('ai', '✅ API Key 已保存！现在你可以开始使用 AI 功能了。有什么想问的吗？');
-}
-
-function clearApiKey() {
-  localStorage.removeItem('mcm_kimi_key');
-  location.reload();
-}
-
-// 调用 KIMI API
-async function callKimi(messages, onChunk, signal) {
-  const key = getApiKey();
-  if(!key) {
-    alert('请先在 AI 助手面板（右下角 🤖）中填写 KIMI API Key');
-    return null;
-  }
-  const resp = await fetch(`${KIMI_BASE}/chat/completions`, {
-    method: 'POST',
-    signal,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`
-    },
-    body: JSON.stringify({
-      model: KIMI_MODEL,
-      stream: !!onChunk,
-      messages,
-      temperature: 0.7,
-      max_tokens: 2000
-    })
-  });
-  if(!resp.ok) {
-    const err = await resp.json().catch(()=>({}));
-    throw new Error(err?.error?.message || `HTTP ${resp.status}`);
-  }
-  if(!onChunk) {
-    const data = await resp.json();
-    return data.choices[0].message.content;
-  }
-  // 流式
-  const reader = resp.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  while(true) {
-    const { done, value } = await reader.read();
-    if(done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop();
-    for(const line of lines) {
-      const trimmed = line.trim();
-      if(!trimmed || trimmed === 'data: [DONE]') continue;
-      if(trimmed.startsWith('data: ')) {
-        try {
-          const json = JSON.parse(trimmed.slice(6));
-          const delta = json.choices?.[0]?.delta?.content;
-          if(delta) onChunk(delta);
-        } catch {}
-      }
-    }
-  }
-  return null;
-}
-
-// 获取当前活动数据摘要（给 AI 做上下文）
-function getActivitiesSummary() {
-  return activities.map(a => {
-    const kpiStr = a.kpis.map(k=>`${k.name}:目标${k.target}${k.unit}/实际${k.actual||'未填'}${k.unit}`).join('、');
-    return `[${a.name}] 负责人:${a.owner} 类型:${a.type} 状态:${a.status} 进度:${a.progress}% 预算:¥${a.budget} 已支出:¥${a.spent} ROI:${a.roi||'未知'} 满意度:${a.satisfaction||'未知'} KPI:${kpiStr}`;
-  }).join('\n');
-}
-
-// ===== AI 对话抽屉 =====
-let aiDrawerOpen = false;
-let aiAbortCtrl = null;
-const aiConversation = []; // 对话历史
-
-function toggleAiDrawer() {
-  aiDrawerOpen = !aiDrawerOpen;
-  document.getElementById('ai-drawer').classList.toggle('open', aiDrawerOpen);
-  if(aiDrawerOpen) {
-    // 检查是否有 key
-    const key = getApiKey();
-    if(key) {
-      document.getElementById('ai-key-bar').style.background = '#f0fdf4';
-      document.getElementById('ai-key-bar').style.borderColor = '#bbf7d0';
-      document.getElementById('ai-key-bar').innerHTML = `<span>✅</span><span style="font-size:12px;color:#059669">API Key 已保存（${key.slice(0,8)}…）</span><button style="margin-left:auto;padding:4px 8px;border:1px solid #d1fae5;border-radius:6px;background:#fff;cursor:pointer;font-size:11px" onclick="clearApiKey()">更换</button>`;
-      document.getElementById('ai-fab-badge').style.display = 'none';
-    } else {
-      document.getElementById('ai-fab-badge').style.display = 'flex';
-    }
-    setTimeout(()=>document.getElementById('ai-input').focus(), 300);
-  }
-}
-
-function appendAiMsg(role, text, isTyping = false) {
-  const box = document.getElementById('ai-messages');
-  const id = 'msg-' + Date.now();
-  const div = document.createElement('div');
-  div.className = `ai-msg ${role}`;
-  div.id = id;
-  div.innerHTML = `
-    <div class="ai-msg-avatar">${role==='ai'?'🤖':'👤'}</div>
-    <div class="ai-msg-bubble ${isTyping?'typing':''}">${isTyping?'':escHtml(text)}</div>
-  `;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-  return id;
-}
-
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-}
-
-function updateAiMsg(id, text) {
-  const el = document.getElementById(id);
-  if(!el) return;
-  const bubble = el.querySelector('.ai-msg-bubble');
-  bubble.classList.remove('typing');
-  bubble.innerHTML = escHtml(text);
-  document.getElementById('ai-messages').scrollTop = 999999;
-}
-
-async function sendAiMessage() {
-  const input = document.getElementById('ai-input');
-  const text = input.value.trim();
-  if(!text || !getApiKey()) {
-    if(!getApiKey()) { toggleAiDrawer(); return; }
-    return;
-  }
-  input.value = '';
-  input.style.height = 'auto';
-  document.getElementById('ai-send-btn').disabled = true;
-
-  appendAiMsg('user', text);
-  aiConversation.push({ role:'user', content: text });
-
-  // 系统 prompt 带上活动数据
-  const sysPrompt = `你是一个专业的市场活动管理 AI 助手。以下是当前系统中的活动数据，请基于这些数据回答问题：\n\n${getActivitiesSummary()}\n\n请用中文简洁回答，适当使用换行和符号使回复易读。`;
-
-  const msgId = appendAiMsg('ai', '', true);
-  let fullText = '';
-
-  try {
-    if(aiAbortCtrl) aiAbortCtrl.abort();
-    aiAbortCtrl = new AbortController();
-
-    const messages = [
-      { role:'system', content: sysPrompt },
-      ...aiConversation.slice(-10)
-    ];
-
-    await callKimi(messages, (chunk) => {
-      fullText += chunk;
-      updateAiMsg(msgId, fullText);
-    }, aiAbortCtrl.signal);
-
-    if(fullText) aiConversation.push({ role:'assistant', content: fullText });
-  } catch(e) {
-    updateAiMsg(msgId, `❌ 出错了：${e.message}\n\n请检查 API Key 是否正确，或网络是否正常。`);
-  }
-
-  document.getElementById('ai-send-btn').disabled = false;
-  input.focus();
-}
-
-function quickAsk(text) {
-  document.getElementById('ai-input').value = text;
-  sendAiMessage();
-}
-
-// ===== AI 生成活动策划 =====
-async function aiGeneratePlan() {
-  const name = document.getElementById('new-name').value.trim();
-  if(!name) { alert('请先填写活动名称'); document.getElementById('new-name').focus(); return; }
-  if(!getApiKey()) { toggleAiDrawer(); return; }
-
-  const btn = document.getElementById('ai-gen-plan-btn');
-  const resultDiv = document.getElementById('ai-plan-result');
-  btn.disabled = true;
-  btn.textContent = '⏳ AI 生成中…';
-  resultDiv.innerHTML = '';
-
-  const prompt = `请为以下市场活动生成策划方案，活动名称：「${name}」。
-请返回以下内容（JSON 格式）：
-{
-  "goal": "核心目标（一段话，50字内）",
-  "desc": "活动简介（100字内）",
-  "tasks": ["任务1","任务2","任务3","任务4","任务5"],
-  "kpis": [
-    {"name":"活动实际参与人数","target":数字,"unit":"人"},
-    {"name":"线上覆盖人数","target":数字,"unit":"人"},
-    {"name":"商机情况","target":数字,"unit":"个"}
-  ],
-  "risks": [{"level":"高/中/低","text":"风险描述"}]
-}
-只返回 JSON，不要其他文字。`;
-
-  try {
-    const result = await callKimi([{role:'user', content: prompt}], null, null);
-    const jsonStr = result.replace(/```json|```/g,'').trim();
-    const data = JSON.parse(jsonStr);
-
-    // 填入表单
-    if(data.goal) document.getElementById('new-goal').value = data.goal;
-    if(data.desc) document.getElementById('new-desc').value = data.desc;
-
-    // 渲染结果预览
-    resultDiv.innerHTML = `
-      <div class="ai-result-card">
-        <div class="ai-result-title">✨ AI 已生成以下策划内容（可修改）</div>
-        <div class="ai-result-section">
-          <h4>🎯 核心目标</h4><p>${data.goal||''}</p>
-        </div>
-        <div class="ai-result-section">
-          <h4>✅ 建议任务</h4>
-          <ul>${(data.tasks||[]).map(t=>`<li>${t}</li>`).join('')}</ul>
-        </div>
-        <div class="ai-result-section">
-          <h4>📊 KPI 建议</h4>
-          <ul>${(data.kpis||[]).map(k=>`<li>${k.name}：目标 ${k.target}${k.unit}</li>`).join('')}</ul>
-        </div>
-        ${data.risks?.length ? `<div class="ai-result-section"><h4>⚠️ 风险提示</h4><ul>${data.risks.map(r=>`<li>[${r.level}] ${r.text}</li>`).join('')}</ul></div>` : ''}
-        <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="applyAiPlan(${JSON.stringify(data).replace(/"/g,'&quot;')})">✅ 应用此方案</button>
-      </div>`;
-  } catch(e) {
-    resultDiv.innerHTML = `<div style="color:var(--danger);font-size:13px;margin-top:8px">❌ 生成失败：${e.message}</div>`;
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '✨ AI 生成策划';
-}
-
-function applyAiPlan(data) {
-  if(data.tasks) {
-    // 存到临时变量，createActivity 时读取
-    window._aiPlanTasks = data.tasks.map(t=>({name:t,done:false}));
-    window._aiPlanKpis = (data.kpis||[]).map(k=>({name:k.name,target:k.target,actual:0,unit:k.unit}));
-    window._aiPlanRisks = data.risks||[];
-    alert('✅ 方案已应用！任务、KPI、风险已自动填入，点击「创建活动」即可保存。');
-  }
-}
-
-// ===== AI 效果分析 =====
-async function aiAnalyzeAll() {
-  if(!getApiKey()) { toggleAiDrawer(); return; }
-  const resultDiv = document.getElementById('ai-analysis-result');
-  resultDiv.innerHTML = `<div class="ai-result-card"><div class="ai-result-title">⏳ AI 正在分析数据…</div><div style="color:var(--text-muted);font-size:13px">正在生成报告，请稍候</div></div>`;
-
-  const prompt = `你是一个专业市场分析师，请基于以下活动数据，撰写一份效果分析报告：
-
-${getActivitiesSummary()}
-
-请从以下几个维度分析并给出建议（用中文，分段清晰）：
-1. 整体表现总结（2-3句话）
-2. 亮点活动（ROI/满意度最高的，分析原因）
-3. 需要改进的活动（未达标的，分析原因）
-4. 资源分配建议
-5. 下季度活动规划建议（3条具体建议）
-
-格式要点：用 emoji 开头标注各段，语言简洁专业。`;
-
-  try {
-    let fullText = '';
-    resultDiv.innerHTML = `<div class="ai-result-card"><div class="ai-result-title">✨ AI 效果分析报告</div><div id="ai-analysis-text" style="font-size:13px;line-height:1.8;color:var(--text)"></div></div>`;
-    await callKimi([{role:'user',content:prompt}], (chunk) => {
-      fullText += chunk;
-      const el = document.getElementById('ai-analysis-text');
-      if(el) el.innerHTML = escHtml(fullText);
-    }, null);
-  } catch(e) {
-    resultDiv.innerHTML = `<div class="ai-result-card" style="background:#fef2f2;border-color:#fecaca"><div style="color:var(--danger)">❌ 分析失败：${e.message}</div></div>`;
-  }
-}
-
-// ===== AI 生成复盘 =====
-async function aiGenerateReview(activityId) {
-  if(!getApiKey()) { toggleAiDrawer(); return; }
-  const a = activities.find(x=>String(x.id)===String(activityId));
-  if(!a) return;
-
-  const btn = event.target;
-  btn.disabled = true;
-  btn.textContent = '⏳ 生成中…';
-
-  const kpiStr = a.kpis.map(k=>`${k.name}：目标${k.target}${k.unit}，实际${k.actual||0}${k.unit}，完成率${k.actual&&k.target?Math.round(k.actual/k.target*100):0}%`).join('；');
-  const taskStr = a.tasks.map(t=>`${t.name}:${t.done?'完成':'未完成'}`).join('；');
-  const prompt = `请为以下市场活动生成复盘总结：
-活动名称：${a.name}
-类型：${a.type}
-负责人：${a.owner}
-时间：${a.start} ~ ${a.end}
-预算：¥${a.budget}，实际支出：¥${a.spent}
-KPI 完成情况：${kpiStr}
-任务完成情况：${taskStr}
-${a.risks.length?'风险情况：'+a.risks.map(r=>r.text).join('；'):''}
-
-请生成：
-1. 活动总结（150字内，客观评价整体表现）
-2. 经验沉淀（3条可复用的经验教训，每条一句话）
-3. 综合评分建议（1-5分，给出具体分数和理由）
-
-格式：每部分用标题分开，简洁专业。`;
-
-  try {
-    const result = await callKimi([{role:'user',content:prompt}], null, null);
-    // 解析结果填入复盘表单
-    const lines = result.split('\n').filter(l=>l.trim());
-    const summaryIdx = lines.findIndex(l=>l.includes('总结'));
-    const lessonIdx  = lines.findIndex(l=>l.includes('经验'));
-    const scoreIdx   = lines.findIndex(l=>l.includes('评分'));
-
-    let summary = '', lessons = '';
-    if(summaryIdx>=0 && lessonIdx>summaryIdx) summary = lines.slice(summaryIdx+1,lessonIdx).join('\n').trim();
-    if(lessonIdx>=0 && scoreIdx>lessonIdx)    lessons = lines.slice(lessonIdx+1,scoreIdx).join('\n').trim();
-    else if(lessonIdx>=0)                     lessons = lines.slice(lessonIdx+1).join('\n').trim();
-
-    const scoreMatch = result.match(/(\d+(?:\.\d+)?)\s*分/);
-    const score = scoreMatch ? parseFloat(scoreMatch[1]) : '';
-
-    if(summary) document.getElementById('review-summary').value = summary;
-    if(lessons) document.getElementById('review-lessons').value = lessons;
-    if(score)   document.getElementById('review-score').value = Math.min(5, Math.max(1, score));
-
-    // 显示提示
-    const notice = document.createElement('div');
-    notice.style.cssText = 'background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;font-size:13px;color:#059669;margin-bottom:12px';
-    notice.textContent = '✅ AI 已自动填写复盘内容，请检查后修改保存';
-    document.getElementById('review-summary').parentElement.parentElement.insertBefore(notice, document.getElementById('review-summary').parentElement);
-  } catch(e) {
-    alert(`AI 生成失败：${e.message}`);
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '✨ AI 自动生成复盘';
-}
-
 // ===== 登录功能 =====
 var calYear, calMonth;
 
 (function initLogin() {
-  const key = 'mcm_auth_ts';
+  const authKey = 'mcm_auth_ts';
   const SESSION_HOURS = 8;
-  const saved = localStorage.getItem(key);
+  const saved = localStorage.getItem(authKey);
+  const overlay = document.getElementById('login-overlay');
 
-  // 检查 URL 参数，如果有 auth 参数则跳过登录
-  const urlParams = new URLSearchParams(window.location.search);
-  const hasAuth = urlParams.has('auth');
-
-  if ((saved && (Date.now() - parseInt(saved)) < SESSION_HOURS * 3600000) || hasAuth) {
-    // 更新会话时间戳
-    localStorage.setItem(key, Date.now().toString());
-
-    // 隐藏登录遮罩
-    const overlay = document.getElementById('login-overlay');
-    if(overlay) {
-      overlay.style.display = 'none';
-    }
-
-    // 清除 URL 参数
-    if(hasAuth) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
+  // 会话未过期，直接放行
+  if (saved && (Date.now() - parseInt(saved)) < SESSION_HOURS * 3600000) {
+    localStorage.setItem(authKey, Date.now().toString());
+    if (overlay) overlay.style.display = 'none';
     return;
   }
-  const pwdInput = document.getElementById('login-pwd');
-  if(pwdInput) pwdInput.focus();
+
+  // 显示遮罩，聚焦密码框
+  if (overlay) overlay.style.display = 'flex';
+  setTimeout(() => {
+    const pwdInput = document.getElementById('login-pwd');
+    if (pwdInput) pwdInput.focus();
+  }, 50);
 })();
+
+function doLogin() {
+  const pwdInput = document.getElementById('login-pwd');
+  const errorEl  = document.getElementById('login-error');
+  const input    = (pwdInput ? pwdInput.value : '');
+  const correct  = localStorage.getItem('mcm_password') || 'admin123';
+
+  if (input === correct) {
+    localStorage.setItem('mcm_auth_ts', Date.now().toString());
+    const overlay = document.getElementById('login-overlay');
+    if (overlay) overlay.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
+  } else {
+    if (errorEl) errorEl.style.display = 'block';
+    if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
+  }
+}
 
 // ===== 修改密码功能 =====
 window.openChangePasswordModal = function() {
@@ -2940,6 +2646,29 @@ window.openChangePasswordModal = function() {
   document.getElementById('confirm-pwd').value = '';
   showModal('modal-change-password');
 };
+
+function saveNewPassword() {
+  const current  = document.getElementById('current-pwd').value;
+  const newPwd   = document.getElementById('new-pwd').value;
+  const confirm  = document.getElementById('confirm-pwd').value;
+  const correct  = localStorage.getItem('mcm_password') || 'admin123';
+
+  if (current !== correct) {
+    alert('当前密码不正确');
+    return;
+  }
+  if (!newPwd || newPwd.length < 4) {
+    alert('新密码不能少于4位');
+    return;
+  }
+  if (newPwd !== confirm) {
+    alert('两次输入的新密码不一致');
+    return;
+  }
+  localStorage.setItem('mcm_password', newPwd);
+  closeModal('modal-change-password');
+  alert('✅ 密码已修改成功');
+}
 
 // ===== 日历渲染 =====
 function getCalendarEvents() {
@@ -3234,6 +2963,79 @@ function renderOwnerAnalysis() {
       </div>
     </div>` : ''}
   `;
+}
+
+// ===== 广西区县数据 =====
+const GX_DISTRICTS = {
+  '南宁市': ['兴宁区','青秀区','江南区','西乡塘区','良庆区','邕宁区','武鸣区','隆安县','马山县','上林县','宾阳县','横州市'],
+  '柳州市': ['城中区','鱼峰区','柳南区','柳北区','柳江区','柳城县','鹿寨县','融安县','融水苗族自治县','三江侗族自治县'],
+  '桂林市': ['秀峰区','叠彩区','象山区','七星区','雁山区','临桂区','阳朔县','灵川县','全州县','兴安县','永福县','灌阳县','龙胜各族自治县','资源县','平乐县','恭城瑶族自治县','荔浦市'],
+  '梧州市': ['万秀区','长洲区','龙圩区','苍梧县','藤县','蒙山县','岑溪市'],
+  '北海市': ['海城区','银海区','铁山港区','合浦县'],
+  '防城港市': ['港口区','防城区','上思县','东兴市'],
+  '钦州市': ['钦南区','钦北区','灵山县','浦北县'],
+  '贵港市': ['港北区','港南区','覃塘区','平南县','桂平市'],
+  '玉林市': ['玉州区','福绵区','容县','陆川县','博白县','兴业县','北流市'],
+  '百色市': ['右江区','田阳区','田东县','德保县','那坡县','凌云县','乐业县','田林县','西林县','隆林各族自治县','靖西市','平果市'],
+  '贺州市': ['八步区','平桂区','昭平县','钟山县','富川瑶族自治县'],
+  '河池市': ['金城江区','宜州区','南丹县','天峨县','凤山县','东兰县','罗城仫佬族自治县','环江毛南族自治县','巴马瑶族自治县','都安瑶族自治县','大化瑶族自治县'],
+  '来宾市': ['兴宾区','忻城县','象州县','武宣县','金秀瑶族自治县','合山市'],
+  '崇左市': ['江州区','扶绥县','宁明县','龙州县','大新县','天等县','凭祥市']
+};
+
+function updateDistrictOptions() {
+  const city = document.getElementById('new-city').value;
+  const districtSel = document.getElementById('new-district');
+  if (!city || !GX_DISTRICTS[city]) {
+    districtSel.innerHTML = '<option value="">请先选择地市</option>';
+    return;
+  }
+  districtSel.innerHTML = '<option value="">请选择区县（可选）</option>' +
+    GX_DISTRICTS[city].map(d => `<option value="${d}">${d}</option>`).join('');
+}
+
+// ===== Excel 导出功能 =====
+function exportActivitiesToExcel() {
+  const list = activities;
+  if (list.length === 0) { alert('暂无活动数据可导出'); return; }
+
+  // 构建 CSV（Excel 可直接打开）
+  const BOM = '\uFEFF'; // UTF-8 BOM，防止 Excel 乱码
+  const headers = ['活动名称','类型','地市','区县','负责人','开始日期','结束日期','预算(元)','已支出(元)','状态','进度(%)','线下参与','线上覆盖','商机数','ROI','满意度','核心目标'];
+
+  const rows = list.map(a => {
+    const offline = a.kpis ? (a.kpis.find(k=>k.name.includes('参与'))?.actual ?? '') : '';
+    const online  = a.kpis ? (a.kpis.find(k=>k.name.includes('覆盖'))?.actual ?? '') : '';
+    const leads   = a.kpis ? (a.kpis.find(k=>k.name.includes('商机'))?.actual ?? '') : '';
+    return [
+      a.name || '',
+      a.type || '',
+      a.city || '',
+      a.district || '',
+      a.owner || '',
+      a.start || '',
+      a.end || '',
+      a.budget || 0,
+      a.spent || 0,
+      a.status || '',
+      a.progress || 0,
+      offline,
+      online,
+      leads,
+      a.roi !== null && a.roi !== undefined ? a.roi : '',
+      a.satisfaction || '',
+      (a.goal || '').replace(/[\r\n,]/g, ' ')
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+  });
+
+  const csv = BOM + [headers.map(h=>`"${h}"`).join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `活动档案_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ===== HELPERS =====
