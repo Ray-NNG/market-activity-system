@@ -616,20 +616,17 @@
           <div class="card-header"><div class="card-title">💰 预算执行概况</div></div>
           <div style="text-align:center;padding:8px 0">
             <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">本季度总预算</div>
-            <div style="font-size:32px;font-weight:700;color:var(--primary)">¥ 485,000</div>
-            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">已支出 ¥ 312,800 <span class="color-warning">（64.5%）</span></div>
+            <div style="font-size:32px;font-weight:700;color:var(--primary)" id="total-budget">¥ 0</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">已支出 <span id="total-spent">¥ 0</span> <span class="color-warning" id="budget-percent">（0%）</span></div>
           </div>
           <div class="mt-16">
             <div class="flex-between text-sm mb-16">
-              <span>预算使用率</span><span class="fw-600">64.5%</span>
+              <span>预算使用率</span><span class="fw-600" id="budget-usage-rate">0%</span>
             </div>
-            <div class="progress-wrap"><div class="progress-bar progress-warning" style="width:64.5%"></div></div>
+            <div class="progress-wrap"><div class="progress-bar progress-warning" style="width:0%" id="budget-progress"></div></div>
           </div>
-          <div class="mt-16" style="display:flex;flex-direction:column;gap:8px;">
-            <div class="flex-between text-sm"><span>活动策划费</span><span>¥ 85,000</span></div>
-            <div class="flex-between text-sm"><span>物料制作费</span><span>¥ 120,000</span></div>
-            <div class="flex-between text-sm"><span>媒体投放费</span><span>¥ 180,000</span></div>
-            <div class="flex-between text-sm"><span>人员差旅费</span><span>¥ 27,800</span></div>
+          <div class="mt-16" style="display:flex;flex-direction:column;gap:8px;" id="budget-breakdown">
+            <!-- 动态加载预算明细 -->
           </div>
         </div>
 
@@ -1553,6 +1550,9 @@ function renderDashboard() {
   document.getElementById('stat-participants').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('参与'))?.actual||0),0);
   document.getElementById('stat-coverage').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('覆盖'))?.actual||0),0);
   document.getElementById('stat-leads').textContent = activities.reduce((sum,a)=>sum+(a.kpis.find(k=>k.name.includes('商机'))?.actual||0),0);
+
+  // 动态计算预算数据
+  updateBudgetStats();
 
   // 活动列表
   const list = document.getElementById('dashboard-activity-list');
@@ -2827,6 +2827,39 @@ function saveNewPassword() {
   alert('✅ 密码已修改成功');
 }
 
+// ===== 预算统计更新 =====
+function updateBudgetStats() {
+  // 计算所有活动的总预算和总支出
+  const totalBudget = activities.reduce((sum, a) => sum + (Number(a.budget) || 0), 0);
+  const totalSpent = activities.reduce((sum, a) => sum + (Number(a.spent) || 0), 0);
+  const budgetPercent = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+
+  // 更新预算概况
+  document.getElementById('total-budget').textContent = `¥ ${totalBudget.toLocaleString()}`;
+  document.getElementById('total-spent').textContent = `¥ ${totalSpent.toLocaleString()}`;
+  document.getElementById('budget-percent').textContent = `（${budgetPercent}%）`;
+  document.getElementById('budget-usage-rate').textContent = `${budgetPercent}%`;
+  document.getElementById('budget-progress').style.width = `${Math.min(budgetPercent, 100)}%`;
+
+  // 动态生成预算明细（按活动分类）
+  const breakdown = document.getElementById('budget-breakdown');
+  if (activities.length > 0) {
+    breakdown.innerHTML = activities.map(a => {
+      const pct = a.budget > 0 ? Math.round((a.spent / a.budget) * 100) : 0;
+      return `
+        <div class="flex-between text-sm">
+          <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name}">${a.name}</span>
+          <span style="color:${pct >= 100 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#64748b'}">
+            ¥ ${a.spent.toLocaleString()} <span style="font-size:11px;color:#94a3b8">/ ¥ ${a.budget.toLocaleString()} (${pct}%)</span>
+          </span>
+        </div>
+      `;
+    }).join('');
+  } else {
+    breakdown.innerHTML = '<div class="text-sm" style="color:var(--text-muted);text-align:center;padding:20px">暂无预算数据</div>';
+  }
+}
+
 // ===== 日历渲染 =====
 function getCalendarEvents() {
   const events = {}; // { 'YYYY-MM-DD': [{title, type}] }
@@ -2835,18 +2868,11 @@ function getCalendarEvents() {
     if(!events[date]) events[date] = [];
     events[date].push({title, type});
   };
+  // 只显示真实活动的日期节点，不添加硬编码的里程碑
   activities.forEach(a => {
     add(a.start, a.name + ' 开始', 'start');
     add(a.end,   a.name + ' 结束', 'end');
   });
-  // 固定里程碑
-  const miles = [
-    {date:'2026-03-20', title:'新品发布嘉宾确认'},
-    {date:'2026-05-20', title:'618大促启动'},
-    {date:'2026-06-01', title:'新品发布直播'},
-    {date:'2026-07-01', title:'用户感恩节启动'},
-  ];
-  miles.forEach(m => add(m.date, m.title, 'mile'));
   return events;
 }
 
