@@ -643,9 +643,28 @@
       <div class="login-logo">
         <div style="font-size:40px;margin-bottom:8px">🎯</div>
         <h1>市场活动管理系统</h1>
-        <p>请输入密码以继续</p>
+        <p>请选择角色并输入密码</p>
       </div>
       <div class="login-form">
+        <!-- 角色选择 -->
+        <div class="login-field">
+          <label>登录角色</label>
+          <div style="display:flex;gap:8px;margin-top:2px">
+            <button type="button" id="role-btn-superadmin" onclick="selectRole('superadmin')"
+              style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:#64748b">
+              👑 超级管理员
+            </button>
+            <button type="button" id="role-btn-admin" onclick="selectRole('admin')"
+              style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid #4f46e5;background:#4f46e5;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:#fff">
+              🛡️ 管理员
+            </button>
+            <button type="button" id="role-btn-viewer" onclick="selectRole('viewer')"
+              style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:#64748b">
+              👤 使用人员
+            </button>
+          </div>
+          <div id="role-hint" style="font-size:11px;color:#64748b;margin-top:6px;text-align:center">管理员：可创建、编辑、删除活动</div>
+        </div>
         <div class="login-field">
           <label>密码</label>
           <input type="password" id="login-pwd" placeholder="请输入密码"
@@ -655,10 +674,10 @@
         <button class="login-btn" onclick="doLogin()">登 录</button>
       </div>
     </div>
-    <!-- COS 配置卡片（未配置时显示） -->
+    <!-- COS 配置卡片（超级管理员登录后用，或初始化时显示） -->
     <div id="cos-setup-card" style="display:none;width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:16px;padding:20px;color:#fff">
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px">☁️ 首次使用 · 配置云存储</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:14px">配置后数据可跨设备同步，仅需填写一次</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">☁️ 初始化 · 配置云存储</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:14px">超级管理员配置一次后，所有设备自动同步，无需重复填写</div>
       <div style="margin-bottom:10px">
         <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">SecretId</div>
         <input id="setup-secret-id" type="text" placeholder="AKIDxxxxxxxx"
@@ -712,6 +731,8 @@
     <h1>📊 活动管理系统</h1>
     <span>Market Campaign Manager</span>
   </div>
+  <!-- 当前登录角色标识 -->
+  <div id="sidebar-role-bar" style="padding:8px 16px 0;"></div>
   <nav class="sidebar-nav">
     <div class="nav-section">
       <div class="nav-section-title">总览</div>
@@ -744,9 +765,18 @@
       </div>
     </div>
     <div class="nav-section">
-      <div class="nav-section-title">系统</div>
-      <div class="nav-item" onclick="goto('settings')">
+      <div class="nav-section-title">渠道管理</div>
+      <div class="nav-item" onclick="goto('channels')">
+        <span class="icon">🤝</span> 渠道名单
+      </div>
+    </div>
+    <div class="nav-section" id="nav-admin-section">
+      <div class="nav-section-title">系统管理</div>
+      <div class="nav-item" id="nav-settings" onclick="goto('settings')">
         <span class="icon">⚙️</span> 系统设置
+      </div>
+      <div class="nav-item" id="nav-user-mgmt" onclick="goto('usermgmt')">
+        <span class="icon">🔑</span> 账户权限
       </div>
     </div>
   </nav>
@@ -760,6 +790,8 @@
       <p id="page-sub">市场活动全流程监控与管理</p>
     </div>
     <div class="topbar-right">
+      <!-- 角色徽章 -->
+      <div id="topbar-role-badge" style="display:none;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600"></div>
       <!-- 全局搜索 -->
       <div class="search-wrap" id="search-wrap">
         <span class="search-icon">🔍</span>
@@ -1067,6 +1099,122 @@
       <div id="owner-analysis-content"></div>
     </div>
 
+    <!-- ===== 渠道名单 ===== -->
+    <div id="page-channels" class="page">
+      <!-- 顶部操作栏 -->
+      <div class="card" style="padding:16px 20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <input class="form-control" id="channel-search" placeholder="🔍 搜索渠道名称、联系人、负责销售…" style="width:280px" oninput="renderChannelList()">
+            <select class="form-control" id="channel-filter-tier" onchange="renderChannelList()" style="width:140px">
+              <option value="">全部分层</option>
+            </select>
+            <select class="form-control" id="channel-filter-city" onchange="renderChannelList()" style="width:140px">
+              <option value="">全部地市</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px">
+            <label class="btn btn-primary" style="cursor:pointer" id="excel-import-btn">
+              📥 导入Excel
+              <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importChannelExcel(this)">
+            </label>
+            <button class="btn btn-outline" onclick="exportChannelCsv()">📤 导出CSV</button>
+            <button class="btn btn-outline" id="btn-add-channel" onclick="openAddChannelModal()">＋ 手动添加</button>
+          </div>
+        </div>
+        <!-- 统计汇总 -->
+        <div id="channel-stats" style="display:flex;gap:20px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap"></div>
+      </div>
+      <!-- Excel导入结果提示 -->
+      <div id="channel-import-result" style="display:none;margin-bottom:12px;padding:12px 16px;border-radius:10px;font-size:13px"></div>
+      <!-- 渠道列表 -->
+      <div id="channel-list-container"></div>
+    </div>
+
+    <!-- ===== 账户权限管理（仅超级管理员可见） ===== -->
+    <div id="page-usermgmt" class="page">
+      <div class="card" style="max-width:720px">
+        <div class="card-header">
+          <div class="card-title">🔑 账户权限管理</div>
+          <div style="font-size:12px;color:var(--text-muted)">设置各角色密码，密码存储在云端，所有设备同步生效</div>
+        </div>
+
+        <!-- 超级管理员 -->
+        <div style="padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:18px">👑</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">超级管理员</div>
+              <div style="font-size:12px;color:var(--text-muted)">可访问全部功能，包括系统设置、账户管理、COS配置</div>
+            </div>
+          </div>
+          <div class="grid-2" style="gap:12px">
+            <div class="form-group">
+              <label>超级管理员密码</label>
+              <input class="form-control" type="password" id="pwd-superadmin" placeholder="设置超级管理员密码">
+            </div>
+            <div class="form-group">
+              <label>确认密码</label>
+              <input class="form-control" type="password" id="pwd-superadmin-confirm" placeholder="再次输入">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveRolePassword('superadmin')">保存超级管理员密码</button>
+        </div>
+
+        <!-- 管理员 -->
+        <div style="padding:16px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:18px">🛡️</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">管理员</div>
+              <div style="font-size:12px;color:var(--text-muted)">可创建/编辑/删除活动、管理渠道，不能修改系统设置</div>
+            </div>
+          </div>
+          <div class="grid-2" style="gap:12px">
+            <div class="form-group">
+              <label>管理员密码</label>
+              <input class="form-control" type="password" id="pwd-admin" placeholder="设置管理员密码">
+            </div>
+            <div class="form-group">
+              <label>确认密码</label>
+              <input class="form-control" type="password" id="pwd-admin-confirm" placeholder="再次输入">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveRolePassword('admin')">保存管理员密码</button>
+        </div>
+
+        <!-- 使用人员 -->
+        <div style="padding:16px 0">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>
+            <div>
+              <div style="font-weight:700;font-size:14px">使用人员</div>
+              <div style="font-size:12px;color:var(--text-muted)">只读权限，可查看活动和渠道数据，不能创建或修改</div>
+            </div>
+          </div>
+          <div class="grid-2" style="gap:12px">
+            <div class="form-group">
+              <label>使用人员密码</label>
+              <input class="form-control" type="password" id="pwd-viewer" placeholder="设置使用人员密码">
+            </div>
+            <div class="form-group">
+              <label>确认密码</label>
+              <input class="form-control" type="password" id="pwd-viewer-confirm" placeholder="再次输入">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveRolePassword('viewer')">保存使用人员密码</button>
+        </div>
+
+        <div id="usermgmt-result" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;font-size:13px"></div>
+      </div>
+
+      <!-- 当前密码状态 -->
+      <div class="card" style="max-width:720px;margin-top:16px">
+        <div class="card-header"><div class="card-title">📋 当前密码状态</div></div>
+        <div id="pwd-status-list" style="padding:4px 0"></div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </main>
 
@@ -1231,6 +1379,12 @@
       <textarea class="form-control" id="new-goal" placeholder="例：线下参与人数达到200人，线上覆盖人数达到5000人，获取商机50个..."></textarea>
     </div>
     <div class="form-group">
+      <label>🤝 关联渠道（可多选）</label>
+      <div id="new-channel-select" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px">
+        <div style="color:var(--text-muted);font-size:12px;padding:8px" id="new-channel-empty">暂无渠道数据，请先在「渠道名单」页面导入</div>
+      </div>
+    </div>
+    <div class="form-group">
       <label>活动简介</label>
       <textarea class="form-control" id="new-desc" placeholder="活动背景、主要内容说明..."></textarea>
     </div>
@@ -1272,6 +1426,73 @@
   </div>
 </div>
 
+<!-- ===== 渠道编辑弹窗 ===== -->
+<div class="modal-overlay" id="modal-channel">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title" id="channel-modal-title">➕ 添加渠道</div>
+      <button class="modal-close" onclick="closeModal('modal-channel')">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group">
+        <label>渠道名称 *</label>
+        <input class="form-control" id="ch-name" placeholder="渠道全称">
+      </div>
+      <div class="form-group">
+        <label>渠道分层</label>
+        <input class="form-control" id="ch-tier" list="ch-tier-list" placeholder="如：核心渠道、敌对渠道">
+        <datalist id="ch-tier-list">
+          <option value="核心渠道"><option value="重点渠道"><option value="一般渠道"><option value="敌对渠道"><option value="待开发">
+        </datalist>
+      </div>
+      <div class="form-group">
+        <label>所在地市</label>
+        <select class="form-control" id="ch-city" onchange="updateChDistrictOptions()">
+          <option value="">请选择地市</option>
+          <option value="南宁市">南宁市</option><option value="柳州市">柳州市</option><option value="桂林市">桂林市</option>
+          <option value="梧州市">梧州市</option><option value="北海市">北海市</option><option value="防城港市">防城港市</option>
+          <option value="钦州市">钦州市</option><option value="贵港市">贵港市</option><option value="玉林市">玉林市</option>
+          <option value="百色市">百色市</option><option value="贺州市">贺州市</option><option value="河池市">河池市</option>
+          <option value="来宾市">来宾市</option><option value="崇左市">崇左市</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>区/县</label>
+        <input class="form-control" id="ch-district" placeholder="区/县名称">
+      </div>
+      <div class="form-group">
+        <label>负责销售</label>
+        <input class="form-control" id="ch-sales" placeholder="负责人姓名">
+      </div>
+      <div class="form-group">
+        <label>关键联系人</label>
+        <input class="form-control" id="ch-contact" placeholder="联系人姓名">
+      </div>
+      <div class="form-group">
+        <label>联系方式</label>
+        <input class="form-control" id="ch-phone" placeholder="手机号 / 微信">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>渠道背景</label>
+        <textarea class="form-control" id="ch-background" rows="3" placeholder="渠道资源、优势、历史合作等背景信息…"></textarea>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>历史推广记录</label>
+        <textarea class="form-control" id="ch-history" rows="2" placeholder="曾参与的活动记录…"></textarea>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>商机反馈</label>
+        <textarea class="form-control" id="ch-feedback" rows="2" placeholder="商机线索、项目跟进情况…"></textarea>
+      </div>
+    </div>
+    <input type="hidden" id="ch-edit-id">
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-channel')">取消</button>
+      <button class="btn btn-primary" onclick="saveChannel()">保存</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== 腾讯云 COS 数据层配置 =====
 const STORAGE_KEY = 'market_activities_data_frontend';
@@ -1301,6 +1522,11 @@ async function getJsonBinData(retryCount = 0) {
     const data = await window.MarketActivityCOS.adapter.getData();
     console.log('✅ 腾讯云 COS 数据加载成功');
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // 同步渠道数据
+    if (data.channels && Array.isArray(data.channels)) {
+      channels = data.channels;
+      localStorage.setItem('mcm_channels', JSON.stringify(channels));
+    }
     return data;
   } catch (err) {
     console.log('⚠️ 腾讯云 COS 连接失败，使用本地数据:', err.message);
@@ -1321,6 +1547,8 @@ async function getJsonBinData(retryCount = 0) {
 // ===== 保存数据：先存本地，再异步同步到腾讯云 COS =====
 async function saveJsonBinData(data, retryCount = 0) {
   console.log('💾 开始保存数据到腾讯云 COS...');
+  // 合并当前渠道数据
+  if (!data.channels) data.channels = channels || [];
 
   // 1. 立即写本地（保证不丢数据）
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -1830,14 +2058,22 @@ const pageTitles = {
   analysis: ['效果分析','多维数据对比与趋势洞察'],
   owner: ['负责人分析','按负责人查看活动数据与效果'],
   activities: ['活动档案','所有活动记录与查询'],
-  settings: ['系统设置','数据存储与账户配置']
+  channels: ['渠道名单','渠道资源管理与活动关联'],
+  settings: ['系统设置','数据存储与账户配置'],
+  usermgmt: ['账户权限','管理各角色登录密码']
 };
 
 function goto(page) {
+  // 权限检查
+  const role = getCurrentRole();
+  if (page === 'settings' && role === 'viewer') { alert('使用人员无权访问系统设置'); return; }
+  if (page === 'usermgmt' && role !== 'superadmin') { alert('仅超级管理员可管理账户权限'); return; }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
-  document.querySelector(`.nav-item[onclick="goto('${page}')"]`).classList.add('active');
+  const navEl = document.querySelector(`.nav-item[onclick="goto('${page}')"]`);
+  if (navEl) navEl.classList.add('active');
   document.getElementById('page-title').textContent = pageTitles[page][0];
   document.getElementById('page-sub').textContent = pageTitles[page][1];
   renderPage(page);
@@ -1851,7 +2087,9 @@ function renderPage(page) {
   if(page === 'analysis') renderAnalysis();
   if(page === 'owner') renderOwnerPage();
   if(page === 'activities') renderActivities();
+  if(page === 'channels') renderChannelsPage();
   if(page === 'settings') renderSettings();
+  if(page === 'usermgmt') renderUserMgmt();
 }
 
 // ===== 仪表盘 =====
@@ -2303,6 +2541,7 @@ function openDetail(id) {
       <div class="tab" onclick="detailTab(this,2)">KPI 追踪</div>
       <div class="tab" onclick="detailTab(this,3)">复盘总结</div>
       <div class="tab" onclick="detailTab(this,4)">📎 文件附件${totalFiles>0?`<span class="file-count-badge">${totalFiles}</span>`:''}</div>
+      <div class="tab" onclick="detailTab(this,5)">🤝 关联渠道</div>
     </div>
     <div id="dtab-0">
       <div class="grid-2" style="gap:12px">
@@ -2423,6 +2662,9 @@ function openDetail(id) {
     </div>
     <div id="dtab-4" style="display:none">
       ${renderFilePanel(id)}
+    </div>
+    <div id="dtab-5" style="display:none">
+      ${renderChannelLinkPanel(id)}
     </div>
   `;
   showModal('modal-detail');
@@ -2813,7 +3055,7 @@ function refreshFileTabBadge(activityId) {
 function detailTab(el, idx) {
   el.closest('#detail-content').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  for(let i=0;i<5;i++){
+  for(let i=0;i<6;i++){
     const tab = document.getElementById('dtab-'+i);
     if(tab) tab.style.display = i===idx?'block':'none';
   }
@@ -3014,6 +3256,23 @@ function openNewActivity() {
   hasBudget = true;
   toggleBudgetType('has');
   initBudgetItems();
+  // 渲染渠道多选
+  loadChannels();
+  const selectEl = document.getElementById('new-channel-select');
+  const emptyEl  = document.getElementById('new-channel-empty');
+  if (selectEl) {
+    if (channels.length) {
+      if (emptyEl) emptyEl.style.display = 'none';
+      selectEl.innerHTML = channels.map(c => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+          <input type="checkbox" value="${c.id}" style="width:15px;height:15px;accent-color:#6366f1">
+          <span style="font-weight:600">${c.name}</span>
+          <span style="font-size:11px;color:var(--text-muted)">${c.tier?'['+c.tier+']':''} ${c.city||''}</span>
+        </label>`).join('');
+    } else {
+      if (emptyEl) emptyEl.style.display = 'block';
+    }
+  }
   showModal('modal-new'); 
 }
 
@@ -3062,7 +3321,8 @@ async function createActivity() {
       {name:'商机情况',target:0,actual:0,unit:'个'}
     ],
     tasks: window._aiPlanTasks || [{name:'制定活动方案',done:false},{name:'确认资源预算',done:false},{name:'启动执行',done:false},{name:'数据复盘',done:false}],
-    risks: window._aiPlanRisks || [], review: null, roi: null, satisfaction: null
+    risks: window._aiPlanRisks || [], review: null, roi: null, satisfaction: null,
+    channelIds: [...document.querySelectorAll('#new-channel-select input[type=checkbox]:checked')].map(el => el.value)
   };
   // 清除 AI 临时数据
   window._aiPlanTasks = null; window._aiPlanKpis = null; window._aiPlanRisks = null;
@@ -3213,31 +3473,170 @@ function showSearchResults(keyword) {
   dropdown.classList.add('show');
 }
 
+// ===== 权限系统 =====
+// 角色：superadmin > admin > viewer
+// 密码存储：本地 mcm_passwords（同步自COS的sys_config.json）
+var _currentRole = null;
+var _selectedLoginRole = 'admin';
+
+function getCurrentRole() { return _currentRole; }
+
+function selectRole(role) {
+  _selectedLoginRole = role;
+  const hints = {
+    superadmin: '超级管理员：完整权限，含系统设置与账户管理',
+    admin: '管理员：可创建、编辑、删除活动和渠道',
+    viewer: '使用人员：只读权限，查看活动和渠道数据'
+  };
+  const hintEl = document.getElementById('role-hint');
+  if (hintEl) hintEl.textContent = hints[role] || '';
+  ['superadmin','admin','viewer'].forEach(r => {
+    const btn = document.getElementById('role-btn-' + r);
+    if (!btn) return;
+    if (r === role) {
+      btn.style.borderColor = '#4f46e5';
+      btn.style.background  = '#4f46e5';
+      btn.style.color       = '#fff';
+    } else {
+      btn.style.borderColor = '#e2e8f0';
+      btn.style.background  = '#f8fafc';
+      btn.style.color       = '#64748b';
+    }
+  });
+}
+
+function getRolePasswords() {
+  try {
+    const saved = localStorage.getItem('mcm_passwords');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return { superadmin: 'super2024', admin: 'admin123', viewer: 'view123' };
+}
+
+function setRolePasswords(pwds) {
+  localStorage.setItem('mcm_passwords', JSON.stringify(pwds));
+  // 同步到 COS sys_config.json（异步，不阻塞）
+  syncSysConfigToCOS();
+}
+
+// 从 COS 拉取系统配置（密码等），新设备自动同步
+async function fetchSysConfigFromCOS() {
+  try {
+    const adapter = window.MarketActivityCOS?.adapter;
+    if (!adapter || !adapter.isConfigured()) return false;
+    const cfg = adapter.getConfig ? adapter.getConfig() : {};
+    const host = `${cfg.bucket}.cos.${cfg.region}.myqcloud.com`;
+    const url  = `https://${host}/sys_config.json`;
+    // 公开读，无需签名
+    const res = await fetch(url + '?t=' + Date.now(), { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return false;
+    const data = await res.json();
+    if (data.passwords) {
+      localStorage.setItem('mcm_passwords', JSON.stringify(data.passwords));
+      console.log('✅ 从COS同步系统密码成功');
+    }
+    return true;
+  } catch(e) {
+    console.log('ℹ️ 从COS同步系统配置失败（正常，可能首次使用）:', e.message);
+    return false;
+  }
+}
+
+// 超管配置COS后，把系统配置（密码等）写入 COS
+async function syncSysConfigToCOS() {
+  try {
+    const adapter = window.MarketActivityCOS?.adapter;
+    if (!adapter || !adapter.isConfigured()) return;
+    const sysConfig = {
+      passwords: getRolePasswords(),
+      updatedAt: new Date().toISOString()
+    };
+    const body = JSON.stringify(sysConfig);
+    const req = adapter.buildRequest ? adapter.buildRequest('PUT', 'sys_config.json', body, 'application/json') : null;
+    if (!req) return;
+    await fetch(req.url, { method:'PUT', headers: req.headers, body });
+    console.log('✅ sys_config.json 已同步到COS');
+  } catch(e) {
+    console.log('⚠️ sys_config同步失败:', e.message);
+  }
+}
+
+// 更新侧边栏/topbar的角色显示
+function updateRoleDisplay() {
+  const role = _currentRole;
+  const roleInfo = {
+    superadmin: { icon:'👑', label:'超级管理员', bg:'#fef3c7', color:'#d97706' },
+    admin:      { icon:'🛡️', label:'管理员',     bg:'#ede9fe', color:'#7c3aed' },
+    viewer:     { icon:'👤', label:'使用人员',   bg:'#d1fae5', color:'#059669' }
+  };
+  const info = roleInfo[role] || roleInfo.admin;
+
+  // topbar 徽章
+  const badge = document.getElementById('topbar-role-badge');
+  if (badge) {
+    badge.style.display = 'inline-flex';
+    badge.style.background = info.bg;
+    badge.style.color = info.color;
+    badge.textContent = info.icon + ' ' + info.label;
+  }
+
+  // 根据角色控制侧边栏菜单可见性
+  const settingsNav = document.getElementById('nav-settings');
+  const usermgmtNav = document.getElementById('nav-user-mgmt');
+  const adminSection = document.getElementById('nav-admin-section');
+
+  if (role === 'viewer') {
+    if (settingsNav) settingsNav.style.display = 'none';
+    if (usermgmtNav) usermgmtNav.style.display = 'none';
+    if (adminSection) adminSection.style.display = 'none';
+  } else if (role === 'admin') {
+    if (adminSection) adminSection.style.display = 'block';
+    if (settingsNav) settingsNav.style.display = 'none';
+    if (usermgmtNav) usermgmtNav.style.display = 'none';
+  } else {
+    // superadmin
+    if (adminSection) adminSection.style.display = 'block';
+    if (settingsNav) settingsNav.style.display = 'flex';
+    if (usermgmtNav) usermgmtNav.style.display = 'flex';
+  }
+
+  // 控制「新建活动」按钮对 viewer 不可见
+  const newBtn = document.querySelector('.btn.btn-primary[onclick="openNewActivity()"]');
+  if (newBtn) newBtn.style.display = (role === 'viewer') ? 'none' : '';
+}
+
 // ===== 登录功能 =====
 var calYear, calMonth;
 
 (function initLogin() {
-  const authKey = 'mcm_auth_ts';
+  const authKey  = 'mcm_auth_ts';
   const SESSION_HOURS = 8;
-  const saved = localStorage.getItem(authKey);
-  const overlay = document.getElementById('login-overlay');
+  const saved    = localStorage.getItem(authKey);
+  const overlay  = document.getElementById('login-overlay');
 
-  // 检查COS是否已配置，未配置则显示引导卡
+  // 检查COS是否配置；未配置则显示引导卡（仅给超管看）
   const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
-  const cosSetupCard = document.getElementById('cos-setup-card');
-  if (cosSetupCard && (!cosConfig.secretId || !cosConfig.secretKey)) {
-    cosSetupCard.style.display = 'block';
+  if (!cosConfig.secretId || !cosConfig.secretKey) {
+    // 不强制显示，等选择超级管理员角色时再显示
   }
 
   // 会话未过期，直接放行
-  if (saved && (Date.now() - parseInt(saved)) < SESSION_HOURS * 3600000) {
-    localStorage.setItem(authKey, Date.now().toString());
-    if (overlay) overlay.style.display = 'none';
-    return;
+  if (saved) {
+    const ts = parseInt(saved);
+    if ((Date.now() - ts) < SESSION_HOURS * 3600000) {
+      _currentRole = localStorage.getItem('mcm_current_role') || 'admin';
+      localStorage.setItem(authKey, Date.now().toString());
+      if (overlay) overlay.style.display = 'none';
+      updateRoleDisplay();
+      // 后台尝试从COS同步最新密码
+      fetchSysConfigFromCOS();
+      return;
+    }
   }
 
   // 显示遮罩，聚焦密码框
   if (overlay) overlay.style.display = 'flex';
+  selectRole('admin');
   setTimeout(() => {
     const pwdInput = document.getElementById('login-pwd');
     if (pwdInput) pwdInput.focus();
@@ -3248,13 +3647,30 @@ function doLogin() {
   const pwdInput = document.getElementById('login-pwd');
   const errorEl  = document.getElementById('login-error');
   const input    = (pwdInput ? pwdInput.value : '');
-  const correct  = localStorage.getItem('mcm_password') || 'admin123';
+  const role     = _selectedLoginRole;
+  const pwds     = getRolePasswords();
+  const correct  = pwds[role];
 
   if (input === correct) {
+    _currentRole = role;
     localStorage.setItem('mcm_auth_ts', Date.now().toString());
+    localStorage.setItem('mcm_current_role', role);
     const overlay = document.getElementById('login-overlay');
     if (overlay) overlay.style.display = 'none';
     if (errorEl) errorEl.style.display = 'none';
+    updateRoleDisplay();
+    // 超管首次登录：若 COS 未配置则显示引导
+    if (role === 'superadmin') {
+      const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
+      if (!cosConfig.secretId || !cosConfig.secretKey) {
+        const card = document.getElementById('cos-setup-card');
+        if (card) card.style.display = 'block';
+        if (overlay) overlay.style.display = 'flex';
+        return;
+      }
+    }
+    // 其他角色或已配置COS：后台拉取最新系统配置
+    fetchSysConfigFromCOS();
   } else {
     if (errorEl) errorEl.style.display = 'block';
     if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
@@ -3265,19 +3681,17 @@ function doLogin() {
 function doLogout() {
   if (!confirm('确定要退出当前登录吗？')) return;
   localStorage.removeItem('mcm_auth_ts');
+  localStorage.removeItem('mcm_current_role');
+  _currentRole = null;
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.style.display = 'flex';
-  // 退出时也检查COS配置
-  const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
-  const cosSetupCard = document.getElementById('cos-setup-card');
-  if (cosSetupCard && (!cosConfig.secretId || !cosConfig.secretKey)) {
-    cosSetupCard.style.display = 'block';
-  }
+  selectRole('admin');
   const pwdInput = document.getElementById('login-pwd');
   if (pwdInput) { pwdInput.value = ''; setTimeout(() => pwdInput.focus(), 50); }
 }
 
-// ===== COS 首次配置（登录页） =====
+
+// ===== COS 首次配置（超级管理员登录页） =====
 async function saveCosSetup() {
   const secretId  = (document.getElementById('setup-secret-id')?.value || '').trim();
   const secretKey = (document.getElementById('setup-secret-key')?.value || '').trim();
@@ -3290,19 +3704,23 @@ async function saveCosSetup() {
     if (msgEl) { msgEl.style.color='#fca5a5'; msgEl.textContent='SecretId 格式不对，应以 AKID 开头'; }
     return;
   }
-  if (msgEl) { msgEl.style.color='rgba(255,255,255,0.7)'; msgEl.textContent='验证中…'; }
-  // 保存配置
+  if (msgEl) { msgEl.style.color='rgba(255,255,255,0.7)'; msgEl.textContent='保存中…'; }
   const config = { secretId, secretKey, bucket: 'nnqgcvte2026-1414699807', region: 'ap-guangzhou', storageKey: 'data.json' };
   localStorage.setItem('cos_config', JSON.stringify(config));
   if (window.MarketActivityCOS?.adapter?.configure) {
     window.MarketActivityCOS.adapter.configure(config);
   }
-  if (msgEl) { msgEl.style.color='#86efac'; msgEl.textContent='✅ 配置已保存！登录后数据将自动同步'; }
-  // 隐藏配置卡
+  if (msgEl) { msgEl.style.color='#86efac'; msgEl.textContent='✅ 配置已保存！正在同步系统配置到云端…'; }
+  // 将密码等系统配置写入 COS，其他设备可自动拉取
+  await syncSysConfigToCOS();
   setTimeout(() => {
     const card = document.getElementById('cos-setup-card');
     if (card) card.style.display = 'none';
-  }, 1500);
+    const overlay = document.getElementById('login-overlay');
+    if (overlay) overlay.style.display = 'none';
+    updateRoleDisplay();
+    fetchSysConfigFromCOS();
+  }, 1200);
 }
 
 // ===== 修改密码功能 =====
@@ -3317,7 +3735,9 @@ function saveNewPassword() {
   const current  = document.getElementById('current-pwd').value;
   const newPwd   = document.getElementById('new-pwd').value;
   const confirm  = document.getElementById('confirm-pwd').value;
-  const correct  = localStorage.getItem('mcm_password') || 'admin123';
+  const role     = _currentRole || 'admin';
+  const pwds     = getRolePasswords();
+  const correct  = pwds[role];
 
   if (current !== correct) {
     alert('当前密码不正确');
@@ -3331,9 +3751,10 @@ function saveNewPassword() {
     alert('两次输入的新密码不一致');
     return;
   }
-  localStorage.setItem('mcm_password', newPwd);
+  pwds[role] = newPwd;
+  setRolePasswords(pwds);
   closeModal('modal-change-password');
-  alert('✅ 密码已修改成功');
+  alert('✅ 密码已修改成功，已同步到云端');
 }
 
 // ===== 系统设置页 =====
@@ -3547,17 +3968,20 @@ function savePasswordFromSettings() {
   const current = document.getElementById('s-current-pwd').value;
   const newPwd  = document.getElementById('s-new-pwd').value;
   const confirm = document.getElementById('s-confirm-pwd').value;
-  const correct = localStorage.getItem('mcm_password') || 'admin123';
+  const role    = _currentRole || 'admin';
+  const pwds    = getRolePasswords();
+  const correct = pwds[role];
 
   if (current !== correct) { alert('当前密码不正确'); return; }
   if (!newPwd || newPwd.length < 4) { alert('新密码不能少于4位'); return; }
   if (newPwd !== confirm) { alert('两次输入的新密码不一致'); return; }
 
-  localStorage.setItem('mcm_password', newPwd);
+  pwds[role] = newPwd;
+  setRolePasswords(pwds);
   document.getElementById('s-current-pwd').value = '';
   document.getElementById('s-new-pwd').value = '';
   document.getElementById('s-confirm-pwd').value = '';
-  alert('✅ 密码已修改成功');
+  alert('✅ 密码已修改成功，已同步到云端');
 }
 
 // ===== 费用支出统计更新 =====
@@ -4048,10 +4472,436 @@ window.addEventListener('error', function(e) {
   console.error('全局错误:', e.message, 'at', e.filename, 'line', e.lineno);
 });
 
+// ===== 活动关联渠道面板 =====
+function renderChannelLinkPanel(activityId) {
+  loadChannels();
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a) return '<div style="color:var(--text-muted);padding:20px">活动不存在</div>';
+  const linkedIds = a.channelIds || [];
+  const role = getCurrentRole();
+
+  if (!channels.length) {
+    return `<div style="text-align:center;padding:40px;color:var(--text-muted)">
+      <div style="font-size:48px;margin-bottom:12px">🤝</div>
+      <div>暂无渠道数据，请先在「渠道名单」页面导入渠道</div>
+    </div>`;
+  }
+
+  return `
+    <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)">
+      已关联 <strong>${linkedIds.length}</strong> 家渠道。点击勾选/取消关联该渠道。
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto">
+      ${channels.map(c => `
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid ${linkedIds.includes(c.id)?'#6366f1':'var(--border)'};background:${linkedIds.includes(c.id)?'#ede9fe':'#fff'};cursor:${role==='viewer'?'default':'pointer'};transition:all .15s">
+          <input type="checkbox" ${linkedIds.includes(c.id)?'checked':''} ${role==='viewer'?'disabled':''}
+            onchange="toggleActivityChannel('${activityId}','${c.id}',this.checked)"
+            style="width:16px;height:16px;cursor:inherit;accent-color:#6366f1">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:13px">${c.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+              <span style="padding:1px 6px;border-radius:20px;font-size:10px;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'未分层'}</span>
+              ${[c.city,c.district].filter(Boolean).join('/')||''} 
+              ${c.sales?'· 负责：'+c.sales:''} 
+              ${c.contact?'· 联系人：'+c.contact:''}
+            </div>
+          </div>
+        </label>
+      `).join('')}
+    </div>`;
+}
+
+function toggleActivityChannel(activityId, channelId, checked) {
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a) return;
+  if (!a.channelIds) a.channelIds = [];
+  if (checked) {
+    if (!a.channelIds.includes(channelId)) a.channelIds.push(channelId);
+  } else {
+    a.channelIds = a.channelIds.filter(id => id !== channelId);
+  }
+  syncData();
+  // 更新面板统计数字
+  const statsEl = document.querySelector('#dtab-5 > div:first-child strong');
+  if (statsEl) statsEl.textContent = a.channelIds.length;
+}
+
+
+function renderUserMgmt() {
+  const pwds = getRolePasswords();
+  const roleLabels = { superadmin:'👑 超级管理员', admin:'🛡️ 管理员', viewer:'👤 使用人员' };
+  const statusEl = document.getElementById('pwd-status-list');
+  if (statusEl) {
+    statusEl.innerHTML = Object.entries(roleLabels).map(([role, label]) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:14px;font-weight:600">${label}</span>
+        <span style="font-size:12px;color:var(--text-muted)">已设置密码（${pwds[role] ? '●'.repeat(Math.min(pwds[role].length,6)) : '未设置'}）</span>
+      </div>
+    `).join('');
+  }
+}
+
+function saveRolePassword(role) {
+  const newPwd  = document.getElementById(`pwd-${role}`)?.value || '';
+  const confirm = document.getElementById(`pwd-${role}-confirm`)?.value || '';
+  const resultEl = document.getElementById('usermgmt-result');
+  if (!newPwd || newPwd.length < 4) {
+    if (resultEl) { resultEl.style.display='block'; resultEl.style.background='#fee2e2'; resultEl.style.color='#991b1b'; resultEl.textContent='密码不能少于4位'; }
+    return;
+  }
+  if (newPwd !== confirm) {
+    if (resultEl) { resultEl.style.display='block'; resultEl.style.background='#fee2e2'; resultEl.style.color='#991b1b'; resultEl.textContent='两次密码不一致'; }
+    return;
+  }
+  const pwds = getRolePasswords();
+  pwds[role] = newPwd;
+  setRolePasswords(pwds);
+  if (resultEl) { resultEl.style.display='block'; resultEl.style.background='#d1fae5'; resultEl.style.color='#065f46'; resultEl.textContent='✅ 密码已保存，正在同步到云端…'; }
+  document.getElementById(`pwd-${role}`).value = '';
+  document.getElementById(`pwd-${role}-confirm`).value = '';
+  setTimeout(() => renderUserMgmt(), 500);
+}
+
+// ===== 渠道名单 =====
+// channels 数组（持久化在 COS data.json 的 channels 字段里）
+var channels = [];
+
+function loadChannels() {
+  try {
+    const raw = localStorage.getItem('mcm_channels');
+    if (raw) channels = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveChannels() {
+  localStorage.setItem('mcm_channels', JSON.stringify(channels));
+  // 异步同步到 COS（附着在主数据里）
+  syncChannelsToCOS();
+}
+
+async function syncChannelsToCOS() {
+  try {
+    const adapter = window.MarketActivityCOS?.adapter;
+    if (!adapter || !adapter.isConfigured()) return;
+    // 读取现有 data.json，合并 channels 字段
+    let mainData = { activities: activities || [], channels: channels };
+    try { mainData = await adapter.getData(); } catch(e) {}
+    mainData.channels = channels;
+    await adapter.saveData(mainData);
+  } catch(e) { console.log('渠道同步失败:', e.message); }
+}
+
+function renderChannelsPage() {
+  loadChannels();
+  updateChannelFilters();
+  renderChannelList();
+}
+
+function updateChannelFilters() {
+  const tierSet  = new Set(channels.map(c => c.tier).filter(Boolean));
+  const citySet  = new Set(channels.map(c => c.city).filter(Boolean));
+  const tierSel  = document.getElementById('channel-filter-tier');
+  const citySel  = document.getElementById('channel-filter-city');
+  if (tierSel) tierSel.innerHTML = '<option value="">全部分层</option>' + [...tierSet].map(t=>`<option>${t}</option>`).join('');
+  if (citySel) citySel.innerHTML = '<option value="">全部地市</option>' + [...citySet].map(c=>`<option>${c}</option>`).join('');
+}
+
+function getFilteredChannels() {
+  const kw   = (document.getElementById('channel-search')?.value || '').toLowerCase();
+  const tier = document.getElementById('channel-filter-tier')?.value || '';
+  const city = document.getElementById('channel-filter-city')?.value || '';
+  return channels.filter(c => {
+    if (tier && c.tier !== tier) return false;
+    if (city && c.city !== city) return false;
+    if (kw) {
+      const text = [c.name, c.sales, c.contact, c.phone, c.background].join(' ').toLowerCase();
+      if (!text.includes(kw)) return false;
+    }
+    return true;
+  });
+}
+
+function renderChannelList() {
+  const filtered = getFilteredChannels();
+  const container = document.getElementById('channel-list-container');
+  const statsEl   = document.getElementById('channel-stats');
+  const role = getCurrentRole();
+
+  // 统计
+  const tierCounts = {};
+  channels.forEach(c => { tierCounts[c.tier||'未分类'] = (tierCounts[c.tier||'未分类']||0) + 1; });
+  if (statsEl) {
+    statsEl.innerHTML = `<span style="font-size:13px;color:var(--text-muted)">共 <strong>${channels.length}</strong> 家渠道</span>` +
+      Object.entries(tierCounts).map(([t,n]) => `<span style="padding:3px 10px;border-radius:20px;background:${tierBg(t)};color:${tierColor(t)};font-size:12px;font-weight:600">${t} ${n}</span>`).join('');
+  }
+
+  // 隐藏操作按钮对 viewer
+  const addBtn = document.getElementById('btn-add-channel');
+  const impBtn = document.getElementById('excel-import-btn');
+  if (addBtn) addBtn.style.display = (role === 'viewer') ? 'none' : '';
+  if (impBtn) impBtn.style.display = (role === 'viewer') ? 'none' : '';
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--text-muted)">
+      <div style="font-size:48px;margin-bottom:12px">🤝</div>
+      <div>${channels.length ? '没有符合条件的渠道' : '暂无渠道数据，点击「导入Excel」开始添加'}</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>渠道名称</th><th>分层</th><th>地市/区县</th><th>负责销售</th>
+            <th>关键联系人</th><th>联系方式</th><th>渠道背景</th>
+            <th>市场活动</th><th>操作</th>
+          </tr></thead>
+          <tbody>
+            ${filtered.map(c => `
+              <tr>
+                <td class="fw-600">${c.name}</td>
+                <td><span style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
+                <td class="text-sm">${[c.city, c.district].filter(Boolean).join(' / ')||'-'}</td>
+                <td>${c.sales||'-'}</td>
+                <td>${c.contact||'-'}</td>
+                <td>${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary)">${c.phone}</a>` : '-'}</td>
+                <td class="text-sm" style="max-width:200px;white-space:normal;word-break:break-all;color:var(--text-muted)">${(c.background||'-').substring(0,80)}${(c.background||'').length>80?'…':''}</td>
+                <td class="text-sm">${getChannelActivityCount(c.id)}</td>
+                <td>
+                  ${role !== 'viewer' ? `<button class="btn btn-outline btn-sm" onclick="openEditChannelModal('${c.id}')">编辑</button>
+                  <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;margin-left:4px" onclick="deleteChannel('${c.id}')">删除</button>` : ''}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function tierBg(tier) {
+  const map = { '核心渠道':'#d1fae5','重点渠道':'#dbeafe','一般渠道':'#f1f5f9','敌对渠道':'#fee2e2','待开发':'#fef9c3' };
+  return map[tier] || '#f1f5f9';
+}
+function tierColor(tier) {
+  const map = { '核心渠道':'#059669','重点渠道':'#2563eb','一般渠道':'#64748b','敌对渠道':'#dc2626','待开发':'#d97706' };
+  return map[tier] || '#64748b';
+}
+
+function getChannelActivityCount(channelId) {
+  const acts = (activities||[]).filter(a => (a.channelIds||[]).includes(channelId));
+  return acts.length ? `<span style="color:var(--primary);font-weight:600">${acts.length} 个活动</span>` : '-';
+}
+
+function openAddChannelModal() {
+  document.getElementById('channel-modal-title').textContent = '➕ 添加渠道';
+  document.getElementById('ch-edit-id').value = '';
+  ['ch-name','ch-tier','ch-city','ch-district','ch-sales','ch-contact','ch-phone','ch-background','ch-history','ch-feedback'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  showModal('modal-channel');
+}
+
+function openEditChannelModal(id) {
+  const c = channels.find(ch => ch.id === id);
+  if (!c) return;
+  document.getElementById('channel-modal-title').textContent = '✏️ 编辑渠道';
+  document.getElementById('ch-edit-id').value = id;
+  document.getElementById('ch-name').value = c.name || '';
+  document.getElementById('ch-tier').value = c.tier || '';
+  document.getElementById('ch-city').value = c.city || '';
+  document.getElementById('ch-district').value = c.district || '';
+  document.getElementById('ch-sales').value = c.sales || '';
+  document.getElementById('ch-contact').value = c.contact || '';
+  document.getElementById('ch-phone').value = c.phone || '';
+  document.getElementById('ch-background').value = c.background || '';
+  document.getElementById('ch-history').value = c.history || '';
+  document.getElementById('ch-feedback').value = c.feedback || '';
+  showModal('modal-channel');
+}
+
+function saveChannel() {
+  const name = document.getElementById('ch-name')?.value?.trim();
+  if (!name) { alert('渠道名称不能为空'); return; }
+  const editId = document.getElementById('ch-edit-id').value;
+  const obj = {
+    id: editId || 'ch_' + Date.now(),
+    name,
+    tier:       document.getElementById('ch-tier')?.value?.trim() || '',
+    city:       document.getElementById('ch-city')?.value || '',
+    district:   document.getElementById('ch-district')?.value?.trim() || '',
+    sales:      document.getElementById('ch-sales')?.value?.trim() || '',
+    contact:    document.getElementById('ch-contact')?.value?.trim() || '',
+    phone:      document.getElementById('ch-phone')?.value?.trim() || '',
+    background: document.getElementById('ch-background')?.value?.trim() || '',
+    history:    document.getElementById('ch-history')?.value?.trim() || '',
+    feedback:   document.getElementById('ch-feedback')?.value?.trim() || '',
+    updatedAt:  new Date().toISOString()
+  };
+  if (editId) {
+    const idx = channels.findIndex(c => c.id === editId);
+    if (idx !== -1) channels[idx] = obj; else channels.push(obj);
+  } else {
+    channels.push(obj);
+  }
+  saveChannels();
+  closeModal('modal-channel');
+  updateChannelFilters();
+  renderChannelList();
+}
+
+function deleteChannel(id) {
+  if (!confirm('确定要删除该渠道吗？')) return;
+  channels = channels.filter(c => c.id !== id);
+  saveChannels();
+  updateChannelFilters();
+  renderChannelList();
+}
+
+function exportChannelCsv() {
+  const headers = ['渠道名称','渠道分层','所在地市','区/县','负责销售','关键联系人','联系方式','渠道背景','历史推广记录','商机反馈'];
+  const rows = channels.map(c => [c.name,c.tier,c.city,c.district,c.sales,c.contact,c.phone,c.background,c.history,c.feedback].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '渠道名单_' + new Date().toLocaleDateString('zh-CN') + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ===== Excel 导入（纯 JS 解析，无需外部库） =====
+// 支持 .csv（直接解析）和 .xlsx/.xls（读取 ZIP 内 SharedStrings + sheet）
+async function importChannelExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const resultEl = document.getElementById('channel-import-result');
+  resultEl.style.display = 'block';
+  resultEl.style.background = '#eff6ff';
+  resultEl.style.color = '#1e40af';
+  resultEl.textContent = '📊 正在解析文件…';
+
+  try {
+    let rows = [];
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      rows = await parseCsvFile(file);
+    } else if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+      rows = await parseXlsxFile(file);
+    } else {
+      throw new Error('仅支持 .xlsx / .xls / .csv 格式');
+    }
+
+    if (!rows.length) throw new Error('文件中没有有效数据');
+
+    // 自动识别列（模糊匹配）
+    const headers = rows[0].map(h => String(h || '').trim());
+    const colMap = autoDetectColumns(headers);
+
+    const imported = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const name = colMap.name !== -1 ? String(row[colMap.name]||'').trim() : '';
+      if (!name) continue;
+      imported.push({
+        id:         'ch_' + Date.now() + '_' + i,
+        name,
+        tier:       colMap.tier !== -1 ? String(row[colMap.tier]||'').trim() : '',
+        city:       colMap.city !== -1 ? String(row[colMap.city]||'').trim() : '',
+        district:   colMap.district !== -1 ? String(row[colMap.district]||'').trim() : '',
+        sales:      colMap.sales !== -1 ? String(row[colMap.sales]||'').trim() : '',
+        contact:    colMap.contact !== -1 ? String(row[colMap.contact]||'').trim() : '',
+        phone:      colMap.phone !== -1 ? String(row[colMap.phone]||'').trim() : '',
+        background: colMap.background !== -1 ? String(row[colMap.background]||'').trim() : '',
+        history:    colMap.history !== -1 ? String(row[colMap.history]||'').trim() : '',
+        feedback:   colMap.feedback !== -1 ? String(row[colMap.feedback]||'').trim() : '',
+        updatedAt:  new Date().toISOString()
+      });
+    }
+
+    // 去重（按名称）
+    let added = 0, updated = 0;
+    imported.forEach(nc => {
+      const existing = channels.findIndex(c => c.name === nc.name);
+      if (existing !== -1) { channels[existing] = { ...channels[existing], ...nc, id: channels[existing].id }; updated++; }
+      else { channels.push(nc); added++; }
+    });
+
+    saveChannels();
+    updateChannelFilters();
+    renderChannelList();
+
+    resultEl.style.background = '#d1fae5';
+    resultEl.style.color = '#065f46';
+    resultEl.textContent = `✅ 导入成功！新增 ${added} 家，更新 ${updated} 家。字段映射：${Object.entries(colMap).filter(([,v])=>v!==-1).map(([k])=>k).join('、')}`;
+  } catch(e) {
+    resultEl.style.background = '#fee2e2';
+    resultEl.style.color = '#991b1b';
+    resultEl.textContent = '❌ 导入失败：' + e.message;
+  }
+}
+
+function autoDetectColumns(headers) {
+  const matchers = {
+    name:       ['渠道名称','名称','渠道','channel name','name'],
+    tier:       ['渠道分层','分层','级别','tier','level'],
+    city:       ['所在地市','地市','城市','city'],
+    district:   ['区/县','区县','district','county'],
+    sales:      ['负责销售','销售','负责人','sales'],
+    contact:    ['关键联系人','联系人','contact'],
+    phone:      ['联系方式','手机','电话','phone','mobile'],
+    background: ['渠道背景','背景','background'],
+    history:    ['历史推广记录','历史记录','推广记录','history'],
+    feedback:   ['商机反馈','商机','feedback']
+  };
+  const result = {};
+  Object.entries(matchers).forEach(([key, patterns]) => {
+    result[key] = headers.findIndex(h => patterns.some(p => h.toLowerCase().includes(p.toLowerCase())));
+  });
+  return result;
+}
+
+async function parseCsvFile(file) {
+  const text = await file.text();
+  return text.split('\n').filter(l => l.trim()).map(line => {
+    const cells = [];
+    let inQuote = false, cell = '';
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { if (inQuote && line[i+1]==='"') { cell += '"'; i++; } else inQuote = !inQuote; }
+      else if (ch === ',' && !inQuote) { cells.push(cell); cell = ''; }
+      else cell += ch;
+    }
+    cells.push(cell);
+    return cells;
+  });
+}
+
+async function parseXlsxFile(file) {
+  // 使用 CDN 加载 SheetJS 解析 xlsx
+  if (!window.XLSX) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.mini.min.js';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('SheetJS 加载失败，请检查网络'));
+      document.head.appendChild(s);
+    });
+  }
+  const buf = await file.arrayBuffer();
+  const wb  = window.XLSX.read(buf, { type: 'array' });
+  const ws  = wb.Sheets[wb.SheetNames[0]];
+  const data = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  return data;
+}
+
 // ===== INIT =====
 const _today = new Date();
 calYear = _today.getFullYear();
 calMonth = _today.getMonth();
+loadChannels(); // 加载本地渠道数据
 renderDashboard();
 
 // 点击遮罩关闭
