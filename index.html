@@ -671,7 +671,7 @@
             onkeydown="if(event.key==='Enter') doLogin()">
         </div>
         <div class="login-error" id="login-error">密码错误，请重新输入</div>
-        <button class="login-btn" onclick="doLogin()">登 录</button>
+        <button id="login-btn" class="login-btn" onclick="doLogin()">登 录</button>
       </div>
     </div>
     <!-- COS 配置卡片（超级管理员登录后用，或初始化时显示） -->
@@ -3576,20 +3576,34 @@ function setRolePasswords(pwds) {
 }
 
 // 从 COS 拉取系统配置（密码等），新设备自动同步
+// 优先用本地 cos_config，没有则用默认 bucket（公开读）
+const _DEFAULT_SYS_CONFIG_URL = 'https://nnqgcvte2026-1414699807.cos.ap-guangzhou.myqcloud.com/sys_config.json';
+
 async function fetchSysConfigFromCOS() {
   try {
+    // 优先用已配置的 adapter
+    let url = _DEFAULT_SYS_CONFIG_URL;
     const adapter = window.MarketActivityCOS?.adapter;
-    if (!adapter || !adapter.isConfigured()) return false;
-    const cfg = adapter.getConfig ? adapter.getConfig() : {};
-    const host = `${cfg.bucket}.cos.${cfg.region}.myqcloud.com`;
-    const url  = `https://${host}/sys_config.json`;
-    // 公开读，无需签名
+    if (adapter && adapter.isConfigured()) {
+      const cfg = adapter.getConfig ? adapter.getConfig() : {};
+      if (cfg.bucket && cfg.region) {
+        url = `https://${cfg.bucket}.cos.${cfg.region}.myqcloud.com/sys_config.json`;
+      }
+    }
     const res = await fetch(url + '?t=' + Date.now(), { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return false;
     const data = await res.json();
     if (data.passwords) {
       localStorage.setItem('mcm_passwords', JSON.stringify(data.passwords));
       console.log('✅ 从COS同步系统密码成功');
+    }
+    // 同时保存 cos_config（如果本地还没有的话，帮其他设备自动完成配置）
+    if (data.cosConfig) {
+      const local = localStorage.getItem('cos_config');
+      if (!local || local === '{}') {
+        localStorage.setItem('cos_config', JSON.stringify(data.cosConfig));
+        console.log('✅ 从COS同步cos_config成功');
+      }
     }
     return true;
   } catch(e) {
@@ -3603,8 +3617,10 @@ async function syncSysConfigToCOS() {
   try {
     const adapter = window.MarketActivityCOS?.adapter;
     if (!adapter || !adapter.isConfigured()) return;
+    const cosConfigRaw = localStorage.getItem('cos_config') || '{}';
     const sysConfig = {
       passwords: getRolePasswords(),
+      cosConfig: JSON.parse(cosConfigRaw),   // 新设备拉取后自动完成配置
       updatedAt: new Date().toISOString()
     };
     const body = JSON.stringify(sysConfig);
@@ -3702,35 +3718,40 @@ var calYear, calMonth;
 function doLogin() {
   const pwdInput = document.getElementById('login-pwd');
   const errorEl  = document.getElementById('login-error');
+  const loginBtn = document.getElementById('login-btn');
   const input    = (pwdInput ? pwdInput.value : '');
   const role     = _selectedLoginRole;
-  const pwds     = getRolePasswords();
-  const correct  = pwds[role];
 
-  if (input === correct) {
-    _currentRole = role;
-    localStorage.setItem('mcm_auth_ts', Date.now().toString());
-    localStorage.setItem('mcm_current_role', role);
-    const overlay = document.getElementById('login-overlay');
-    if (overlay) overlay.style.display = 'none';
-    if (errorEl) errorEl.style.display = 'none';
-    updateRoleDisplay();
-    // 超管首次登录：若 COS 未配置则显示引导
-    if (role === 'superadmin') {
-      const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
-      if (!cosConfig.secretId || !cosConfig.secretKey) {
-        const card = document.getElementById('cos-setup-card');
-        if (card) card.style.display = 'block';
-        if (overlay) overlay.style.display = 'flex';
-        return;
+  // 先从COS拉取最新密码，再验证（确保用最新密码）
+  if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '🔄 同步中…'; }
+  fetchSysConfigFromCOS().finally(() => {
+    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登录'; }
+    const pwds    = getRolePasswords();
+    const correct = pwds[role];
+
+    if (input === correct) {
+      _currentRole = role;
+      localStorage.setItem('mcm_auth_ts', Date.now().toString());
+      localStorage.setItem('mcm_current_role', role);
+      const overlay = document.getElementById('login-overlay');
+      if (overlay) overlay.style.display = 'none';
+      if (errorEl) errorEl.style.display = 'none';
+      updateRoleDisplay();
+      // 超管首次登录：若 COS 未配置则显示引导
+      if (role === 'superadmin') {
+        const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
+        if (!cosConfig.secretId || !cosConfig.secretKey) {
+          const card = document.getElementById('cos-setup-card');
+          if (card) card.style.display = 'block';
+          if (overlay) overlay.style.display = 'flex';
+          return;
+        }
       }
+    } else {
+      if (errorEl) errorEl.style.display = 'block';
+      if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
     }
-    // 其他角色或已配置COS：后台拉取最新系统配置
-    fetchSysConfigFromCOS();
-  } else {
-    if (errorEl) errorEl.style.display = 'block';
-    if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
-  }
+  });
 }
 
 // ===== 退出登录 =====
