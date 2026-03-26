@@ -5313,6 +5313,11 @@ async function parseXlsxFile(file) {
 }
 
 // ===== KIMI AI 分析助手 =====
+const _KIMI_DEFAULT_KEY = 'sk-lodpXqryK0ZvRSDrBdiYMd7t8uCsv2OPJ1UZK45YufYJg7iG';
+const _KIMI_DEFAULT_MODEL = 'moonshot-v1-32k';
+
+function _kimiKey() { return localStorage.getItem('kimi_api_key') || _KIMI_DEFAULT_KEY; }
+function _kimiModel() { return localStorage.getItem('kimi_model') || _KIMI_DEFAULT_MODEL; }
 
 function saveKimiConfig() {
   const key = document.getElementById('kimi-api-key')?.value?.trim();
@@ -5328,8 +5333,8 @@ function saveKimiConfig() {
 }
 
 async function testKimiConnection() {
-  const key = document.getElementById('kimi-api-key')?.value?.trim() || localStorage.getItem('kimi_api_key');
-  const model = document.getElementById('kimi-model')?.value || localStorage.getItem('kimi_model') || 'moonshot-v1-32k';
+  const key = document.getElementById('kimi-api-key')?.value?.trim() || _kimiKey();
+  const model = document.getElementById('kimi-model')?.value || _kimiModel();
   const r = document.getElementById('kimi-test-result');
   r.style.display = 'block';
   r.style.background = '#f1f5f9';
@@ -5359,7 +5364,7 @@ function loadKimiConfigToForm() {
   const keyEl = document.getElementById('kimi-api-key');
   const modelEl = document.getElementById('kimi-model');
   if (keyEl) keyEl.value = localStorage.getItem('kimi_api_key') || '';
-  if (modelEl) modelEl.value = localStorage.getItem('kimi_model') || 'moonshot-v1-32k';
+  if (modelEl) modelEl.value = localStorage.getItem('kimi_model') || _KIMI_DEFAULT_MODEL;
 }
 
 // ---- AI 对话功能 ----
@@ -5367,7 +5372,7 @@ let _aiChatHistory = [];
 
 function renderAiPage() {
   const warn = document.getElementById('ai-config-warning');
-  if (warn) warn.style.display = localStorage.getItem('kimi_api_key') ? 'none' : 'block';
+  if (warn) warn.style.display = 'none'; // 默认Key已内置，无需警告
 }
 
 function aiGetDataContext(scope) {
@@ -5438,14 +5443,14 @@ async function aiSendMessage() {
   const question = input?.value?.trim();
   if (!question) return;
 
-  const apiKey = localStorage.getItem('kimi_api_key');
+  const apiKey = _kimiKey();
   if (!apiKey) {
     document.getElementById('ai-config-warning').style.display = 'block';
     return;
   }
 
   const scope = document.getElementById('ai-data-scope')?.value || 'all';
-  const model = localStorage.getItem('kimi_model') || 'moonshot-v1-32k';
+  const model = _kimiModel();
 
   aiAppendMessage('user', question);
   input.value = '';
