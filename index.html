@@ -4999,7 +4999,6 @@ function openAddChannelModal() {
   });
   _chHistoryRows = [];
   renderChannelHistoryRows(_chHistoryRows);
-  updateChDistrictOptions();
   showModal('modal-channel');
 }
 
@@ -5017,7 +5016,6 @@ function openEditChannelModal(id) {
   document.getElementById('ch-phone').value = c.phone || '';
   document.getElementById('ch-background').value = c.background || '';
   document.getElementById('ch-feedback').value = c.feedback || '';
-  updateChDistrictOptions();
   // 兼容旧字符串格式：转为单条记录
   if (Array.isArray(c.history)) {
     _chHistoryRows = c.history.map(r => ({ date: r.date||'', content: r.content||'' }));
