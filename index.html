@@ -672,6 +672,21 @@
         </div>
         <div class="login-error" id="login-error">密码错误，请重新输入</div>
         <button id="login-btn" class="login-btn" onclick="doLogin()">登 录</button>
+        <!-- 云端密码同步（B设备首次使用时） -->
+        <div id="login-sync-area" style="display:none;margin-top:14px;padding:14px;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd">
+          <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">☁️ 从云端同步密码</div>
+          <div style="font-size:12px;color:#0284c7;margin-bottom:10px">首次在新设备使用？输入云存储 Bucket 名称即可同步密码</div>
+          <input id="login-sync-bucket" type="text" placeholder="例：market-data-1312345678"
+            style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid #bae6fd;font-size:13px;margin-bottom:6px">
+          <select id="login-sync-region" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid #bae6fd;font-size:13px;margin-bottom:10px;background:#fff">
+            <option value="ap-guangzhou">广州（ap-guangzhou）</option>
+            <option value="ap-beijing">北京（ap-beijing）</option>
+            <option value="ap-shanghai">上海（ap-shanghai）</option>
+            <option value="ap-chengdu">成都（ap-chengdu）</option>
+          </select>
+          <button onclick="loginSyncFromBucket()" style="width:100%;padding:8px;border-radius:6px;border:none;background:#0ea5e9;color:#fff;font-size:13px;font-weight:600;cursor:pointer">🔄 立即同步</button>
+          <div id="login-sync-msg" style="font-size:12px;margin-top:6px;text-align:center;min-height:14px"></div>
+        </div>
       </div>
     </div>
     <!-- COS 配置卡片（超级管理员登录后用，或初始化时显示） -->
@@ -683,10 +698,25 @@
         <input id="setup-secret-id" type="text" placeholder="AKIDxxxxxxxx"
           style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;outline:none">
       </div>
-      <div style="margin-bottom:14px">
+      <div style="margin-bottom:10px">
         <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">SecretKey</div>
         <input id="setup-secret-key" type="password" placeholder="xxxxxxxxxxxxxxxx"
           style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;outline:none">
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">存储桶名称（Bucket）</div>
+        <input id="setup-bucket" type="text" placeholder="例：market-data-1312345678"
+          style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.1);color:#fff;font-size:13px;outline:none">
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:4px">地域（Region）</div>
+        <select id="setup-region" style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(30,30,60,0.8);color:#fff;font-size:13px;outline:none">
+          <option value="ap-guangzhou">广州（ap-guangzhou）</option>
+          <option value="ap-beijing">北京（ap-beijing）</option>
+          <option value="ap-shanghai">上海（ap-shanghai）</option>
+          <option value="ap-chengdu">成都（ap-chengdu）</option>
+          <option value="ap-shenzhen">深圳（ap-shenzhen）</option>
+        </select>
       </div>
       <div style="display:flex;gap:8px">
         <button onclick="saveCosSetup()" style="flex:1;padding:9px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:13px;font-weight:600;cursor:pointer">保存配置</button>
@@ -3697,8 +3727,15 @@ const _DEFAULT_SYS_CONFIG_URL = 'https://nnqgcvte2026-1414699807.cos.ap-guangzho
 
 async function fetchSysConfigFromCOS() {
   try {
-    // 优先用已配置的 adapter
+    // 优先从 localStorage cos_config 构造 URL（不依赖 adapter 是否初始化）
     let url = _DEFAULT_SYS_CONFIG_URL;
+    try {
+      const localCfg = JSON.parse(localStorage.getItem('cos_config') || '{}');
+      if (localCfg.bucket && localCfg.region) {
+        url = `https://${localCfg.bucket}.cos.${localCfg.region}.myqcloud.com/sys_config.json`;
+      }
+    } catch(e) {}
+    // 若 adapter 已配置且 bucket/region 与 localStorage 一致，也可以用（冗余保障）
     const adapter = window.MarketActivityCOS?.adapter;
     if (adapter && adapter.isConfigured()) {
       const cfg = adapter.getConfig ? adapter.getConfig() : {};
@@ -3718,7 +3755,13 @@ async function fetchSysConfigFromCOS() {
       const local = localStorage.getItem('cos_config');
       if (!local || local === '{}') {
         localStorage.setItem('cos_config', JSON.stringify(data.cosConfig));
-        console.log('✅ 从COS同步cos_config成功');
+        // 同步初始化 adapter，让后续数据读写走正确的 COS
+        if (window.MarketActivityCOS?.adapter?.configure) {
+          window.MarketActivityCOS.adapter.configure(data.cosConfig);
+          console.log('✅ 从COS同步cos_config并初始化adapter成功');
+        } else {
+          console.log('✅ 从COS同步cos_config成功');
+        }
       }
     }
     return true;
@@ -3843,8 +3886,8 @@ function doLogin() {
 
   // 先从COS拉取最新密码，再验证（确保用最新密码）
   if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '🔄 同步中…'; }
-  fetchSysConfigFromCOS().finally(() => {
-    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登录'; }
+  fetchSysConfigFromCOS().then(synced => {
+    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
     const pwds    = getRolePasswords();
     const correct = pwds[role];
 
@@ -3860,14 +3903,25 @@ function doLogin() {
       if (role === 'superadmin') {
         const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
         if (!cosConfig.secretId || !cosConfig.secretKey) {
-          // 再尝试一次同步（可能sys_config.json有cosConfig但刚才没拿到）
           // 直接跳过引导框——非超管配置设备也可正常使用，只是数据读写走本地缓存
           // 只有完全没有任何cos_config且云端也没有时才弹引导
           console.log('ℹ️ 超管登录但COS未配置，跳过引导（可在系统设置里配置）');
         }
       }
     } else {
-      if (errorEl) errorEl.style.display = 'block';
+      // 验证失败：若 COS 未同步成功且本地无 cos_config，可能是首次登录 B 设备
+      const hasCosConfig = (() => { try { const c = JSON.parse(localStorage.getItem('cos_config')||'{}'); return !!(c.secretId && c.secretKey); } catch(e) { return false; } })();
+      if (!synced && !hasCosConfig) {
+        if (errorEl) {
+          errorEl.style.display = 'block';
+          errorEl.textContent = '密码错误，请重新输入';
+        }
+        // 自动展开云端同步区域
+        const syncArea = document.getElementById('login-sync-area');
+        if (syncArea) syncArea.style.display = 'block';
+      } else {
+        if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '密码错误，请重新输入'; }
+      }
       if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
     }
   });
@@ -3891,9 +3945,11 @@ function doLogout() {
 async function saveCosSetup() {
   const secretId  = (document.getElementById('setup-secret-id')?.value || '').trim();
   const secretKey = (document.getElementById('setup-secret-key')?.value || '').trim();
+  const bucket    = (document.getElementById('setup-bucket')?.value || '').trim();
+  const region    = (document.getElementById('setup-region')?.value || 'ap-guangzhou').trim();
   const msgEl = document.getElementById('cos-setup-msg');
-  if (!secretId || !secretKey) {
-    if (msgEl) { msgEl.style.color='#fca5a5'; msgEl.textContent='请填写 SecretId 和 SecretKey'; }
+  if (!secretId || !secretKey || !bucket) {
+    if (msgEl) { msgEl.style.color='#fca5a5'; msgEl.textContent='请填写 SecretId、SecretKey 和存储桶名称'; }
     return;
   }
   if (!secretId.startsWith('AKID')) {
@@ -3901,7 +3957,7 @@ async function saveCosSetup() {
     return;
   }
   if (msgEl) { msgEl.style.color='rgba(255,255,255,0.7)'; msgEl.textContent='保存中…'; }
-  const config = { secretId, secretKey, bucket: 'nnqgcvte2026-1414699807', region: 'ap-guangzhou', storageKey: 'data.json' };
+  const config = { secretId, secretKey, bucket, region, storageKey: 'data.json' };
   localStorage.setItem('cos_config', JSON.stringify(config));
   if (window.MarketActivityCOS?.adapter?.configure) {
     window.MarketActivityCOS.adapter.configure(config);
@@ -5538,6 +5594,43 @@ function aiClearChat() {
       👋 你好！我是 Kimi AI 助手，可以帮你分析活动数据。<br>
       选择上方快捷分析，或在下方输入框自由提问。
     </div>`;
+  }
+}
+
+// B设备输入 bucket 后拉取系统配置（密码+cosConfig）
+async function loginSyncFromBucket() {
+  const bucket = (document.getElementById('login-sync-bucket')?.value || '').trim();
+  const region = document.getElementById('login-sync-region')?.value || 'ap-guangzhou';
+  const msgEl = document.getElementById('login-sync-msg');
+  if (!bucket) {
+    if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = '请填写存储桶名称'; }
+    return;
+  }
+  if (msgEl) { msgEl.style.color = '#0284c7'; msgEl.textContent = '⏳ 同步中…'; }
+  try {
+    const url = `https://${bucket}.cos.${region}.myqcloud.com/sys_config.json?t=${Date.now()}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}，请确认 bucket 名称和地域是否正确`);
+    const data = await res.json();
+    if (data.passwords) {
+      localStorage.setItem('mcm_passwords', JSON.stringify(data.passwords));
+    }
+    if (data.cosConfig) {
+      localStorage.setItem('cos_config', JSON.stringify(data.cosConfig));
+      if (window.MarketActivityCOS?.adapter?.configure) {
+        window.MarketActivityCOS.adapter.configure(data.cosConfig);
+      }
+    }
+    if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ 同步成功！请重新输入密码登录'; }
+    // 隐藏同步区，聚焦密码框
+    setTimeout(() => {
+      const syncArea = document.getElementById('login-sync-area');
+      if (syncArea) syncArea.style.display = 'none';
+      const pwdInput = document.getElementById('login-pwd');
+      if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
+    }, 1500);
+  } catch(e) {
+    if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = `❌ 同步失败：${e.message}`; }
   }
 }
 
