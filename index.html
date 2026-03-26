@@ -3700,8 +3700,11 @@ var calYear, calMonth;
       localStorage.setItem(authKey, Date.now().toString());
       if (overlay) overlay.style.display = 'none';
       updateRoleDisplay();
-      // 后台尝试从COS同步最新密码
-      fetchSysConfigFromCOS();
+      // 后台尝试从COS同步最新密码；若本地有cos_config则顺带把cosConfig推上去
+      fetchSysConfigFromCOS().then(() => {
+        const cc = JSON.parse(localStorage.getItem('cos_config') || '{}');
+        if (cc.secretId && cc.secretKey) syncSysConfigToCOS();
+      });
       return;
     }
   }
@@ -3737,14 +3740,14 @@ function doLogin() {
       if (overlay) overlay.style.display = 'none';
       if (errorEl) errorEl.style.display = 'none';
       updateRoleDisplay();
-      // 超管首次登录：若 COS 未配置则显示引导
+      // 超管首次登录：若 COS 未配置则显示引导（已从云端同步cosConfig则跳过）
       if (role === 'superadmin') {
         const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
         if (!cosConfig.secretId || !cosConfig.secretKey) {
-          const card = document.getElementById('cos-setup-card');
-          if (card) card.style.display = 'block';
-          if (overlay) overlay.style.display = 'flex';
-          return;
+          // 再尝试一次同步（可能sys_config.json有cosConfig但刚才没拿到）
+          // 直接跳过引导框——非超管配置设备也可正常使用，只是数据读写走本地缓存
+          // 只有完全没有任何cos_config且云端也没有时才弹引导
+          console.log('ℹ️ 超管登录但COS未配置，跳过引导（可在系统设置里配置）');
         }
       }
     } else {
