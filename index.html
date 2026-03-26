@@ -1653,6 +1653,12 @@ async function initData() {
     const data = await getJsonBinData();
     activities = data.activities || [];
     fileStore = data.files || {};
+    // 修复历史数据：有 actualCosts 的活动，spent 以 actualCosts 汇总为准
+    activities.forEach(a => {
+      if (a.actualCosts && a.actualCosts.length > 0) {
+        a.spent = a.actualCosts.reduce((s,c)=>s+(Number(c.amount)||0), 0);
+      }
+    });
     console.log('✅ 数据加载成功', activities.length, '个活动');
     
     // 数据加载成功后，尝试同步离线队列
@@ -2747,9 +2753,10 @@ function updateActualCost(actId, idx, field, val) {
   if(!a || !a.actualCosts || !a.actualCosts[idx]) return;
   if(field === 'amount') a.actualCosts[idx].amount = parseFloat(val)||0;
   else a.actualCosts[idx][field] = val;
+  const total = a.actualCosts.reduce((s,c)=>s+(Number(c.amount)||0),0);
+  a.spent = total;  // 实时同步到 spent
   const totalEl = document.getElementById(`actual-cost-total-${actId}`);
   if(totalEl) {
-    const total = a.actualCosts.reduce((s,c)=>s+(Number(c.amount)||0),0);
     totalEl.textContent = `实际合计：¥${total.toLocaleString()}`;
   }
 }
@@ -2773,9 +2780,10 @@ function removeActualCost(actId, idx) {
       </div>
     `).join('');
   }
+  const total = a.actualCosts.reduce((s,c)=>s+(Number(c.amount)||0),0);
+  a.spent = total;  // 删除项后同步 spent
   const totalEl = document.getElementById(`actual-cost-total-${actId}`);
   if(totalEl) {
-    const total = a.actualCosts.reduce((s,c)=>s+(Number(c.amount)||0),0);
     totalEl.textContent = `实际合计：¥${total.toLocaleString()}`;
   }
 }
@@ -3133,6 +3141,8 @@ async function saveReview(id) {
   a.satisfaction = a.review.score;
   // 保存实际花费（actualCosts 由 updateActualCost 实时维护，此处直接使用）
   if(!a.actualCosts) a.actualCosts = [];
+  // 自动汇总 actualCosts → spent，保持两者同步
+  a.spent = a.actualCosts.reduce((s,c)=>s+(Number(c.amount)||0), 0);
   if(a.status === '复盘中') { a.status = '已完成'; a.progress = 100; }
   await syncData();
   alert('✅ 复盘总结已保存！');
