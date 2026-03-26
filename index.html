@@ -1008,7 +1008,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>活动名称</th><th>类型</th><th>地市</th><th>时间</th><th>负责人</th><th>预算</th><th>状态</th><th>进度</th><th>操作</th></tr>
+              <tr><th>活动名称</th><th>类型</th><th>地市</th><th>时间</th><th>负责人</th><th>预算</th><th>实际支出</th><th>状态</th><th>进度</th><th>操作</th></tr>
             </thead>
             <tbody id="activities-table"></tbody>
           </table>
@@ -2268,13 +2268,15 @@ function renderAnalysis() {
     const totalParticipants = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('参与'))?.actual||0),0);
     const totalCoverage = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('覆盖'))?.actual||0),0);
     const totalLeads = activities.reduce((sum,a)=>sum+(a.kpis?.find(k=>k.name.includes('商机'))?.actual||0),0);
+    const archiveTotalBudget = activities.reduce((s,a)=>s+(Number(a.budget)||0),0);
+    const archiveTotalSpent  = activities.reduce((s,a)=>s+(Number(a.spent)||0),0);
     statsDiv.innerHTML = `
       <div class="stat-card"><div class="label">📋 活动总数</div><div class="value color-primary">${activities.length}</div><div class="change text-muted">累计已创建</div></div>
       <div class="stat-card"><div class="label">👥 线下参与总人数</div><div class="value color-success">${totalParticipants}</div><div class="change text-muted">实际参与人数</div></div>
       <div class="stat-card"><div class="label">🌐 线上覆盖总人数</div><div class="value color-info">${totalCoverage}</div><div class="change text-muted">线上触达人数</div></div>
       <div class="stat-card"><div class="label">💼 商机总数</div><div class="value color-warning">${totalLeads}</div><div class="change text-muted">累计商机数量</div></div>
       <div class="stat-card"><div class="label">💸 平均 ROI</div><div class="value color-warning">${done.length>0?(done.reduce((s,a)=>s+(a.roi||0),0)/done.length).toFixed(1)+'x':'-'}</div><div class="change text-muted">已复盘活动</div></div>
-      <div class="stat-card"><div class="label">⭐ 平均满意度</div><div class="value" style="color:#f59e0b">${done.filter(a=>a.satisfaction).length>0?(done.filter(a=>a.satisfaction).reduce((s,a)=>s+(a.satisfaction||0),0)/done.filter(a=>a.satisfaction).length).toFixed(1):'-'}</div><div class="change">/ 5.0 分</div></div>
+      <div class="stat-card"><div class="label">💰 实际支出</div><div class="value" style="color:var(--danger)">¥${(archiveTotalSpent/10000).toFixed(1)}万</div><div class="change text-muted">预算利用率 ${archiveTotalBudget>0?Math.round(archiveTotalSpent/archiveTotalBudget*100)+'%':'--'}</div></div>
     `;
   }
 
@@ -2425,6 +2427,7 @@ function renderActivities(filter='all') {
       <td class="text-sm" style="color:var(--text-muted)">${a.start} ~ ${a.end}</td>
       <td>${a.owner}</td>
       <td>¥${Number(a.budget||0).toLocaleString()}</td>
+      <td style="color:${a.spent>0?'var(--danger)':'var(--text-muted)'}">¥${Number(a.spent||0).toLocaleString()}</td>
       <td>${statusBadge(a.status)}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px;width:120px">
@@ -4341,9 +4344,9 @@ function renderOwnerAnalysis() {
         <div class="change">基于 ${done.length} 个已完成活动</div>
       </div>
       <div class="stat-card">
-        <div class="label">⭐ 平均满意度</div>
-        <div class="value" style="color:#f59e0b">${avgSat}</div>
-        <div class="change">${avgSat!=='-'?'/ 5.0 分':'-'}</div>
+        <div class="label">💸 实际支出</div>
+        <div class="value color-danger" style="font-size:20px">¥${(totalSpent/10000).toFixed(1)}万</div>
+        <div class="change">预算利用率 ${totalBudget>0?Math.round(totalSpent/totalBudget*100)+'%':'--'}</div>
       </div>
     </div>
 
