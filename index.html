@@ -1486,8 +1486,16 @@
         <textarea class="form-control" id="ch-background" rows="3" placeholder="渠道资源、优势、历史合作等背景信息…"></textarea>
       </div>
       <div class="form-group" style="grid-column:1/-1">
-        <label>历史推广记录</label>
-        <textarea class="form-control" id="ch-history" rows="2" placeholder="曾参与的活动记录…"></textarea>
+        <label style="display:flex;align-items:center;justify-content:space-between">
+          <span>📅 历史推广记录</span>
+          <button type="button" class="btn btn-outline btn-sm" onclick="addChannelHistoryRow()" style="font-size:12px;padding:3px 10px">+ 添加记录</button>
+        </label>
+        <div id="ch-history-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:4px">
+          <div style="display:grid;grid-template-columns:130px 1fr 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
+            <span>时间</span><span>活动/内容</span><span></span>
+          </div>
+          <div id="ch-history-rows" style="display:flex;flex-direction:column"></div>
+        </div>
       </div>
       <div class="form-group" style="grid-column:1/-1">
         <label>商机反馈</label>
@@ -4946,13 +4954,52 @@ function showChannelActivities(channelId) {
   `;
 }
 
+// ===== 历史推广记录表格管理 =====
+function renderChannelHistoryRows(rows) {
+  const container = document.getElementById('ch-history-rows');
+  if (!container) return;
+  if (!rows || rows.length === 0) {
+    container.innerHTML = `<div style="padding:12px 10px;color:var(--text-muted);font-size:13px;text-align:center">暂无记录，点击「+ 添加记录」</div>`;
+    return;
+  }
+  container.innerHTML = rows.map((r, i) => `
+    <div style="display:grid;grid-template-columns:130px 1fr 36px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9;gap:6px" id="ch-hist-row-${i}">
+      <input type="date" class="form-control" style="padding:4px 6px;font-size:13px;border:1px solid var(--border);border-radius:6px"
+        value="${r.date||''}" oninput="updateChannelHistoryRow(${i},'date',this.value)">
+      <input type="text" class="form-control" style="padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:6px"
+        placeholder="活动名称或描述" value="${(r.content||'').replace(/"/g,'&quot;')}" oninput="updateChannelHistoryRow(${i},'content',this.value)">
+      <button type="button" onclick="removeChannelHistoryRow(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;line-height:1;padding:0 4px">×</button>
+    </div>
+  `).join('');
+}
+
+// 临时存储编辑中的历史记录
+let _chHistoryRows = [];
+
+function addChannelHistoryRow() {
+  _chHistoryRows.push({ date: new Date().toISOString().slice(0,10), content: '' });
+  renderChannelHistoryRows(_chHistoryRows);
+}
+
+function updateChannelHistoryRow(idx, field, val) {
+  if (_chHistoryRows[idx]) _chHistoryRows[idx][field] = val;
+}
+
+function removeChannelHistoryRow(idx) {
+  _chHistoryRows.splice(idx, 1);
+  renderChannelHistoryRows(_chHistoryRows);
+}
+
 function openAddChannelModal() {
   document.getElementById('channel-modal-title').textContent = '➕ 添加渠道';
   document.getElementById('ch-edit-id').value = '';
-  ['ch-name','ch-tier','ch-city','ch-district','ch-sales','ch-contact','ch-phone','ch-background','ch-history','ch-feedback'].forEach(id => {
+  ['ch-name','ch-tier','ch-city','ch-district','ch-sales','ch-contact','ch-phone','ch-background','ch-feedback'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  _chHistoryRows = [];
+  renderChannelHistoryRows(_chHistoryRows);
+  updateChDistrictOptions();
   showModal('modal-channel');
 }
 
@@ -4969,8 +5016,17 @@ function openEditChannelModal(id) {
   document.getElementById('ch-contact').value = c.contact || '';
   document.getElementById('ch-phone').value = c.phone || '';
   document.getElementById('ch-background').value = c.background || '';
-  document.getElementById('ch-history').value = c.history || '';
   document.getElementById('ch-feedback').value = c.feedback || '';
+  updateChDistrictOptions();
+  // 兼容旧字符串格式：转为单条记录
+  if (Array.isArray(c.history)) {
+    _chHistoryRows = c.history.map(r => ({ date: r.date||'', content: r.content||'' }));
+  } else if (c.history) {
+    _chHistoryRows = [{ date: '', content: c.history }];
+  } else {
+    _chHistoryRows = [];
+  }
+  renderChannelHistoryRows(_chHistoryRows);
   showModal('modal-channel');
 }
 
@@ -4988,7 +5044,7 @@ function saveChannel() {
     contact:    document.getElementById('ch-contact')?.value?.trim() || '',
     phone:      document.getElementById('ch-phone')?.value?.trim() || '',
     background: document.getElementById('ch-background')?.value?.trim() || '',
-    history:    document.getElementById('ch-history')?.value?.trim() || '',
+    history:    _chHistoryRows.filter(r => r.date || r.content).map(r => ({ date: r.date||'', content: r.content||'' })),
     feedback:   document.getElementById('ch-feedback')?.value?.trim() || '',
     updatedAt:  new Date().toISOString()
   };
@@ -5014,7 +5070,12 @@ function deleteChannel(id) {
 
 function exportChannelCsv() {
   const headers = ['渠道名称','渠道分层','所在地市','区/县','负责销售','关键联系人','联系方式','渠道背景','历史推广记录','商机反馈'];
-  const rows = channels.map(c => [c.name,c.tier,c.city,c.district,c.sales,c.contact,c.phone,c.background,c.history,c.feedback].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(','));
+  const rows = channels.map(c => {
+    const histStr = Array.isArray(c.history)
+      ? c.history.map(r => `${r.date||''}：${r.content||''}`).join('；')
+      : (c.history||'');
+    return [c.name,c.tier,c.city,c.district,c.sales,c.contact,c.phone,c.background,histStr,c.feedback].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',');
+  });
   const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
