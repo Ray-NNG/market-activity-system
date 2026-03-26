@@ -769,6 +769,9 @@
       <div class="nav-item" onclick="goto('channels')">
         <span class="icon">🤝</span> 渠道名单
       </div>
+      <div class="nav-item" onclick="goto('ai')">
+        <span class="icon">🤖</span> AI 分析助手
+      </div>
     </div>
     <div class="nav-section" id="nav-admin-section">
       <div class="nav-section-title">系统管理</div>
@@ -1083,6 +1086,96 @@
           </div>
         </div>
         <button class="btn btn-primary" style="margin-top:12px" onclick="savePasswordFromSettings()">保存新密码</button>
+      </div>
+
+      <!-- Kimi AI 配置 -->
+      <div class="card" style="max-width:680px;margin-top:16px">
+        <div class="card-header"><div class="card-title">🤖 Kimi AI 分析助手配置</div></div>
+        <div style="padding:4px 0 12px;font-size:13px;color:var(--text-muted)">
+          配置 Kimi API Key 后，可在「AI 分析助手」页面对活动数据进行智能分析。Key 仅保存在本地浏览器，不会上传到云端。<br>
+          <a href="https://platform.moonshot.cn/console/api-keys" target="_blank" style="color:var(--primary)">→ 前往 Kimi 开放平台获取 API Key</a>
+        </div>
+        <div class="form-group">
+          <label>Kimi API Key</label>
+          <input class="form-control" id="kimi-api-key" type="password" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+        </div>
+        <div class="form-group" style="margin-top:8px">
+          <label>模型选择</label>
+          <select class="form-control" id="kimi-model">
+            <option value="moonshot-v1-8k">moonshot-v1-8k（速度快，适合简单分析）</option>
+            <option value="moonshot-v1-32k" selected>moonshot-v1-32k（推荐，平衡速度与质量）</option>
+            <option value="moonshot-v1-128k">moonshot-v1-128k（支持超长上下文）</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn btn-primary" onclick="saveKimiConfig()">💾 保存配置</button>
+          <button class="btn btn-outline" onclick="testKimiConnection()">🔌 测试连接</button>
+        </div>
+        <div id="kimi-test-result" style="margin-top:12px;display:none;padding:10px 14px;border-radius:8px;font-size:13px"></div>
+      </div>
+    </div>
+
+    <!-- ===== AI 分析助手 ===== -->
+    <div id="page-ai" class="page">
+      <div style="max-width:860px">
+        <!-- 顶部功能栏 -->
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="font-size:20px">🤖</span>
+            <div style="flex:1;min-width:200px">
+              <div style="font-weight:600;font-size:15px">Kimi AI 分析助手</div>
+              <div style="font-size:12px;color:var(--text-muted)">基于当前系统数据进行智能分析，支持自由提问</div>
+            </div>
+            <select class="form-control" id="ai-data-scope" style="width:180px;font-size:13px">
+              <option value="all">📊 全部活动数据</option>
+              <option value="review">🔍 复盘活动数据</option>
+              <option value="channels">🤝 渠道数据</option>
+              <option value="budget">💰 预算与支出数据</option>
+              <option value="owner">👤 负责人绩效数据</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="aiClearChat()" style="font-size:12px">🗑️ 清空对话</button>
+          </div>
+        </div>
+
+        <!-- 快捷分析按钮 -->
+        <div class="card" style="margin-bottom:16px;padding:14px 16px">
+          <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:10px">⚡ 快捷分析</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="ai-quick-btns">
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('summary')" style="font-size:12px">📋 活动整体总结</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('budget')" style="font-size:12px">💰 预算执行分析</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('owner')" style="font-size:12px">👤 负责人绩效对比</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('channel')" style="font-size:12px">🤝 渠道效果分析</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('risk')" style="font-size:12px">⚠️ 风险与问题识别</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('suggest')" style="font-size:12px">💡 优化建议</button>
+          </div>
+        </div>
+
+        <!-- 对话区域 -->
+        <div class="card" style="margin-bottom:16px">
+          <div id="ai-chat-messages" style="min-height:300px;max-height:500px;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:12px">
+            <div style="text-align:center;color:var(--text-muted);font-size:13px;padding:40px 0">
+              👋 你好！我是 Kimi AI 助手，可以帮你分析活动数据。<br>
+              选择上方快捷分析，或在下方输入框自由提问。
+            </div>
+          </div>
+        </div>
+
+        <!-- 输入区 -->
+        <div class="card" style="padding:14px 16px">
+          <div style="display:flex;gap:10px;align-items:flex-end">
+            <textarea id="ai-input" class="form-control" rows="3"
+              placeholder="输入问题，例如：哪个活动的ROI最高？有哪些活动超出了预算？"
+              style="flex:1;resize:none;font-size:14px"
+              onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){aiSendMessage()}"
+            ></textarea>
+            <button class="btn btn-primary" onclick="aiSendMessage()" id="ai-send-btn" style="padding:10px 20px;align-self:flex-end">
+              发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>
+            </button>
+          </div>
+          <div id="ai-config-warning" style="display:none;margin-top:10px;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">
+            ⚠️ 尚未配置 Kimi API Key，请先前往 <a href="javascript:goto('settings')" style="color:var(--primary)">系统设置</a> 完成配置。
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2083,7 +2176,8 @@ const pageTitles = {
   activities: ['活动档案','所有活动记录与查询'],
   channels: ['渠道名单','渠道资源管理与活动关联'],
   settings: ['系统设置','数据存储与账户配置'],
-  usermgmt: ['账户权限','管理各角色登录密码']
+  usermgmt: ['账户权限','管理各角色登录密码'],
+  ai: ['AI 分析助手','由 Kimi 驱动的智能数据分析']
 };
 
 function goto(page) {
@@ -2111,8 +2205,9 @@ function renderPage(page) {
   if(page === 'owner') renderOwnerPage();
   if(page === 'activities') renderActivities();
   if(page === 'channels') renderChannelsPage();
-  if(page === 'settings') renderSettings();
+  if(page === 'settings') { renderSettings(); loadKimiConfigToForm(); }
   if(page === 'usermgmt') renderUserMgmt();
+  if(page === 'ai') renderAiPage();
 }
 
 // ===== 仪表盘 =====
@@ -5215,6 +5310,220 @@ async function parseXlsxFile(file) {
   const ws  = wb.Sheets[wb.SheetNames[0]];
   const data = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
   return data;
+}
+
+// ===== KIMI AI 分析助手 =====
+
+function saveKimiConfig() {
+  const key = document.getElementById('kimi-api-key')?.value?.trim();
+  const model = document.getElementById('kimi-model')?.value || 'moonshot-v1-32k';
+  if (!key) { alert('请填写 API Key'); return; }
+  localStorage.setItem('kimi_api_key', key);
+  localStorage.setItem('kimi_model', model);
+  const r = document.getElementById('kimi-test-result');
+  r.style.display = 'block';
+  r.style.background = '#d1fae5';
+  r.style.color = '#065f46';
+  r.textContent = '✅ 配置已保存到本地浏览器';
+}
+
+async function testKimiConnection() {
+  const key = document.getElementById('kimi-api-key')?.value?.trim() || localStorage.getItem('kimi_api_key');
+  const model = document.getElementById('kimi-model')?.value || localStorage.getItem('kimi_model') || 'moonshot-v1-32k';
+  const r = document.getElementById('kimi-test-result');
+  r.style.display = 'block';
+  r.style.background = '#f1f5f9';
+  r.style.color = '#475569';
+  r.textContent = '⏳ 正在测试连接…';
+  try {
+    const res = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: '你好，请回复「连接成功」四个字' }], max_tokens: 20 })
+    });
+    const data = await res.json();
+    if (data.choices?.[0]?.message?.content) {
+      r.style.background = '#d1fae5'; r.style.color = '#065f46';
+      r.textContent = `✅ 连接成功！Kimi 回复：${data.choices[0].message.content}`;
+    } else {
+      throw new Error(data.error?.message || '未知错误');
+    }
+  } catch(e) {
+    r.style.background = '#fee2e2'; r.style.color = '#991b1b';
+    r.textContent = `❌ 连接失败：${e.message}`;
+  }
+}
+
+// 加载配置到表单
+function loadKimiConfigToForm() {
+  const keyEl = document.getElementById('kimi-api-key');
+  const modelEl = document.getElementById('kimi-model');
+  if (keyEl) keyEl.value = localStorage.getItem('kimi_api_key') || '';
+  if (modelEl) modelEl.value = localStorage.getItem('kimi_model') || 'moonshot-v1-32k';
+}
+
+// ---- AI 对话功能 ----
+let _aiChatHistory = [];
+
+function renderAiPage() {
+  const warn = document.getElementById('ai-config-warning');
+  if (warn) warn.style.display = localStorage.getItem('kimi_api_key') ? 'none' : 'block';
+}
+
+function aiGetDataContext(scope) {
+  const scopeMap = {
+    all: activities,
+    review: activities.filter(a => a.status === '已完成' || a.status === '复盘中'),
+    budget: activities,
+    owner: activities,
+    channels: null
+  };
+  const list = scopeMap[scope] ?? activities;
+
+  if (scope === 'channels') {
+    const chs = (typeof channels !== 'undefined' ? channels : []).map(c => ({
+      名称: c.name, 层级: c.tier, 地市: c.city,
+      区县: c.district, 负责销售: c.sales, 联系人: c.contact,
+      历史记录数: Array.isArray(c.history) ? c.history.length : (c.history ? 1 : 0)
+    }));
+    return `当前系统渠道名单（共 ${chs.length} 条）：\n${JSON.stringify(chs, null, 2)}`;
+  }
+
+  const simplified = list.map(a => ({
+    名称: a.name,
+    类型: a.type,
+    地市: a.city,
+    负责人: a.owner,
+    状态: a.status,
+    预算: Number(a.budget) || 0,
+    实际支出: Number(a.spent) || 0,
+    预算利用率: a.budget > 0 ? `${Math.round(a.spent / a.budget * 100)}%` : '--',
+    开始时间: a.startDate,
+    结束时间: a.endDate,
+    ROI: a.roi || '',
+    KPIs: a.kpis?.map(k => `${k.name}(目标${k.target},实际${k.actual})`).join('，') || '',
+    复盘总结: a.reviewSummary || '',
+    实际费用明细: a.actualCosts?.map(c => `${c.name}:¥${c.amount}`).join('，') || ''
+  }));
+
+  const scopeLabel = {all:'全部', review:'已完成/复盘中', budget:'预算与支出', owner:'负责人绩效', channels:'渠道'}[scope] || '全部';
+  return `当前系统活动数据（范围：${scopeLabel}，共 ${simplified.length} 条）：\n${JSON.stringify(simplified, null, 2)}`;
+}
+
+function aiAppendMessage(role, content, isLoading = false) {
+  const container = document.getElementById('ai-chat-messages');
+  if (!container) return null;
+  // 清除欢迎语
+  const welcome = container.querySelector('[data-welcome]');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;gap:10px;align-items:flex-start;${role==='user'?'flex-direction:row-reverse':''}`;
+  const avatar = document.createElement('div');
+  avatar.style.cssText = `width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;${role==='user'?'background:#e0e7ff':'background:#f0fdf4'}`;
+  avatar.textContent = role === 'user' ? '👤' : '🤖';
+  const bubble = document.createElement('div');
+  bubble.style.cssText = `max-width:76%;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;${role==='user'?'background:#6366f1;color:#fff;border-bottom-right-radius:4px':'background:#f8fafc;border:1px solid var(--border);border-bottom-left-radius:4px'}`;
+  bubble.textContent = isLoading ? '⏳ 思考中…' : content;
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return bubble;
+}
+
+async function aiSendMessage() {
+  const input = document.getElementById('ai-input');
+  const sendBtn = document.getElementById('ai-send-btn');
+  const question = input?.value?.trim();
+  if (!question) return;
+
+  const apiKey = localStorage.getItem('kimi_api_key');
+  if (!apiKey) {
+    document.getElementById('ai-config-warning').style.display = 'block';
+    return;
+  }
+
+  const scope = document.getElementById('ai-data-scope')?.value || 'all';
+  const model = localStorage.getItem('kimi_model') || 'moonshot-v1-32k';
+
+  aiAppendMessage('user', question);
+  input.value = '';
+  sendBtn.disabled = true;
+  sendBtn.textContent = '发送中…';
+
+  // 构建 system prompt
+  const systemPrompt = `你是一个专业的市场活动数据分析师，擅长从活动运营数据中提取洞察。
+用户会提供市场活动管理系统的数据，请基于数据给出准确、具体、有价值的分析。
+回答时请：
+1. 引用具体数据支撑结论
+2. 按重要性排列发现
+3. 提供可执行的建议
+4. 使用简洁的中文，适当使用表格或列表提高可读性`;
+
+  const dataContext = aiGetDataContext(scope);
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: `【数据上下文】\n${dataContext}` },
+    ..._aiChatHistory,
+    { role: 'user', content: question }
+  ];
+
+  const loadingBubble = aiAppendMessage('assistant', '', true);
+
+  try {
+    const res = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: 2000 })
+    });
+    const data = await res.json();
+    if (data.choices?.[0]?.message?.content) {
+      const reply = data.choices[0].message.content;
+      loadingBubble.textContent = reply;
+      _aiChatHistory.push({ role: 'user', content: question });
+      _aiChatHistory.push({ role: 'assistant', content: reply });
+      // 限制历史长度，避免 token 超限
+      if (_aiChatHistory.length > 20) _aiChatHistory = _aiChatHistory.slice(-20);
+    } else {
+      throw new Error(data.error?.message || '返回数据格式异常');
+    }
+  } catch(e) {
+    loadingBubble.style.background = '#fee2e2';
+    loadingBubble.style.color = '#991b1b';
+    loadingBubble.textContent = `❌ 请求失败：${e.message}\n请检查 API Key 是否有效，或网络是否正常。`;
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = '发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>';
+  }
+}
+
+const _aiQuickPrompts = {
+  summary: '请对所有活动进行整体总结，包括活动数量、类型分布、完成情况，以及执行过程中的主要亮点和问题。',
+  budget: '请分析所有活动的预算执行情况：哪些活动预算超支？哪些活动节余较多？整体预算利用率如何？',
+  owner: '请对比分析各负责人的绩效：活动数量、完成率、预算控制能力、KPI达成情况，给出排名和建议。',
+  channel: '请分析渠道数据，包括渠道层级分布、各地市覆盖情况，以及与活动的关联情况（如有）。',
+  risk: '请识别当前活动中存在的风险和问题：哪些活动进度滞后？预算风险？KPI达成风险？',
+  suggest: '基于以上所有数据，请给出3-5条具体可落地的优化建议，帮助提升活动效果和执行效率。'
+};
+
+function aiQuickAsk(type) {
+  const input = document.getElementById('ai-input');
+  if (input) {
+    input.value = _aiQuickPrompts[type] || '';
+    input.focus();
+  }
+}
+
+function aiClearChat() {
+  _aiChatHistory = [];
+  const container = document.getElementById('ai-chat-messages');
+  if (container) {
+    container.innerHTML = `<div data-welcome style="text-align:center;color:var(--text-muted);font-size:13px;padding:40px 0">
+      👋 你好！我是 Kimi AI 助手，可以帮你分析活动数据。<br>
+      选择上方快捷分析，或在下方输入框自由提问。
+    </div>`;
+  }
 }
 
 // ===== INIT =====
