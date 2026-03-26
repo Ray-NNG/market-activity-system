@@ -1584,8 +1584,8 @@
           <button type="button" class="btn btn-outline btn-sm" onclick="addChannelHistoryRow()" style="font-size:12px;padding:3px 10px">+ 添加记录</button>
         </label>
         <div id="ch-history-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:4px">
-          <div style="display:grid;grid-template-columns:130px 1fr 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
-            <span>时间</span><span>活动/内容</span><span></span>
+          <div style="display:grid;grid-template-columns:130px 130px 1fr 120px 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
+            <span>时间</span><span>类型</span><span>活动/内容</span><span>讲师/售前</span><span></span>
           </div>
           <div id="ch-history-rows" style="display:flex;flex-direction:column"></div>
         </div>
@@ -5058,11 +5058,21 @@ function renderChannelHistoryRows(rows) {
     return;
   }
   container.innerHTML = rows.map((r, i) => `
-    <div style="display:grid;grid-template-columns:130px 1fr 36px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9;gap:6px" id="ch-hist-row-${i}">
+    <div style="display:grid;grid-template-columns:130px 130px 1fr 120px 36px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9;gap:6px" id="ch-hist-row-${i}">
       <input type="date" class="form-control" style="padding:4px 6px;font-size:13px;border:1px solid var(--border);border-radius:6px"
         value="${r.date||''}" oninput="updateChannelHistoryRow(${i},'date',this.value)">
+      <select class="form-control" style="padding:4px 6px;font-size:13px;border:1px solid var(--border);border-radius:6px"
+        onchange="updateChannelHistoryRow(${i},'type',this.value)">
+        <option value="">-- 类型 --</option>
+        <option value="渠道赋能" ${r.type==='渠道赋能'?'selected':''}>渠道赋能</option>
+        <option value="渠道沙龙" ${r.type==='渠道沙龙'?'selected':''}>渠道沙龙</option>
+        <option value="拜访" ${r.type==='拜访'?'selected':''}>拜访</option>
+        <option value="协同入校" ${r.type==='协同入校'?'selected':''}>协同入校</option>
+      </select>
       <input type="text" class="form-control" style="padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:6px"
         placeholder="活动名称或描述" value="${(r.content||'').replace(/"/g,'&quot;')}" oninput="updateChannelHistoryRow(${i},'content',this.value)">
+      <input type="text" class="form-control" style="padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:6px"
+        placeholder="讲师/售前" value="${(r.speaker||'').replace(/"/g,'&quot;')}" oninput="updateChannelHistoryRow(${i},'speaker',this.value)">
       <button type="button" onclick="removeChannelHistoryRow(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;line-height:1;padding:0 4px">×</button>
     </div>
   `).join('');
@@ -5072,7 +5082,7 @@ function renderChannelHistoryRows(rows) {
 let _chHistoryRows = [];
 
 function addChannelHistoryRow() {
-  _chHistoryRows.push({ date: new Date().toISOString().slice(0,10), content: '' });
+  _chHistoryRows.push({ date: new Date().toISOString().slice(0,10), type: '', content: '', speaker: '' });
   renderChannelHistoryRows(_chHistoryRows);
 }
 
@@ -5113,9 +5123,9 @@ function openEditChannelModal(id) {
   document.getElementById('ch-feedback').value = c.feedback || '';
   // 兼容旧字符串格式：转为单条记录
   if (Array.isArray(c.history)) {
-    _chHistoryRows = c.history.map(r => ({ date: r.date||'', content: r.content||'' }));
+    _chHistoryRows = c.history.map(r => ({ date: r.date||'', type: r.type||'', content: r.content||'', speaker: r.speaker||'' }));
   } else if (c.history) {
-    _chHistoryRows = [{ date: '', content: c.history }];
+    _chHistoryRows = [{ date: '', type: '', content: c.history, speaker: '' }];
   } else {
     _chHistoryRows = [];
   }
@@ -5137,7 +5147,7 @@ function saveChannel() {
     contact:    document.getElementById('ch-contact')?.value?.trim() || '',
     phone:      document.getElementById('ch-phone')?.value?.trim() || '',
     background: document.getElementById('ch-background')?.value?.trim() || '',
-    history:    _chHistoryRows.filter(r => r.date || r.content).map(r => ({ date: r.date||'', content: r.content||'' })),
+    history:    _chHistoryRows.filter(r => r.date || r.content || r.type || r.speaker).map(r => ({ date: r.date||'', type: r.type||'', content: r.content||'', speaker: r.speaker||'' })),
     feedback:   document.getElementById('ch-feedback')?.value?.trim() || '',
     updatedAt:  new Date().toISOString()
   };
@@ -5165,7 +5175,7 @@ function exportChannelCsv() {
   const headers = ['渠道名称','渠道分层','所在地市','区/县','负责销售','关键联系人','联系方式','渠道背景','历史推广记录','商机反馈'];
   const rows = channels.map(c => {
     const histStr = Array.isArray(c.history)
-      ? c.history.map(r => `${r.date||''}：${r.content||''}`).join('；')
+      ? c.history.map(r => `${r.date||''}[${r.type||''}]${r.content||''}${r.speaker?'('+r.speaker+')':''}`).join('；')
       : (c.history||'');
     return [c.name,c.tier,c.city,c.district,c.sales,c.contact,c.phone,c.background,histStr,c.feedback].map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',');
   });
