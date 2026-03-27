@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>市场活动全流程管理系统 v2026.03.27-9</title>
+<title>市场活动全流程管理系统 v2026.03.27-10</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -536,7 +536,8 @@
         const expired = now + 3600;
         const signTime = `${now};${expired}`;
         const host = `${CONFIG.bucket}.cos.${CONFIG.region}.myqcloud.com`;
-        const isWrite = method.toUpperCase() !== 'GET';
+        // HEAD 和 GET 都是读操作，不携带 Content-Type（否则签名和实际请求不一致→403）
+        const isWrite = method.toUpperCase() !== 'GET' && method.toUpperCase() !== 'HEAD';
         const ct = isWrite ? (contentType || 'application/octet-stream') : null;
 
         // 腾讯云签名规范：
@@ -898,7 +899,7 @@
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.27-9</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.27-10</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1666,7 +1667,7 @@
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.27-9';
+const APP_VERSION = 'v2026.03.27-10';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
