@@ -628,8 +628,41 @@
             return { success: false, message: `连接失败: HTTP ${res.status}` };
         } catch(e) { return { success: false, message: `连接失败: ${e.message}` }; }
     }
+
+    // ===== channels.json 独立存储（与 data.json 完全分开，避免互相覆盖）=====
+    const CHANNELS_KEY = 'channels.json';
+    function getLocalChannels() {
+        const s = localStorage.getItem('mcm_channels');
+        if (s) { try { return JSON.parse(s); } catch(e) {} }
+        return [];
+    }
+    function saveLocalChannels(arr) {
+        localStorage.setItem('mcm_channels', JSON.stringify(arr));
+    }
+    async function getChannels() {
+        if (!isConfigured()) return getLocalChannels();
+        try {
+            const req = buildCosRequest('GET', CHANNELS_KEY);
+            const res = await fetch(req.url, { method: 'GET', headers: req.headers, signal: AbortSignal.timeout(10000) });
+            if (res.ok) { const d = await res.json(); saveLocalChannels(d); return d; }
+            if (res.status === 404) return getLocalChannels(); // 首次使用，返回本地
+            throw new Error(`HTTP ${res.status}`);
+        } catch(e) { console.warn('⚠️ COS channels.json 获取失败，使用本地:', e.message); return getLocalChannels(); }
+    }
+    async function saveChannelsData(arr) {
+        saveLocalChannels(arr);
+        if (!isConfigured()) return { success: false, message: '未配置', local: true };
+        try {
+            const dataStr = JSON.stringify(arr, null, 2);
+            const req = buildCosRequest('PUT', CHANNELS_KEY, dataStr, 'application/json');
+            const res = await fetch(req.url, { method: 'PUT', headers: req.headers, body: dataStr, signal: AbortSignal.timeout(15000) });
+            if (res.ok) return { success: true, message: '渠道数据保存成功' };
+            throw new Error(`HTTP ${res.status}`);
+        } catch(e) { return { success: false, message: e.message, local: true }; }
+    }
+
     if (!window.MarketActivityCOS) window.MarketActivityCOS = {};
-    window.MarketActivityCOS.adapter = { configure, getData, saveData, testConnection, isConfigured, loadConfig, getConfig: () => ({ ...CONFIG }), buildRequest: buildCosRequest };
+    window.MarketActivityCOS.adapter = { configure, getData, saveData, testConnection, isConfigured, loadConfig, getConfig: () => ({ ...CONFIG }), buildRequest: buildCosRequest, getChannels, saveChannelsData };
     window.MarketActivityCOS.version = 'inline-1.0.1';
     loadConfig();
     console.log('✅ COS 适配器已就绪，配置状态:', isConfigured());
@@ -1649,16 +1682,32 @@ async function getJsonBinData(retryCount = 0) {
     return { activities: [], files: {} };
   }
 
-  // 1. 尝试从腾讯云 COS 加载
+  // 1. 尝试从腾讯云 COS 加载（activities 和 channels 并发请求）
   try {
-    const data = await window.MarketActivityCOS.adapter.getData();
+    const adapter = window.MarketActivityCOS.adapter;
+    // 并发加载 data.json 和 channels.json，速度更快
+    const [data, cosChannels] = await Promise.all([
+      adapter.getData(),
+      adapter.getChannels().catch(e => { console.warn('channels.json 加载失败:', e.message); return null; })
+    ]);
     console.log('✅ 腾讯云 COS 数据加载成功');
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // 同步渠道数据
-    if (data.channels && Array.isArray(data.channels)) {
+    // 处理旧版 data.json 中 channels 字段的迁移
+    if (data.channels && Array.isArray(data.channels) && data.channels.length > 0 && (!cosChannels || cosChannels.length === 0)) {
+      console.log('🔄 检测到旧版 channels 数据，迁移到 channels.json...');
       channels = data.channels;
       localStorage.setItem('mcm_channels', JSON.stringify(channels));
+      // 迁移到独立文件
+      adapter.saveChannelsData(channels).then(() => console.log('✅ channels 迁移完成'));
+      // 从 data.json 中去掉 channels 字段并回写
+      delete data.channels;
+      adapter.saveData(data).catch(()=>{});
+    } else if (cosChannels && Array.isArray(cosChannels)) {
+      // 正常情况：用 channels.json 的数据
+      channels = cosChannels;
+      localStorage.setItem('mcm_channels', JSON.stringify(channels));
+      console.log('✅ channels.json 加载成功，共', channels.length, '家渠道');
     }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     return data;
   } catch (err) {
     console.log('⚠️ 腾讯云 COS 连接失败，使用本地数据:', err.message);
@@ -1679,8 +1728,9 @@ async function getJsonBinData(retryCount = 0) {
 // ===== 保存数据：先存本地，再异步同步到腾讯云 COS =====
 async function saveJsonBinData(data, retryCount = 0) {
   console.log('💾 开始保存数据到腾讯云 COS...');
-  // 合并当前渠道数据
-  if (!data.channels) data.channels = channels || [];
+  // 注意：channels 已独立存储在 channels.json，不再合并到 data.json
+  // 如果旧数据里有 channels 字段，清掉防止干扰
+  if (data.channels !== undefined) delete data.channels;
 
   // 1. 立即写本地（保证不丢数据）
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -3248,7 +3298,23 @@ function detailTab(el, idx) {
       const countEl = panel.querySelector('[id^="channel-link-count-"]');
       if (countEl) {
         const actId = countEl.id.replace('channel-link-count-', '');
+        // 先用本地数据快速渲染
         setTimeout(() => filterChannelLinkPanel(actId), 20);
+        // 再从 COS 拉最新 channels，拉到后重新渲染面板
+        (async () => {
+          try {
+            const adapter = window.MarketActivityCOS?.adapter;
+            if (!adapter || !adapter.isConfigured()) return;
+            const latest = await adapter.getChannels();
+            if (Array.isArray(latest) && latest.length >= 0) {
+              channels = latest;
+              localStorage.setItem('mcm_channels', JSON.stringify(channels));
+              // 重新渲染整个关联渠道面板（包含渠道列表）
+              panel.innerHTML = renderChannelLinkPanel(actId);
+              console.log('✅ 关联渠道面板已从 COS 刷新');
+            }
+          } catch(e) { console.log('关联渠道面板刷新失败:', e.message); }
+        })();
       }
     }
   }
@@ -5053,11 +5119,10 @@ async function syncChannelsToCOS() {
   try {
     const adapter = window.MarketActivityCOS?.adapter;
     if (!adapter || !adapter.isConfigured()) return;
-    // 读取现有 data.json，合并 channels 字段
-    let mainData = { activities: activities || [], channels: channels };
-    try { mainData = await adapter.getData(); } catch(e) {}
-    mainData.channels = channels;
-    await adapter.saveData(mainData);
+    // 使用独立的 channels.json，避免与 data.json 互相覆盖
+    const result = await adapter.saveChannelsData(channels);
+    if (result.success) console.log('✅ 渠道数据已同步到 COS channels.json');
+    else console.warn('⚠️ 渠道COS同步失败:', result.message);
   } catch(e) { console.log('渠道同步失败:', e.message); }
 }
 
@@ -5065,17 +5130,18 @@ function renderChannelsPage() {
   loadChannels();
   updateChannelFilters();
   renderChannelList();
-  // 后台从 COS 拉最新数据，拉到后自动刷新列表
+  // 后台从 COS channels.json 拉最新数据（独立文件，不会被活动保存覆盖），拉到后自动刷新
   (async () => {
     try {
       const adapter = window.MarketActivityCOS?.adapter;
       if (!adapter || !adapter.isConfigured()) return;
-      const data = await adapter.getData();
-      if (data.channels && Array.isArray(data.channels)) {
-        channels = data.channels;
+      const latest = await adapter.getChannels();
+      if (Array.isArray(latest) && latest.length >= 0) {
+        channels = latest;
         localStorage.setItem('mcm_channels', JSON.stringify(channels));
         updateChannelFilters();
         renderChannelList();
+        console.log('✅ 渠道数据已从 COS 刷新，共', channels.length, '家');
       }
     } catch(e) { console.log('渠道页刷新失败:', e.message); }
   })();
