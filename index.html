@@ -1178,6 +1178,7 @@
         <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="saveCosConfig()">💾 保存配置</button>
           <button class="btn btn-outline" onclick="testCosConnection()">🔌 测试连接</button>
+          <button class="btn btn-outline" onclick="forceSyncCosFromCloud()" title="从云端重新拉取最新配置，覆盖本地">☁️ 从云端同步</button>
           <button class="btn btn-outline" style="color:var(--danger);border-color:var(--danger)" onclick="clearCosConfig()">🗑️ 清除配置</button>
         </div>
 
@@ -4104,7 +4105,7 @@ function updateCosStatusBar() {
   }
 }
 
-function saveCosConfig() {
+async function saveCosConfig() {
   const secretId  = document.getElementById('cos-secret-id').value.trim();
   const secretKey = document.getElementById('cos-secret-key').value.trim();
   const bucket    = document.getElementById('cos-bucket').value.trim();
@@ -4123,7 +4124,15 @@ function saveCosConfig() {
   }
 
   updateCosStatusBar();
-  showCosResult('success', '✅ 配置已保存！建议点击「测试连接」验证是否可用。');
+  showCosResult('success', '✅ 配置已保存！正在同步到云端，其他设备可自动获取…');
+
+  // 关键：同步到 sys_config.json，让其他设备自动获取最新密钥
+  try {
+    await syncSysConfigToCOS();
+    showCosResult('success', '✅ 配置已保存并同步到云端！其他设备打开页面将自动获取最新配置。');
+  } catch(e) {
+    showCosResult('success', '✅ 配置已本地保存。（云端同步失败，请确认密钥正确后再保存一次）');
+  }
 }
 
 async function testCosConnection() {
@@ -4244,6 +4253,36 @@ async function testCosConnection() {
   } finally {
     btn.disabled = false;
     btn.textContent = '🔌 测试连接';
+  }
+}
+
+async function forceSyncCosFromCloud() {
+  showCosResult('info', '☁️ 正在从云端拉取最新 COS 配置…');
+  try {
+    const res = await fetch(_DEFAULT_SYS_CONFIG_URL + '?t=' + Date.now(), { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.cosConfig && data.cosConfig.secretId && data.cosConfig.secretKey) {
+      localStorage.setItem('cos_config', JSON.stringify(data.cosConfig));
+      if (window.MarketActivityCOS?.adapter?.configure) {
+        window.MarketActivityCOS.adapter.configure(data.cosConfig);
+      }
+      // 回填到表单
+      const sid = document.getElementById('cos-secret-id');
+      const sk  = document.getElementById('cos-secret-key');
+      const bkt = document.getElementById('cos-bucket');
+      const rgn = document.getElementById('cos-region');
+      if (sid) sid.value = data.cosConfig.secretId || '';
+      if (sk)  sk.value  = data.cosConfig.secretKey  || '';
+      if (bkt) bkt.value = data.cosConfig.bucket     || '';
+      if (rgn) rgn.value = data.cosConfig.region     || 'ap-guangzhou';
+      updateCosStatusBar();
+      showCosResult('success', '✅ 已从云端同步最新配置！请点击「测试连接」验证。');
+    } else {
+      showCosResult('error', '❌ 云端 sys_config.json 里没有 COS 配置，请超级管理员先在本设备保存一次。');
+    }
+  } catch(e) {
+    showCosResult('error', `❌ 从云端拉取失败：${e.message}`);
   }
 }
 
