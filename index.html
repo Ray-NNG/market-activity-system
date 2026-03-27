@@ -562,14 +562,14 @@
         const headerList = ct ? 'content-type;host' : 'host';
         const httpString = `${method.toLowerCase()}\n${uriPath}\n${httpParams}\n${httpHeaders}\n`;
 
-        // Step1: signKey = HMAC-SHA1(SecretKey, signTime)
+        // Step1: signKey = HMAC-SHA1(SecretKey, signTime)  → 结果是 hex 字符串
         const signKey = await _hmacSha1Hex(strToBytes(CONFIG.secretKey), signTime);
         // Step2: StringToSign = "sha1\n" + signTime + "\n" + SHA1(httpString) + "\n"
         const httpHash = await _sha1Hex(httpString);
         const stringToSign = `sha1\n${signTime}\n${httpHash}\n`;
-        // Step3: signature = HMAC-SHA1(signKey字节, StringToSign)
-        const signKeyArr = signKey.match(/.{2}/g).map(h => parseInt(h, 16));
-        const signature = await _hmacSha1Hex(signKeyArr, stringToSign);
+        // Step3: signature = HMAC-SHA1(signKey的UTF-8字节, StringToSign)
+        // ⚡ 关键：signKey 是 40字符 hex 字符串，直接用其 UTF-8 字节（而非 fromHex 解码）
+        const signature = await _hmacSha1Hex(strToBytes(signKey), stringToSign);
 
         console.log('🔐 COS签名调试:', {
             method: method.toLowerCase(), uriPath, host, ct,
@@ -1674,7 +1674,7 @@
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.27-12';
+const APP_VERSION = 'v2026.03.27-14';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
