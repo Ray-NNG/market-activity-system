@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>市场活动全流程管理系统 v2026.03.27-11</title>
+<title>市场活动全流程管理系统 v2026.03.27-12</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -510,8 +510,6 @@
         const httpHash = await _sha1Hex(httpString);
         const stringToSign = `sha1\n${signTime}\n${httpHash}\n`;
         // Step3: signature = HMAC-SHA1(signKey字节, StringToSign)
-        const signKeyBytes = [...Buffer.from ? Buffer.from(signKey, 'hex') : signKey.match(/.{2}/g).map(h => parseInt(h, 16))];
-        // 浏览器无 Buffer，用 Uint8Array
         const signKeyArr = signKey.match(/.{2}/g).map(h => parseInt(h, 16));
         const signature = await _hmacSha1Hex(signKeyArr, stringToSign);
 
@@ -850,7 +848,7 @@
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.27-11</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.27-12</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1618,7 +1616,7 @@
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.27-11';
+const APP_VERSION = 'v2026.03.27-12';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
