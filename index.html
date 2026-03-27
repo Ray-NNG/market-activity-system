@@ -643,39 +643,27 @@
       <div class="login-logo">
         <div style="font-size:40px;margin-bottom:8px">🎯</div>
         <h1>市场活动管理系统</h1>
-        <p>请选择角色并输入密码</p>
+        <p>请输入账号和密码登录</p>
       </div>
       <div class="login-form">
-        <!-- 角色选择 -->
         <div class="login-field">
-          <label>登录角色</label>
-          <div style="display:flex;gap:8px;margin-top:2px">
-            <button type="button" id="role-btn-superadmin" onclick="selectRole('superadmin')"
-              style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:#64748b">
-              👑 超级管理员
-            </button>
-            <button type="button" id="role-btn-admin" onclick="selectRole('admin')"
-              style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid #4f46e5;background:#4f46e5;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:#fff">
-              🛡️ 管理员
-            </button>
-            <button type="button" id="role-btn-viewer" onclick="selectRole('viewer')"
-              style="flex:1;padding:8px 4px;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:#64748b">
-              👤 使用人员
-            </button>
-          </div>
-          <div id="role-hint" style="font-size:11px;color:#64748b;margin-top:6px;text-align:center">管理员：可创建、编辑、删除活动</div>
+          <label>账号</label>
+          <input type="text" id="login-username" placeholder="请输入账号"
+            autocomplete="username"
+            onkeydown="if(event.key==='Enter') document.getElementById('login-pwd').focus()">
         </div>
         <div class="login-field">
           <label>密码</label>
           <input type="password" id="login-pwd" placeholder="请输入密码"
+            autocomplete="current-password"
             onkeydown="if(event.key==='Enter') doLogin()">
         </div>
-        <div class="login-error" id="login-error">密码错误，请重新输入</div>
+        <div class="login-error" id="login-error">账号或密码错误，请重新输入</div>
         <button id="login-btn" class="login-btn" onclick="doLogin()">登 录</button>
-        <!-- 云端密码同步（B设备首次使用时） -->
+        <!-- 云端账号同步（B设备首次使用时） -->
         <div id="login-sync-area" style="display:none;margin-top:14px;padding:14px;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd">
-          <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">☁️ 从云端同步密码</div>
-          <div style="font-size:12px;color:#0284c7;margin-bottom:10px">首次在新设备使用？输入云存储 Bucket 名称即可同步密码</div>
+          <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">☁️ 从云端同步账号</div>
+          <div style="font-size:12px;color:#0284c7;margin-bottom:10px">首次在新设备使用？输入云存储 Bucket 名称即可同步账号信息</div>
           <input id="login-sync-bucket" type="text" placeholder="例：market-data-1312345678"
             style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid #bae6fd;font-size:13px;margin-bottom:6px">
           <select id="login-sync-region" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid #bae6fd;font-size:13px;margin-bottom:10px;background:#fff">
@@ -723,6 +711,64 @@
         <button onclick="document.getElementById('cos-setup-card').style.display='none'" style="padding:9px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:transparent;color:rgba(255,255,255,0.7);font-size:13px;cursor:pointer">跳过</button>
       </div>
       <div id="cos-setup-msg" style="margin-top:8px;font-size:12px;text-align:center;min-height:16px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 新增/编辑账号弹窗 -->
+<div id="modal-user-edit" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3 id="user-edit-title">➕ 新建账号</h3>
+      <button class="modal-close" onclick="closeModal('modal-user-edit')">×</button>
+    </div>
+    <div class="modal-body" style="padding-top:8px">
+      <input type="hidden" id="user-edit-id">
+      <div class="form-group">
+        <label>账号（登录用）*</label>
+        <input class="form-control" id="user-edit-username" placeholder="英文/数字，如：zhangsan" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>姓名（显示用）</label>
+        <input class="form-control" id="user-edit-name" placeholder="如：张三">
+      </div>
+      <div class="form-group">
+        <label>角色权限 *</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;transition:all .15s" id="role-opt-superadmin">
+            <input type="radio" name="user-edit-role" value="superadmin" onchange="highlightRoleOpt()" style="display:none">
+            👑 超级管理员
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;transition:all .15s" id="role-opt-admin">
+            <input type="radio" name="user-edit-role" value="admin" onchange="highlightRoleOpt()" style="display:none">
+            🛡️ 管理员
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;transition:all .15s" id="role-opt-viewer">
+            <input type="radio" name="user-edit-role" value="viewer" onchange="highlightRoleOpt()" style="display:none">
+            👤 使用人员
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px" id="role-opt-hint">请选择角色</div>
+      </div>
+      <div class="form-group" id="user-edit-pwd-group">
+        <label>密码 *</label>
+        <input class="form-control" type="password" id="user-edit-pwd" placeholder="至少4位" autocomplete="new-password">
+      </div>
+      <div class="form-group" id="user-edit-pwd2-group">
+        <label>确认密码 *</label>
+        <input class="form-control" type="password" id="user-edit-pwd2" placeholder="再次输入密码" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="user-edit-active" checked style="width:16px;height:16px">
+          <span>账号启用</span>
+        </label>
+      </div>
+      <div id="user-edit-msg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-user-edit')">取消</button>
+      <button class="btn btn-primary" onclick="saveUserEdit()">保存账号</button>
     </div>
   </div>
 </div>
@@ -823,8 +869,11 @@
       <p id="page-sub">市场活动全流程监控与管理</p>
     </div>
     <div class="topbar-right">
-      <!-- 角色徽章 -->
-      <div id="topbar-role-badge" style="display:none;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600"></div>
+      <!-- 当前用户信息 -->
+      <div style="display:flex;flex-direction:column;align-items:flex-end;line-height:1.3">
+        <span id="current-user-name" style="font-size:13px;font-weight:600;color:var(--text)"></span>
+        <span id="current-user-role" style="font-size:11px;color:var(--text-muted)"></span>
+      </div>
       <!-- 全局搜索 -->
       <div class="search-wrap" id="search-wrap">
         <span class="search-icon">🔍</span>
@@ -1265,85 +1314,24 @@
 
     <!-- ===== 账户权限管理（仅超级管理员可见） ===== -->
     <div id="page-usermgmt" class="page">
-      <div class="card" style="max-width:720px">
-        <div class="card-header">
-          <div class="card-title">🔑 账户权限管理</div>
-          <div style="font-size:12px;color:var(--text-muted)">设置各角色密码，密码存储在云端，所有设备同步生效</div>
+      <!-- 顶部操作栏 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;max-width:800px">
+        <div>
+          <div style="font-size:16px;font-weight:700">🔑 账户权限管理</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">管理所有登录账号及其权限，仅超级管理员可操作</div>
         </div>
-
-        <!-- 超级管理员 -->
-        <div style="padding:16px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:18px">👑</div>
-            <div>
-              <div style="font-weight:700;font-size:14px">超级管理员</div>
-              <div style="font-size:12px;color:var(--text-muted)">可访问全部功能，包括系统设置、账户管理、COS配置</div>
-            </div>
-          </div>
-          <div class="grid-2" style="gap:12px">
-            <div class="form-group">
-              <label>超级管理员密码</label>
-              <input class="form-control" type="password" id="pwd-superadmin" placeholder="设置超级管理员密码">
-            </div>
-            <div class="form-group">
-              <label>确认密码</label>
-              <input class="form-control" type="password" id="pwd-superadmin-confirm" placeholder="再次输入">
-            </div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveRolePassword('superadmin')">保存超级管理员密码</button>
-        </div>
-
-        <!-- 管理员 -->
-        <div style="padding:16px 0;border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:18px">🛡️</div>
-            <div>
-              <div style="font-weight:700;font-size:14px">管理员</div>
-              <div style="font-size:12px;color:var(--text-muted)">可创建/编辑/删除活动、管理渠道，不能修改系统设置</div>
-            </div>
-          </div>
-          <div class="grid-2" style="gap:12px">
-            <div class="form-group">
-              <label>管理员密码</label>
-              <input class="form-control" type="password" id="pwd-admin" placeholder="设置管理员密码">
-            </div>
-            <div class="form-group">
-              <label>确认密码</label>
-              <input class="form-control" type="password" id="pwd-admin-confirm" placeholder="再次输入">
-            </div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveRolePassword('admin')">保存管理员密码</button>
-        </div>
-
-        <!-- 使用人员 -->
-        <div style="padding:16px 0">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>
-            <div>
-              <div style="font-weight:700;font-size:14px">使用人员</div>
-              <div style="font-size:12px;color:var(--text-muted)">只读权限，可查看活动和渠道数据，不能创建或修改</div>
-            </div>
-          </div>
-          <div class="grid-2" style="gap:12px">
-            <div class="form-group">
-              <label>使用人员密码</label>
-              <input class="form-control" type="password" id="pwd-viewer" placeholder="设置使用人员密码">
-            </div>
-            <div class="form-group">
-              <label>确认密码</label>
-              <input class="form-control" type="password" id="pwd-viewer-confirm" placeholder="再次输入">
-            </div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveRolePassword('viewer')">保存使用人员密码</button>
-        </div>
-
-        <div id="usermgmt-result" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;font-size:13px"></div>
+        <button class="btn btn-primary" onclick="openAddUserModal()">＋ 新建账号</button>
       </div>
 
-      <!-- 当前密码状态 -->
-      <div class="card" style="max-width:720px;margin-top:16px">
-        <div class="card-header"><div class="card-title">📋 当前密码状态</div></div>
-        <div id="pwd-status-list" style="padding:4px 0"></div>
+      <!-- 用户列表 -->
+      <div class="card" style="max-width:800px">
+        <div id="user-list-container">
+          <div style="text-align:center;padding:40px;color:var(--text-muted)">加载中…</div>
+        </div>
+      </div>
+
+      <div style="max-width:800px;margin-top:12px;padding:12px 16px;background:#fef9c3;border-radius:8px;font-size:12px;color:#854d0e">
+        💡 账号说明：超级管理员可访问全部功能；管理员可创建/编辑活动和渠道；使用人员仅可查看，不能修改
       </div>
     </div>
 
@@ -3676,58 +3664,59 @@ function showSearchResults(keyword) {
 }
 
 // ===== 权限系统 =====
+// 账号体系：每个用户有独立 username / password / role / name
+// 数据存储：localStorage mcm_users（同步自 COS sys_config.json 的 users 字段）
 // 角色：superadmin > admin > viewer
-// 密码存储：本地 mcm_passwords（同步自COS的sys_config.json）
 var _currentRole = null;
-var _selectedLoginRole = 'admin';
+var _currentUser = null;   // 当前登录的用户对象 { id, username, name, role }
 
 function getCurrentRole() { return _currentRole; }
+function getCurrentUser() { return _currentUser; }
 
-function selectRole(role) {
-  _selectedLoginRole = role;
-  const hints = {
-    superadmin: '超级管理员：全部权限，含系统设置、账户权限管理',
-    admin: '管理员：可创建/编辑/删除活动和渠道，可访问系统设置',
-    viewer: '使用人员：只读权限，查看活动和渠道数据'
-  };
-  const hintEl = document.getElementById('role-hint');
-  if (hintEl) hintEl.textContent = hints[role] || '';
-  ['superadmin','admin','viewer'].forEach(r => {
-    const btn = document.getElementById('role-btn-' + r);
-    if (!btn) return;
-    if (r === role) {
-      btn.style.borderColor = '#4f46e5';
-      btn.style.background  = '#4f46e5';
-      btn.style.color       = '#fff';
-    } else {
-      btn.style.borderColor = '#e2e8f0';
-      btn.style.background  = '#f8fafc';
-      btn.style.color       = '#64748b';
-    }
-  });
-}
-
-function getRolePasswords() {
+// 获取用户列表，默认含超级管理员
+function getUsers() {
   try {
-    const saved = localStorage.getItem('mcm_passwords');
-    if (saved) return JSON.parse(saved);
+    const saved = localStorage.getItem('mcm_users');
+    if (saved) {
+      const list = JSON.parse(saved);
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
   } catch(e) {}
-  return { superadmin: 'super2024', admin: 'admin123', viewer: 'view123' };
+  // 默认账号（首次使用）
+  return [
+    { id: 'u_superadmin', username: 'superadmin', name: '超级管理员', role: 'superadmin', password: 'super2024', active: true },
+    { id: 'u_admin',      username: 'admin',      name: '管理员',     role: 'admin',      password: 'admin123',  active: true },
+    { id: 'u_viewer',     username: 'viewer',     name: '使用人员',   role: 'viewer',     password: 'view123',   active: true }
+  ];
 }
 
-function setRolePasswords(pwds) {
-  localStorage.setItem('mcm_passwords', JSON.stringify(pwds));
-  // 同步到 COS sys_config.json（异步，不阻塞）
+function setUsers(list) {
+  localStorage.setItem('mcm_users', JSON.stringify(list));
   syncSysConfigToCOS();
 }
 
-// 从 COS 拉取系统配置（密码等），新设备自动同步
-// 优先用本地 cos_config，没有则用默认 bucket（公开读）
+// 兼容旧代码：getRolePasswords 仍可用
+function getRolePasswords() {
+  const users = getUsers();
+  const pwds = { superadmin: 'super2024', admin: 'admin123', viewer: 'view123' };
+  users.forEach(u => { if (u.role && u.password) pwds[u.role] = u.password; });
+  return pwds;
+}
+function setRolePasswords(pwds) {
+  const users = getUsers();
+  ['superadmin','admin','viewer'].forEach(role => {
+    if (!pwds[role]) return;
+    const u = users.find(x => x.username === role);
+    if (u) u.password = pwds[role];
+  });
+  setUsers(users);
+}
+
+// 从 COS 拉取系统配置（账号列表等），新设备自动同步
 const _DEFAULT_SYS_CONFIG_URL = 'https://nnqgcvte2026-1414699807.cos.ap-guangzhou.myqcloud.com/sys_config.json';
 
 async function fetchSysConfigFromCOS() {
   try {
-    // 优先从 localStorage cos_config 构造 URL（不依赖 adapter 是否初始化）
     let url = _DEFAULT_SYS_CONFIG_URL;
     try {
       const localCfg = JSON.parse(localStorage.getItem('cos_config') || '{}');
@@ -3735,7 +3724,6 @@ async function fetchSysConfigFromCOS() {
         url = `https://${localCfg.bucket}.cos.${localCfg.region}.myqcloud.com/sys_config.json`;
       }
     } catch(e) {}
-    // 若 adapter 已配置且 bucket/region 与 localStorage 一致，也可以用（冗余保障）
     const adapter = window.MarketActivityCOS?.adapter;
     if (adapter && adapter.isConfigured()) {
       const cfg = adapter.getConfig ? adapter.getConfig() : {};
@@ -3746,21 +3734,20 @@ async function fetchSysConfigFromCOS() {
     const res = await fetch(url + '?t=' + Date.now(), { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return false;
     const data = await res.json();
-    if (data.passwords) {
+    if (data.users && Array.isArray(data.users) && data.users.length > 0) {
+      localStorage.setItem('mcm_users', JSON.stringify(data.users));
+      console.log('✅ 从COS同步用户列表成功');
+    } else if (data.passwords) {
       localStorage.setItem('mcm_passwords', JSON.stringify(data.passwords));
-      console.log('✅ 从COS同步系统密码成功');
+      console.log('✅ 从COS同步系统密码成功（旧格式）');
     }
-    // 同时保存 cos_config（如果本地还没有的话，帮其他设备自动完成配置）
     if (data.cosConfig) {
       const local = localStorage.getItem('cos_config');
       if (!local || local === '{}') {
         localStorage.setItem('cos_config', JSON.stringify(data.cosConfig));
-        // 同步初始化 adapter，让后续数据读写走正确的 COS
         if (window.MarketActivityCOS?.adapter?.configure) {
           window.MarketActivityCOS.adapter.configure(data.cosConfig);
           console.log('✅ 从COS同步cos_config并初始化adapter成功');
-        } else {
-          console.log('✅ 从COS同步cos_config成功');
         }
       }
     }
@@ -3771,15 +3758,16 @@ async function fetchSysConfigFromCOS() {
   }
 }
 
-// 超管配置COS后，把系统配置（密码等）写入 COS
+// 超管配置COS后，把系统配置写入 COS
 async function syncSysConfigToCOS() {
   try {
     const adapter = window.MarketActivityCOS?.adapter;
     if (!adapter || !adapter.isConfigured()) return;
     const cosConfigRaw = localStorage.getItem('cos_config') || '{}';
     const sysConfig = {
+      users: getUsers(),
       passwords: getRolePasswords(),
-      cosConfig: JSON.parse(cosConfigRaw),   // 新设备拉取后自动完成配置
+      cosConfig: JSON.parse(cosConfigRaw),
       updatedAt: new Date().toISOString()
     };
     const body = JSON.stringify(sysConfig);
@@ -3788,78 +3776,56 @@ async function syncSysConfigToCOS() {
     await fetch(req.url, { method:'PUT', headers: req.headers, body });
     console.log('✅ sys_config.json 已同步到COS');
   } catch(e) {
-    console.log('⚠️ sys_config同步失败:', e.message);
+    console.log('ℹ️ sys_config同步失败:', e.message);
   }
 }
 
-// 更新侧边栏/topbar的角色显示
 function updateRoleDisplay() {
   const role = _currentRole;
-  const roleInfo = {
-    superadmin: { icon:'👑', label:'超级管理员', bg:'#fef3c7', color:'#d97706' },
-    admin:      { icon:'🛡️', label:'管理员',     bg:'#ede9fe', color:'#7c3aed' },
-    viewer:     { icon:'👤', label:'使用人员',   bg:'#d1fae5', color:'#059669' }
-  };
-  const info = roleInfo[role] || roleInfo.admin;
+  const user = _currentUser;
+  const userNameEl = document.getElementById('current-user-name');
+  const userRoleEl = document.getElementById('current-user-role');
+  const roleIcons = { superadmin:'👑', admin:'🛡️', viewer:'👤' };
+  const roleNames = { superadmin:'超级管理员', admin:'管理员', viewer:'使用人员' };
+  if (userNameEl) userNameEl.textContent = user?.name || user?.username || '用户';
+  if (userRoleEl) userRoleEl.textContent = (roleIcons[role]||'') + ' ' + (roleNames[role]||'');
 
-  // topbar 徽章
-  const badge = document.getElementById('topbar-role-badge');
-  if (badge) {
-    badge.style.display = 'inline-flex';
-    badge.style.background = info.bg;
-    badge.style.color = info.color;
-    badge.textContent = info.icon + ' ' + info.label;
-  }
+  const addBtns = document.querySelectorAll('.btn-add-activity, #btn-new-activity, [data-require-admin]');
+  addBtns.forEach(b => { b.style.display = (role === 'viewer') ? 'none' : ''; });
 
-  // 根据角色控制侧边栏菜单可见性
-  const settingsNav = document.getElementById('nav-settings');
-  const usermgmtNav = document.getElementById('nav-user-mgmt');
   const adminSection = document.getElementById('nav-admin-section');
+  const usermgmtNav  = document.getElementById('nav-user-mgmt');
+  const settingsNav  = document.getElementById('nav-settings');
 
   if (role === 'viewer') {
-    if (settingsNav) settingsNav.style.display = 'none';
-    if (usermgmtNav) usermgmtNav.style.display = 'none';
     if (adminSection) adminSection.style.display = 'none';
   } else if (role === 'admin') {
-    if (adminSection) adminSection.style.display = 'block';
-    if (settingsNav) settingsNav.style.display = 'flex';   // 管理员可见系统设置
-    if (usermgmtNav) usermgmtNav.style.display = 'none';   // 账户权限仅超管可见
+    if (adminSection) adminSection.style.display = '';
+    if (usermgmtNav)  usermgmtNav.style.display  = 'none';
+    if (settingsNav)  settingsNav.style.display   = 'flex';
   } else {
-    // superadmin
-    if (adminSection) adminSection.style.display = 'block';
-    if (settingsNav) settingsNav.style.display = 'flex';
-    if (usermgmtNav) usermgmtNav.style.display = 'flex';
+    if (adminSection) adminSection.style.display = '';
+    if (usermgmtNav)  usermgmtNav.style.display  = 'flex';
+    if (settingsNav)  settingsNav.style.display   = 'flex';
   }
-
-  // 控制「新建活动」按钮对 viewer 不可见
-  const newBtn = document.querySelector('.btn.btn-primary[onclick="openNewActivity()"]');
-  if (newBtn) newBtn.style.display = (role === 'viewer') ? 'none' : '';
 }
 
-// ===== 登录功能 =====
-var calYear, calMonth;
+// ===== 登录检测（页面加载时自动执行）=====
+(function() {
+  const authKey     = 'mcm_auth_ts';
+  const SESSION_HOURS = 24;
+  const saved       = localStorage.getItem(authKey);
+  const overlay     = document.getElementById('login-overlay');
 
-(function initLogin() {
-  const authKey  = 'mcm_auth_ts';
-  const SESSION_HOURS = 8;
-  const saved    = localStorage.getItem(authKey);
-  const overlay  = document.getElementById('login-overlay');
-
-  // 检查COS是否配置；未配置则显示引导卡（仅给超管看）
-  const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
-  if (!cosConfig.secretId || !cosConfig.secretKey) {
-    // 不强制显示，等选择超级管理员角色时再显示
-  }
-
-  // 会话未过期，直接放行
   if (saved) {
     const ts = parseInt(saved);
     if ((Date.now() - ts) < SESSION_HOURS * 3600000) {
       _currentRole = localStorage.getItem('mcm_current_role') || 'admin';
+      const savedUser = localStorage.getItem('mcm_current_user');
+      _currentUser = savedUser ? JSON.parse(savedUser) : { username: _currentRole, name: _currentRole, role: _currentRole };
       localStorage.setItem(authKey, Date.now().toString());
       if (overlay) overlay.style.display = 'none';
       updateRoleDisplay();
-      // 后台尝试从COS同步最新密码；若本地有cos_config则顺带把cosConfig推上去
       fetchSysConfigFromCOS().then(() => {
         const cc = JSON.parse(localStorage.getItem('cos_config') || '{}');
         if (cc.secretId && cc.secretKey) syncSysConfigToCOS();
@@ -3868,61 +3834,53 @@ var calYear, calMonth;
     }
   }
 
-  // 显示遮罩，聚焦密码框
   if (overlay) overlay.style.display = 'flex';
-  selectRole('admin');
   setTimeout(() => {
-    const pwdInput = document.getElementById('login-pwd');
-    if (pwdInput) pwdInput.focus();
+    const usernameInput = document.getElementById('login-username');
+    if (usernameInput) usernameInput.focus();
   }, 50);
 })();
 
 function doLogin() {
-  const pwdInput = document.getElementById('login-pwd');
-  const errorEl  = document.getElementById('login-error');
-  const loginBtn = document.getElementById('login-btn');
-  const input    = (pwdInput ? pwdInput.value : '');
-  const role     = _selectedLoginRole;
+  const usernameInput = document.getElementById('login-username');
+  const pwdInput      = document.getElementById('login-pwd');
+  const errorEl       = document.getElementById('login-error');
+  const loginBtn      = document.getElementById('login-btn');
+  const username      = (usernameInput ? usernameInput.value.trim() : '');
+  const password      = (pwdInput ? pwdInput.value : '');
 
-  // 先从COS拉取最新密码，再验证（确保用最新密码）
+  if (!username || !password) {
+    if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '请输入账号和密码'; }
+    return;
+  }
+
   if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '🔄 同步中…'; }
   fetchSysConfigFromCOS().then(synced => {
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
-    const pwds    = getRolePasswords();
-    const correct = pwds[role];
 
-    if (input === correct) {
-      _currentRole = role;
+    const users   = getUsers();
+    const matched = users.find(u => u.username === username && u.password === password && u.active !== false);
+
+    if (matched) {
+      _currentRole = matched.role;
+      _currentUser = { id: matched.id, username: matched.username, name: matched.name, role: matched.role };
       localStorage.setItem('mcm_auth_ts', Date.now().toString());
-      localStorage.setItem('mcm_current_role', role);
+      localStorage.setItem('mcm_current_role', matched.role);
+      localStorage.setItem('mcm_current_user', JSON.stringify(_currentUser));
       const overlay = document.getElementById('login-overlay');
       if (overlay) overlay.style.display = 'none';
       if (errorEl) errorEl.style.display = 'none';
+      if (usernameInput) usernameInput.value = '';
+      if (pwdInput) pwdInput.value = '';
       updateRoleDisplay();
-      // 超管首次登录：若 COS 未配置则显示引导（已从云端同步cosConfig则跳过）
-      if (role === 'superadmin') {
-        const cosConfig = JSON.parse(localStorage.getItem('cos_config') || '{}');
-        if (!cosConfig.secretId || !cosConfig.secretKey) {
-          // 直接跳过引导框——非超管配置设备也可正常使用，只是数据读写走本地缓存
-          // 只有完全没有任何cos_config且云端也没有时才弹引导
-          console.log('ℹ️ 超管登录但COS未配置，跳过引导（可在系统设置里配置）');
-        }
-      }
     } else {
-      // 验证失败：若 COS 未同步成功且本地无 cos_config，可能是首次登录 B 设备
+      if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '账号或密码错误，请重新输入'; }
+      if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
       const hasCosConfig = (() => { try { const c = JSON.parse(localStorage.getItem('cos_config')||'{}'); return !!(c.secretId && c.secretKey); } catch(e) { return false; } })();
       if (!synced && !hasCosConfig) {
-        if (errorEl) {
-          errorEl.style.display = 'block';
-          errorEl.textContent = '密码错误，请重新输入';
-        }
-        // 自动展开云端同步区域
         const syncArea = document.getElementById('login-sync-area');
         if (syncArea) syncArea.style.display = 'block';
-      } else {
-        if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '密码错误，请重新输入'; }
       }
-      if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
     }
   });
 }
@@ -3932,14 +3890,16 @@ function doLogout() {
   if (!confirm('确定要退出当前登录吗？')) return;
   localStorage.removeItem('mcm_auth_ts');
   localStorage.removeItem('mcm_current_role');
+  localStorage.removeItem('mcm_current_user');
   _currentRole = null;
+  _currentUser = null;
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.style.display = 'flex';
-  selectRole('admin');
+  const usernameInput = document.getElementById('login-username');
   const pwdInput = document.getElementById('login-pwd');
-  if (pwdInput) { pwdInput.value = ''; setTimeout(() => pwdInput.focus(), 50); }
+  if (usernameInput) { usernameInput.value = ''; setTimeout(() => usernameInput.focus(), 50); }
+  if (pwdInput) pwdInput.value = '';
 }
-
 
 // ===== COS 首次配置（超级管理员登录页） =====
 async function saveCosSetup() {
@@ -3987,9 +3947,12 @@ function saveNewPassword() {
   const current  = document.getElementById('current-pwd').value;
   const newPwd   = document.getElementById('new-pwd').value;
   const confirm  = document.getElementById('confirm-pwd').value;
-  const role     = _currentRole || 'admin';
-  const pwds     = getRolePasswords();
-  const correct  = pwds[role];
+  // 从用户列表中找当前登录用户
+  const username = _currentUser?.username || _currentRole || '';
+  const users    = getUsers();
+  const userIdx  = users.findIndex(u => u.username === username);
+  if (userIdx === -1) { alert('找不到当前账号，请重新登录'); return; }
+  const correct  = users[userIdx].password;
 
   if (current !== correct) {
     alert('当前密码不正确');
@@ -4003,8 +3966,8 @@ function saveNewPassword() {
     alert('两次输入的新密码不一致');
     return;
   }
-  pwds[role] = newPwd;
-  setRolePasswords(pwds);
+  users[userIdx].password = newPwd;
+  setUsers(users);
   closeModal('modal-change-password');
   alert('✅ 密码已修改成功，已同步到云端');
 }
@@ -4883,39 +4846,186 @@ function toggleActivityChannel(activityId, channelId, checked) {
 
 
 function renderUserMgmt() {
-  const pwds = getRolePasswords();
-  const roleLabels = { superadmin:'👑 超级管理员', admin:'🛡️ 管理员', viewer:'👤 使用人员' };
-  const statusEl = document.getElementById('pwd-status-list');
-  if (statusEl) {
-    statusEl.innerHTML = Object.entries(roleLabels).map(([role, label]) => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:14px;font-weight:600">${label}</span>
-        <span style="font-size:12px;color:var(--text-muted)">已设置密码（${pwds[role] ? '●'.repeat(Math.min(pwds[role].length,6)) : '未设置'}）</span>
-      </div>
-    `).join('');
+  const users    = getUsers();
+  const container = document.getElementById('user-list-container');
+  if (!container) return;
+
+  const roleLabel = { superadmin:'👑 超级管理员', admin:'🛡️ 管理员', viewer:'👤 使用人员' };
+  const roleColor = { superadmin:'#f59e0b', admin:'#4f46e5', viewer:'#10b981' };
+
+  if (users.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">暂无账号，点击「新建账号」创建</div>';
+    return;
   }
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 140px 80px 100px;padding:10px 16px;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:#f8fafc">
+      <span>账号</span><span>姓名</span><span>角色</span><span>状态</span><span style="text-align:right">操作</span>
+    </div>
+    ${users.map(u => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 140px 80px 100px;padding:12px 16px;align-items:center;border-bottom:1px solid var(--border);font-size:13px" id="user-row-${u.id}">
+      <span style="font-family:monospace;font-weight:600;color:#334155">${u.username}</span>
+      <span>${u.name || '—'}</span>
+      <span>
+        <span style="padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;background:${roleColor[u.role]||'#64748b'}22;color:${roleColor[u.role]||'#64748b'}">
+          ${roleLabel[u.role] || u.role}
+        </span>
+      </span>
+      <span>
+        <span style="padding:3px 8px;border-radius:20px;font-size:12px;background:${u.active!==false?'#d1fae5':'#fee2e2'};color:${u.active!==false?'#065f46':'#991b1b'}">
+          ${u.active!==false ? '启用' : '停用'}
+        </span>
+      </span>
+      <span style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" onclick="openEditUserModal('${u.id}')" style="font-size:12px;padding:4px 10px">编辑</button>
+        ${u.username !== 'superadmin' ? `<button class="btn btn-sm" onclick="deleteUser('${u.id}')" style="font-size:12px;padding:4px 10px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5">删除</button>` : ''}
+      </span>
+    </div>`).join('')}
+  `;
 }
 
-function saveRolePassword(role) {
-  const newPwd  = document.getElementById(`pwd-${role}`)?.value || '';
-  const confirm = document.getElementById(`pwd-${role}-confirm`)?.value || '';
-  const resultEl = document.getElementById('usermgmt-result');
-  if (!newPwd || newPwd.length < 4) {
-    if (resultEl) { resultEl.style.display='block'; resultEl.style.background='#fee2e2'; resultEl.style.color='#991b1b'; resultEl.textContent='密码不能少于4位'; }
-    return;
-  }
-  if (newPwd !== confirm) {
-    if (resultEl) { resultEl.style.display='block'; resultEl.style.background='#fee2e2'; resultEl.style.color='#991b1b'; resultEl.textContent='两次密码不一致'; }
-    return;
-  }
-  const pwds = getRolePasswords();
-  pwds[role] = newPwd;
-  setRolePasswords(pwds);
-  if (resultEl) { resultEl.style.display='block'; resultEl.style.background='#d1fae5'; resultEl.style.color='#065f46'; resultEl.textContent='✅ 密码已保存，正在同步到云端…'; }
-  document.getElementById(`pwd-${role}`).value = '';
-  document.getElementById(`pwd-${role}-confirm`).value = '';
-  setTimeout(() => renderUserMgmt(), 500);
+// 打开新建账号弹窗
+function openAddUserModal() {
+  document.getElementById('user-edit-title').textContent = '➕ 新建账号';
+  document.getElementById('user-edit-id').value = '';
+  document.getElementById('user-edit-username').value = '';
+  document.getElementById('user-edit-name').value = '';
+  document.getElementById('user-edit-pwd').value = '';
+  document.getElementById('user-edit-pwd2').value = '';
+  document.getElementById('user-edit-active').checked = true;
+  document.getElementById('user-edit-pwd-group').style.display = '';
+  document.getElementById('user-edit-pwd2-group').style.display = '';
+  document.querySelectorAll('input[name="user-edit-role"]').forEach(r => r.checked = false);
+  highlightRoleOpt();
+  const msgEl = document.getElementById('user-edit-msg');
+  if (msgEl) msgEl.style.display = 'none';
+  showModal('modal-user-edit');
+  setTimeout(() => document.getElementById('user-edit-username').focus(), 100);
 }
+
+// 打开编辑账号弹窗
+function openEditUserModal(id) {
+  const users = getUsers();
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('user-edit-title').textContent = '✏️ 编辑账号';
+  document.getElementById('user-edit-id').value = u.id;
+  document.getElementById('user-edit-username').value = u.username;
+  document.getElementById('user-edit-name').value = u.name || '';
+  document.getElementById('user-edit-pwd').value = '';
+  document.getElementById('user-edit-pwd2').value = '';
+  document.getElementById('user-edit-active').checked = u.active !== false;
+  // 密码框提示：留空则不修改
+  document.getElementById('user-edit-pwd').placeholder = '留空则不修改密码';
+  document.getElementById('user-edit-pwd2').placeholder = '留空则不修改密码';
+  // 选中角色
+  const roleRadio = document.querySelector(`input[name="user-edit-role"][value="${u.role}"]`);
+  if (roleRadio) roleRadio.checked = true;
+  highlightRoleOpt();
+  const msgEl = document.getElementById('user-edit-msg');
+  if (msgEl) msgEl.style.display = 'none';
+  showModal('modal-user-edit');
+}
+
+// 角色选项高亮
+function highlightRoleOpt() {
+  const roleColors = { superadmin:'#f59e0b', admin:'#4f46e5', viewer:'#10b981' };
+  const roleHints  = {
+    superadmin: '👑 可访问全部功能，含系统设置、账户权限管理',
+    admin:      '🛡️ 可创建/编辑/删除活动和渠道，可访问系统设置',
+    viewer:     '👤 只读权限，只能查看活动和渠道数据'
+  };
+  let selected = '';
+  document.querySelectorAll('input[name="user-edit-role"]').forEach(r => {
+    const label = document.getElementById('role-opt-' + r.value);
+    if (!label) return;
+    if (r.checked) {
+      selected = r.value;
+      label.style.borderColor = roleColors[r.value] || '#4f46e5';
+      label.style.background  = (roleColors[r.value] || '#4f46e5') + '18';
+      label.style.color = roleColors[r.value] || '#4f46e5';
+    } else {
+      label.style.borderColor = 'var(--border)';
+      label.style.background  = '';
+      label.style.color = 'var(--text)';
+    }
+  });
+  const hintEl = document.getElementById('role-opt-hint');
+  if (hintEl) hintEl.textContent = roleHints[selected] || '请选择角色';
+}
+
+// 保存账号（新增或编辑）
+function saveUserEdit() {
+  const id       = document.getElementById('user-edit-id').value.trim();
+  const username = document.getElementById('user-edit-username').value.trim();
+  const name     = document.getElementById('user-edit-name').value.trim();
+  const pwd      = document.getElementById('user-edit-pwd').value;
+  const pwd2     = document.getElementById('user-edit-pwd2').value;
+  const active   = document.getElementById('user-edit-active').checked;
+  const roleRadio = document.querySelector('input[name="user-edit-role"]:checked');
+  const role     = roleRadio ? roleRadio.value : '';
+  const msgEl    = document.getElementById('user-edit-msg');
+
+  const showMsg = (text, ok) => {
+    if (!msgEl) return;
+    msgEl.style.display = 'block';
+    msgEl.style.background = ok ? '#d1fae5' : '#fee2e2';
+    msgEl.style.color = ok ? '#065f46' : '#991b1b';
+    msgEl.textContent = text;
+  };
+
+  if (!username) { showMsg('账号不能为空', false); return; }
+  if (!/^[a-zA-Z0-9_\-\.@]+$/.test(username)) { showMsg('账号只能含英文字母、数字、下划线、点、@', false); return; }
+  if (!role) { showMsg('请选择角色', false); return; }
+
+  const users = getUsers();
+  const isEdit = !!id;
+
+  // 检查账号重名
+  const dup = users.find(u => u.username === username && u.id !== id);
+  if (dup) { showMsg('该账号已存在，请换一个', false); return; }
+
+  if (isEdit) {
+    const idx = users.findIndex(u => u.id === id);
+    if (idx === -1) { showMsg('账号不存在', false); return; }
+    users[idx].username = username;
+    users[idx].name = name;
+    users[idx].role = role;
+    users[idx].active = active;
+    if (pwd) {
+      if (pwd.length < 4) { showMsg('密码不能少于4位', false); return; }
+      if (pwd !== pwd2)   { showMsg('两次密码不一致', false); return; }
+      users[idx].password = pwd;
+    }
+  } else {
+    if (!pwd)           { showMsg('请设置初始密码', false); return; }
+    if (pwd.length < 4) { showMsg('密码不能少于4位', false); return; }
+    if (pwd !== pwd2)   { showMsg('两次密码不一致', false); return; }
+    users.push({ id: 'u_' + Date.now(), username, name, role, password: pwd, active });
+  }
+
+  setUsers(users);
+  showMsg('✅ 账号已保存，正在同步到云端…', true);
+  setTimeout(() => {
+    closeModal('modal-user-edit');
+    renderUserMgmt();
+  }, 900);
+}
+
+// 删除账号
+function deleteUser(id) {
+  const users = getUsers();
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  if (u.username === 'superadmin') { alert('默认超级管理员账号不能删除'); return; }
+  if (!confirm(`确定删除账号「${u.username}（${u.name||''}）」吗？`)) return;
+  const newList = users.filter(x => x.id !== id);
+  setUsers(newList);
+  renderUserMgmt();
+}
+
+// 兼容旧函数（已无实际用途）
+function saveRolePassword(role) {}
 
 // ===== 渠道名单 =====
 // channels 数组（持久化在 COS data.json 的 channels 字段里）
@@ -5612,7 +5722,9 @@ async function loginSyncFromBucket() {
     const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) throw new Error(`HTTP ${res.status}，请确认 bucket 名称和地域是否正确`);
     const data = await res.json();
-    if (data.passwords) {
+    if (data.users && Array.isArray(data.users) && data.users.length > 0) {
+      localStorage.setItem('mcm_users', JSON.stringify(data.users));
+    } else if (data.passwords) {
       localStorage.setItem('mcm_passwords', JSON.stringify(data.passwords));
     }
     if (data.cosConfig) {
@@ -5621,13 +5733,12 @@ async function loginSyncFromBucket() {
         window.MarketActivityCOS.adapter.configure(data.cosConfig);
       }
     }
-    if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ 同步成功！请重新输入密码登录'; }
-    // 隐藏同步区，聚焦密码框
+    if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ 同步成功！请输入账号和密码登录'; }
     setTimeout(() => {
       const syncArea = document.getElementById('login-sync-area');
       if (syncArea) syncArea.style.display = 'none';
-      const pwdInput = document.getElementById('login-pwd');
-      if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
+      const unInput = document.getElementById('login-username');
+      if (unInput) { unInput.value = ''; unInput.focus(); }
     }, 1500);
   } catch(e) {
     if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = `❌ 同步失败：${e.message}`; }
