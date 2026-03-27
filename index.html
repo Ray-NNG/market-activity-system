@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>市场活动全流程管理系统 v2403</title>
+<title>市场活动全流程管理系统 v2026.03.27-9</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -846,7 +846,7 @@
   </div>
   <!-- 当前登录角色标识 -->
   <div id="sidebar-role-bar" style="padding:8px 16px 0;"></div>
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" id="sidebar-nav">
     <div class="nav-section">
       <div class="nav-section-title">总览</div>
       <div class="nav-item active" onclick="goto('dashboard')">
@@ -896,6 +896,11 @@
       </div>
     </div>
   </nav>
+  <!-- 版本号 -->
+  <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.27-9</div>
+    <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
+  </div>
 </aside>
 
 <!-- ===== MAIN ===== -->
@@ -1660,6 +1665,14 @@
 </div>
 
 <script>
+// ===== 版本号（每次发布更新此处）=====
+const APP_VERSION = 'v2026.03.27-9';
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('app-version-label');
+  if (el) el.textContent = APP_VERSION;
+  document.title = `市场活动全流程管理系统 ${APP_VERSION}`;
+});
+
 // ===== 腾讯云 COS 数据层配置 =====
 const STORAGE_KEY = 'market_activities_data_frontend';
 var currentDataVersion = null;
