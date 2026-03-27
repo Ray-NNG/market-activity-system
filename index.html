@@ -468,20 +468,79 @@
     function configure(config) { Object.assign(CONFIG, config); saveConfig(); }
     function isConfigured() { return !!(CONFIG.secretId && CONFIG.secretKey && CONFIG.bucket && CONFIG.region); }
 
-    // ===== 使用 crypto.subtle（浏览器内置，结果绝对正确）=====
+    // ===== 纯JS SHA1 实现（兼容 HTTP/HTTPS，无需 crypto.subtle）=====
+    // 优先用 crypto.subtle（HTTPS），HTTP 下自动降级到纯 JS 实现
+    function _sha1Pure(msgBytes) {
+        // msgBytes: Uint8Array
+        let H = [0x67452301,0xEFCDAB89,0x98BADCFE,0x10325476,0xC3D2E1F0];
+        const len = msgBytes.length;
+        // padding
+        const bitLen = len * 8;
+        const padded = new Uint8Array(len + 1 + (((55 - len) % 64 + 64) % 64) + 8);
+        padded.set(msgBytes);
+        padded[len] = 0x80;
+        const dv = new DataView(padded.buffer);
+        dv.setUint32(padded.length - 4, bitLen >>> 0, false);
+        dv.setUint32(padded.length - 8, Math.floor(bitLen / 0x100000000), false);
+        for (let i = 0; i < padded.length; i += 64) {
+            const W = new Uint32Array(80);
+            for (let t = 0; t < 16; t++) W[t] = dv.getUint32(i + t*4, false);
+            for (let t = 16; t < 80; t++) { const x = W[t-3]^W[t-8]^W[t-14]^W[t-16]; W[t] = (x<<1)|(x>>>31); }
+            let [a,b,c,d,e] = H;
+            for (let t = 0; t < 80; t++) {
+                let f, k;
+                if (t<20){f=(b&c)|((~b)&d);k=0x5A827999;}
+                else if(t<40){f=b^c^d;k=0x6ED9EBA1;}
+                else if(t<60){f=(b&c)|(b&d)|(c&d);k=0x8F1BBCDC;}
+                else{f=b^c^d;k=0xCA62C1D6;}
+                const tmp = (((a<<5)|(a>>>27)) + f + e + k + W[t]) >>> 0;
+                e=d; d=c; c=(b<<30)|(b>>>2); b=a; a=tmp;
+            }
+            H[0]=(H[0]+a)>>>0; H[1]=(H[1]+b)>>>0; H[2]=(H[2]+c)>>>0; H[3]=(H[3]+d)>>>0; H[4]=(H[4]+e)>>>0;
+        }
+        return H.map(v=>v.toString(16).padStart(8,'0')).join('');
+    }
+    function _hmacSha1Pure(keyBytes, msgBytes) {
+        // keyBytes, msgBytes: Uint8Array
+        if (keyBytes.length > 64) keyBytes = new Uint8Array(keyBytes.buffer ? keyBytes : keyBytes, 0);
+        const k = new Uint8Array(64);
+        k.set(keyBytes.length > 64 ? new Uint8Array(hexToBytes(_sha1Pure(keyBytes))) : keyBytes);
+        const ipad = k.map(b => b ^ 0x36);
+        const opad = k.map(b => b ^ 0x5C);
+        const inner = new Uint8Array(64 + msgBytes.length);
+        inner.set(ipad); inner.set(msgBytes, 64);
+        const innerHash = hexToBytes(_sha1Pure(inner));
+        const outer = new Uint8Array(64 + 20);
+        outer.set(opad); outer.set(innerHash, 64);
+        return _sha1Pure(outer);
+    }
+    function hexToBytes(hex) {
+        const arr = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < arr.length; i++) arr[i] = parseInt(hex.slice(i*2, i*2+2), 16);
+        return arr;
+    }
+    function strToBytes(str) { return new TextEncoder().encode(str); }
+
     async function _hmacSha1Hex(keyBytes, message) {
-        const enc = new TextEncoder();
-        const keyMaterial = await crypto.subtle.importKey(
-            'raw', new Uint8Array(keyBytes),
-            { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']
-        );
-        const sig = await crypto.subtle.sign('HMAC', keyMaterial, enc.encode(message));
-        return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+        // 优先用 crypto.subtle（更快且HTTPS强制安全），HTTP 降级到纯JS
+        const kb = keyBytes instanceof Uint8Array ? keyBytes : new Uint8Array(keyBytes);
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+            try {
+                const km = await crypto.subtle.importKey('raw', kb, {name:'HMAC',hash:'SHA-1'}, false, ['sign']);
+                const sig = await crypto.subtle.sign('HMAC', km, strToBytes(message));
+                return Array.from(new Uint8Array(sig)).map(b=>b.toString(16).padStart(2,'0')).join('');
+            } catch(e) { /* 降级 */ }
+        }
+        return _hmacSha1Pure(kb, strToBytes(message));
     }
     async function _sha1Hex(message) {
-        const enc = new TextEncoder();
-        const buf = await crypto.subtle.digest('SHA-1', enc.encode(message));
-        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        if (typeof crypto !== 'undefined' && crypto.subtle) {
+            try {
+                const buf = await crypto.subtle.digest('SHA-1', strToBytes(message));
+                return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+            } catch(e) { /* 降级 */ }
+        }
+        return _sha1Pure(strToBytes(message));
     }
 
     async function buildCosRequest(method, key, body, contentType) {
@@ -503,9 +562,8 @@
         const headerList = ct ? 'content-type;host' : 'host';
         const httpString = `${method.toLowerCase()}\n${uriPath}\n${httpParams}\n${httpHeaders}\n`;
 
-        const enc = new TextEncoder();
         // Step1: signKey = HMAC-SHA1(SecretKey, signTime)
-        const signKey = await _hmacSha1Hex([...enc.encode(CONFIG.secretKey)], signTime);
+        const signKey = await _hmacSha1Hex(strToBytes(CONFIG.secretKey), signTime);
         // Step2: StringToSign = "sha1\n" + signTime + "\n" + SHA1(httpString) + "\n"
         const httpHash = await _sha1Hex(httpString);
         const stringToSign = `sha1\n${signTime}\n${httpHash}\n`;
