@@ -5065,6 +5065,20 @@ function renderChannelsPage() {
   loadChannels();
   updateChannelFilters();
   renderChannelList();
+  // 后台从 COS 拉最新数据，拉到后自动刷新列表
+  (async () => {
+    try {
+      const adapter = window.MarketActivityCOS?.adapter;
+      if (!adapter || !adapter.isConfigured()) return;
+      const data = await adapter.getData();
+      if (data.channels && Array.isArray(data.channels)) {
+        channels = data.channels;
+        localStorage.setItem('mcm_channels', JSON.stringify(channels));
+        updateChannelFilters();
+        renderChannelList();
+      }
+    } catch(e) { console.log('渠道页刷新失败:', e.message); }
+  })();
 }
 
 function updateChannelFilters() {
