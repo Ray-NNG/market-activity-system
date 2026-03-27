@@ -548,15 +548,15 @@
         const httpHeaders = `host=${host}`;
         const httpString = `${method.toLowerCase()}\n${uriPath}\n${httpParams}\n${httpHeaders}\n`;
 
-        // Step1: signKey = HMAC-SHA1(SecretKey字节, KeyTime) → hex
+        // Step1: signKey = HMAC-SHA1(SecretKey字节, KeyTime) → hex字符串
         const signKey = _hmacSha1(strToBytes(CONFIG.secretKey), signTime);
         // Step2: StringToSign = "sha1\n" + KeyTime + "\n" + SHA1(HttpString) + "\n"
         const httpHash = _sha1(httpString);
         const stringToSign = `sha1\n${signTime}\n${httpHash}\n`;
         // Step3: Signature = HMAC-SHA1(SignKey字节, StringToSign) → hex
-        // 注意：第二次HMAC的key是signKey的hex字符串本身（ASCII字节），不是hex转二进制
-        const signKeyStrBytes = strToBytes(signKey);
-        const signature = _hmacSha1(signKeyStrBytes, stringToSign);
+        // signKey 是40字符hex字符串，需要解析成20个字节再做HMAC
+        const signKeyBytes = signKey.match(/.{2}/g).map(h => parseInt(h, 16));
+        const signature = _hmacSha1(signKeyBytes, stringToSign);
 
         console.log('🔐 COS签名调试:', {
             method: method.toLowerCase(), uriPath, host,
