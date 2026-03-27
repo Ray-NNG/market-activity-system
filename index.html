@@ -5126,7 +5126,7 @@ function renderChannelList() {
           <thead><tr>
             <th>渠道名称</th><th>分层</th><th>地市/区县</th><th>负责销售</th>
             <th>关键联系人</th><th>联系方式</th><th>渠道背景</th>
-            <th>市场活动</th><th>操作</th>
+            <th>市场活动</th><th>历史推广记录</th><th>操作</th>
           </tr></thead>
           <tbody>
             ${filtered.map(c => `
@@ -5139,6 +5139,7 @@ function renderChannelList() {
                 <td>${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary)">${c.phone}</a>` : '-'}</td>
                 <td class="text-sm" style="max-width:200px;white-space:normal;word-break:break-all;color:var(--text-muted)">${(c.background||'-').substring(0,80)}${(c.background||'').length>80?'…':''}</td>
                 <td class="text-sm">${getChannelActivityCount(c.id)}</td>
+                <td class="text-sm" style="max-width:220px">${renderChannelHistory(c)}</td>
                 <td>
                   ${role !== 'viewer' ? `<button class="btn btn-outline btn-sm" onclick="openEditChannelModal('${c.id}')">编辑</button>
                   <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;margin-left:4px" onclick="deleteChannel('${c.id}')">删除</button>` : ''}
@@ -5165,6 +5166,30 @@ function getChannelActivityCount(channelId) {
   if (!acts.length) return '-';
   return `<span style="color:var(--primary);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px" 
     onclick="showChannelActivities('${channelId}')">${acts.length} 个活动</span>`;
+}
+
+// 渲染历史推广记录（用于列表展示）
+function renderChannelHistory(c) {
+  const history = c.history || [];
+  if (!history.length) return '<span style="color:var(--text-muted)">-</span>';
+  // 最多显示3条，超出显示「+N条」并支持展开
+  const MAX = 3;
+  const shown = history.slice(0, MAX);
+  const rest = history.length - MAX;
+  const typeColor = { '产品发布':'#4f46e5','培训活动':'#0891b2','渠道推广':'#059669','客户拜访':'#d97706','线上活动':'#7c3aed' };
+  const rows = shown.map(h => {
+    const tc = typeColor[h.type] || '#64748b';
+    return `<div style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;border-bottom:1px dashed #f0f0f0;line-height:1.4">
+      <span style="flex-shrink:0;font-size:11px;color:#94a3b8;white-space:nowrap;padding-top:1px">${h.date||''}</span>
+      <span style="flex-shrink:0;font-size:11px;padding:1px 6px;border-radius:10px;background:${tc}18;color:${tc};font-weight:600;white-space:nowrap">${h.type||''}</span>
+      <span style="font-size:12px;color:var(--text-muted);word-break:break-all">${h.content||''}</span>
+    </div>`;
+  }).join('');
+  const moreBtn = rest > 0
+    ? `<div style="font-size:11px;color:var(--primary);cursor:pointer;padding-top:4px;text-align:right" 
+        onclick="openEditChannelModal('${c.id}')">+${rest} 条，点击查看全部</div>`
+    : '';
+  return `<div style="display:flex;flex-direction:column">${rows}${moreBtn}</div>`;
 }
 
 // 弹出渠道关联活动列表
