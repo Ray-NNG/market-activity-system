@@ -3812,13 +3812,16 @@ async function fetchSysConfigFromCOS() {
       localStorage.setItem('mcm_passwords', JSON.stringify(data.passwords));
       console.log('✅ 从COS同步系统密码成功（旧格式）');
     }
-    if (data.cosConfig) {
-      const local = localStorage.getItem('cos_config');
-      if (!local || local === '{}') {
+    if (data.cosConfig && data.cosConfig.secretId && data.cosConfig.secretKey) {
+      // 只要本地没有完整的 secretId/secretKey，就自动从 sys_config 补全 COS 配置
+      // 这样新设备打开时无需手动配置，直接自动连上
+      let localCfg = {};
+      try { localCfg = JSON.parse(localStorage.getItem('cos_config') || '{}'); } catch(e) {}
+      if (!localCfg.secretId || !localCfg.secretKey) {
         localStorage.setItem('cos_config', JSON.stringify(data.cosConfig));
         if (window.MarketActivityCOS?.adapter?.configure) {
           window.MarketActivityCOS.adapter.configure(data.cosConfig);
-          console.log('✅ 从COS同步cos_config并初始化adapter成功');
+          console.log('✅ 新设备自动从 sys_config.json 获取 COS 配置，无需手动填写');
         }
       }
     }
@@ -3880,6 +3883,31 @@ function updateRoleDisplay() {
     if (settingsNav)  settingsNav.style.display   = 'flex';
   }
 }
+
+// ===== 页面启动时静默同步 sys_config（自动配置COS，新设备无需手动填写）=====
+// 直接用公有读URL拉取，不依赖 adapter 是否已配置
+(function() {
+  const localCfg = (() => { try { return JSON.parse(localStorage.getItem('cos_config') || '{}'); } catch(e) { return {}; } })();
+  if (!localCfg.secretId || !localCfg.secretKey) {
+    // 本地没有完整 COS 配置，立即从公有读地址拉取
+    fetch(_DEFAULT_SYS_CONFIG_URL + '?t=' + Date.now(), { signal: AbortSignal.timeout(8000) })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        if (data.cosConfig && data.cosConfig.secretId && data.cosConfig.secretKey) {
+          localStorage.setItem('cos_config', JSON.stringify(data.cosConfig));
+          if (window.MarketActivityCOS?.adapter?.configure) {
+            window.MarketActivityCOS.adapter.configure(data.cosConfig);
+            console.log('🚀 新设备自动从云端获取 COS 配置，无需手动填写');
+          }
+        }
+        if (data.users && Array.isArray(data.users) && data.users.length > 0) {
+          localStorage.setItem('mcm_users', JSON.stringify(data.users));
+        }
+      })
+      .catch(() => {});
+  }
+})();
 
 // ===== 登录检测（页面加载时自动执行）=====
 (function() {
