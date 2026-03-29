@@ -919,7 +919,7 @@
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-11</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-12</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1686,7 +1686,7 @@
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.29-11';
+const APP_VERSION = 'v2026.03.29-12';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -4185,12 +4185,33 @@ function doLogin() {
       try { const u = JSON.parse(localStorage.getItem('mcm_users') || '[]'); return Array.isArray(u) && u.length > 0; } catch(e) { return false; }
     })();
 
-    // 如果COS拉取失败且本地也没有账号数据，提示网络问题
+    // 如果COS拉取失败且本地也没有账号数据，用内置默认账号兜底（允许离线/新设备登录）
     if (syncResult !== true && !hasLocalUsers) {
-      if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '⚠️ 无法连接云端，请检查网络后重试'; }
-      if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
-      const syncArea = document.getElementById('login-sync-area');
-      if (syncArea) syncArea.style.display = 'block';
+      // 内置兜底账号（超管/管理员，仅在无网络且本地无数据时使用）
+      const _BUILTIN_USERS = [
+        { id: 'u_superadmin', username: 'superadmin', name: '超级管理员', role: 'superadmin', password: 'super2024', active: true },
+        { id: 'u_admin',      username: 'admin',      name: '管理员',     role: 'admin',      password: 'admin123',  active: true }
+      ];
+      const builtinMatch = _BUILTIN_USERS.find(u => u.username === username && u.password === password);
+      if (!builtinMatch) {
+        if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '⚠️ 无法连接云端，请检查网络后重试'; }
+        if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
+        const syncArea = document.getElementById('login-sync-area');
+        if (syncArea) syncArea.style.display = 'block';
+        return;
+      }
+      // 兜底账号匹配成功
+      _currentRole = builtinMatch.role;
+      _currentUser = { id: builtinMatch.id, username: builtinMatch.username, name: builtinMatch.name, role: builtinMatch.role };
+      localStorage.setItem('mcm_auth_ts', Date.now().toString());
+      localStorage.setItem('mcm_current_role', builtinMatch.role);
+      localStorage.setItem('mcm_current_user', JSON.stringify(_currentUser));
+      const overlay = document.getElementById('login-overlay');
+      if (overlay) overlay.style.display = 'none';
+      if (errorEl) errorEl.style.display = 'none';
+      if (usernameInput) usernameInput.value = '';
+      if (pwdInput) pwdInput.value = '';
+      updateRoleDisplay();
       return;
     }
 
