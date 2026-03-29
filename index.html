@@ -7,10 +7,24 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <script>
-  // Safari 兼容：http 自动跳 https，避免某些浏览器触发下载
-  if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-    location.replace('https:' + location.href.slice(5));
-  }
+  // Safari 兼容：
+  // 1. http 自动跳 https
+  // 2. cos-website 域名跳转到 .cos. 域名的 /index.html（cos-website 在 Safari 触发下载弹窗）
+  (function() {
+    var h = location.hostname;
+    var isLocal = h === 'localhost' || h === '127.0.0.1';
+    if (isLocal) return;
+    // http → https
+    if (location.protocol === 'http:') {
+      location.replace('https:' + location.href.slice(5));
+      return;
+    }
+    // cos-website 域名 → .cos. 域名 /index.html（Safari 不触发下载）
+    if (h.indexOf('.cos-website.') !== -1) {
+      var cosHost = h.replace('.cos-website.', '.cos.');
+      location.replace('https://' + cosHost + '/index.html');
+    }
+  })();
 </script>
 <title>市场活动全流程管理系统 v2026.03.27-12</title>
 <style>
@@ -905,7 +919,7 @@
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-10</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-11</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1672,7 +1686,7 @@
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.29-10';
+const APP_VERSION = 'v2026.03.29-11';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
