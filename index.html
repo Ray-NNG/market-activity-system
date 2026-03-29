@@ -640,7 +640,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         if (!isConfigured()) return getLocalData();
         try {
             const req = await buildCosRequest('GET', CONFIG.storageKey);
-            const res = await fetch(req.url, { method: 'GET', headers: req.headers, signal: AbortSignal.timeout(10000) });
+            const res = await fetch(req.url, { method: 'GET', headers: req.headers, signal: AbortSignal.timeout(6000) });
             if (res.ok) { const d = await res.json(); saveLocalData(d); return d; }
             if (res.status === 404) { const empty = { activities: [], files: {} }; await saveData(empty); return empty; }
             throw new Error(`HTTP ${res.status}`);
@@ -681,7 +681,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         if (!isConfigured()) return getLocalChannels();
         try {
             const req = await buildCosRequest('GET', CHANNELS_KEY);
-            const res = await fetch(req.url, { method: 'GET', headers: req.headers, signal: AbortSignal.timeout(10000) });
+            const res = await fetch(req.url, { method: 'GET', headers: req.headers, signal: AbortSignal.timeout(6000) });
             if (res.ok) { const d = await res.json(); saveLocalChannels(d); return d; }
             if (res.status === 404) return getLocalChannels(); // 首次使用，返回本地
             throw new Error(`HTTP ${res.status}`);
@@ -964,6 +964,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
     <div style="font-size:48px;margin-bottom:20px">🔄</div>
     <div style="font-size:16px;color:#64748b" id="loading-text">正在加载数据...</div>
     <div style="font-size:12px;color:#94a3b8;margin-top:8px">首次加载可能需要 10 秒左右</div>
+    <button id="loading-skip-btn" onclick="document.getElementById('loading-overlay').style.display='none'; renderDashboard();" style="display:none;margin-top:20px;padding:8px 20px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">使用本地数据进入 →</button>
   </div>
 
   <div class="content">
@@ -1775,7 +1776,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.29-18';
+const APP_VERSION = 'v2026.03.29-19';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -1984,6 +1985,15 @@ var activities = [];
 async function initData() {
   const loadingOverlay = document.getElementById('loading-overlay');
   const loadingText = document.getElementById('loading-text');
+  const skipBtn = document.getElementById('loading-skip-btn');
+
+  // 8 秒后若还没加载完，自动显示「跳过」按钮（网络差时的应急入口）
+  const skipTimer = setTimeout(() => {
+    if (loadingOverlay && loadingOverlay.style.display !== 'none') {
+      if (loadingText) loadingText.textContent = '网络较慢，可使用本地数据进入...';
+      if (skipBtn) skipBtn.style.display = 'inline-block';
+    }
+  }, 8000);
 
   try {
     loadingText.textContent = '正在连接服务器...';
@@ -2048,6 +2058,7 @@ async function initData() {
     
     await new Promise(r => setTimeout(r, 1000)); // 让用户看到提示
   } finally {
+    clearTimeout(skipTimer);
     // 隐藏加载提示
     loadingOverlay.style.display = 'none';
   }
