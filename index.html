@@ -1776,7 +1776,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.29-19';
+const APP_VERSION = 'v2026.03.30-01';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5292,10 +5292,9 @@ function renderChannelLinkPanel(activityId) {
       </div>
     </div>
     <div id="channel-link-list-${activityId}" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto"></div>
-    <script>
-      // 初始化渲染（延迟执行确保 DOM 存在）
-      setTimeout(function() { filterChannelLinkPanel('${activityId}'); }, 50);
-    <\/script>`;
+  `;
+  // 渲染完成后触发列表过滤（DOM通过innerHTML注入，script标签不会执行，改用setTimeout）
+  setTimeout(function() { filterChannelLinkPanel(activityId); }, 50);
 }
 
 // 过滤并渲染关联渠道列表
@@ -6701,10 +6700,8 @@ function aiClearChat() {
     </div>`;
   }
 }
-    </div>`;
-  }
-}
 
+// B设备输入 bucket 后拉取系统配置（密码+cosConfig）
 // B设备输入 bucket 后拉取系统配置（密码+cosConfig）
 async function loginSyncFromBucket() {
   const bucket = (document.getElementById('login-sync-bucket')?.value || '').trim();
