@@ -919,7 +919,7 @@
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-12</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-13</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1686,7 +1686,7 @@
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.29-12';
+const APP_VERSION = 'v2026.03.29-13';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5959,6 +5959,105 @@ async function parseXlsxFile(file) {
   const ws  = wb.Sheets[wb.SheetNames[0]];
   const data = window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
   return data;
+}
+
+// ===== AI 自动生成复盘 =====
+async function aiGenerateReview(activityId) {
+  const a = activities.find(x => x.id === activityId);
+  if (!a) return;
+
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 生成中…'; }
+
+  const apiKey = _kimiKey();
+  if (!apiKey) {
+    alert('请先在「系统设置 → Kimi AI 配置」里填写 API Key');
+    if (btn) { btn.disabled = false; btn.innerHTML = '✨ AI 自动生成复盘'; }
+    return;
+  }
+
+  // 构建活动摘要
+  const kpiStr  = (a.kpis||[]).map(k => `${k.name}：目标${k.target}${k.unit}，实际${k.actual||0}${k.unit}，完成率${(k.actual&&k.target) ? Math.round(k.actual/k.target*100) : 0}%`).join('；') || '无';
+  const taskStr = (a.tasks||[]).map(t => `${t.name}:${t.done?'完成':'未完成'}`).join('；') || '无';
+  const budgetItems = [...(a.budgetItems||[])];
+  if (Number(a.setupFee)>0)    budgetItems.push({name:'售后搭建费用', amount:a.setupFee});
+  if (Number(a.logisticsFee)>0) budgetItems.push({name:'物流运输费用', amount:a.logisticsFee});
+  const budgetStr = budgetItems.map(b=>`${b.name}:¥${b.amount}`).join('、') || '无';
+  const actualStr = (a.actualCosts||[]).map(c=>`${c.name}:¥${c.amount}`).join('、') || '无';
+
+  const prompt = `请为以下市场活动生成一份专业的复盘总结，从四个维度分别输出内容：
+
+活动名称：${a.name}
+活动类型：${a.type||'—'}
+负责人：${a.owner||'—'}
+地区/城市：${a.region||''}${a.city||''}
+时间：${a.start||''} ~ ${a.end||''}
+预算：¥${a.budget||0}，实际支出：¥${a.spent||0}
+预算项：${budgetStr}
+实际花费：${actualStr}
+KPI完成情况：${kpiStr}
+任务完成情况：${taskStr}
+${(a.risks||[]).length ? '风险：'+(a.risks.map(r=>r.text).join('；')) : ''}
+
+请严格按以下格式输出（每部分50-120字，简洁专业，不要标题序号）：
+
+【统筹】
+（活动整体统筹协调情况，流程顺畅度，资源调配合理性）
+
+【搭建】
+（展台/场地搭建执行情况，现场布置效果，物料到位情况）
+
+【讲解】
+（产品/方案讲解效果，演讲表现，客户反馈与接受度）
+
+【客户体验】
+（客户到场体验，邀约情况，客户满意度，现场互动反馈）
+
+【综合评分】
+（给出1-5分具体分数，如：4分）`;
+
+  try {
+    const res = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ model: _kimiModel(), messages: [{ role: 'user', content: prompt }], temperature: 0.4, max_tokens: 1500 })
+    });
+    const data = await res.json();
+    const result = data.choices?.[0]?.message?.content || '';
+    if (!result) throw new Error(data.error?.message || '无返回内容');
+
+    // 解析四个维度和评分
+    const extract = (tag) => {
+      const m = result.match(new RegExp(`【${tag}】\\s*([\\s\\S]*?)(?=【|$)`));
+      return m ? m[1].trim() : '';
+    };
+    const overall      = extract('统筹');
+    const setup        = extract('搭建');
+    const presentation = extract('讲解');
+    const experience   = extract('客户体验');
+    const scoreMatch   = result.match(/【综合评分】[\s\S]*?(\d+(?:\.\d+)?)\s*分/);
+    const score        = scoreMatch ? parseFloat(scoreMatch[1]) : '';
+
+    if (overall)      { const el = document.getElementById('review-overall');      if(el) el.value = overall; }
+    if (setup)        { const el = document.getElementById('review-setup');        if(el) el.value = setup; }
+    if (presentation) { const el = document.getElementById('review-presentation'); if(el) el.value = presentation; }
+    if (experience)   { const el = document.getElementById('review-experience');   if(el) el.value = experience; }
+    if (score)        { const el = document.getElementById('review-score');        if(el) el.value = Math.min(5, Math.max(1, score)); }
+
+    // 显示成功提示
+    const existing = document.getElementById('ai-review-notice');
+    if (existing) existing.remove();
+    const notice = document.createElement('div');
+    notice.id = 'ai-review-notice';
+    notice.style.cssText = 'background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:13px;color:#059669;margin-bottom:12px';
+    notice.textContent = '✅ AI 已自动填写复盘内容，请检查修改后点「保存复盘」';
+    const grid = document.querySelector('#dtab-3 .grid-2');
+    if (grid) grid.parentElement.insertBefore(notice, grid);
+  } catch(e) {
+    alert('AI 生成失败：' + e.message);
+  }
+
+  if (btn) { btn.disabled = false; btn.innerHTML = '✨ AI 自动生成复盘'; }
 }
 
 // ===== KIMI AI 分析助手 =====
