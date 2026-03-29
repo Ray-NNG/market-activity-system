@@ -927,7 +927,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-17</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-18</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1278,16 +1278,17 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
     <!-- ===== AI 分析助手 ===== -->
     <div id="page-ai" class="page">
-      <div style="max-width:860px">
-        <!-- 顶部功能栏 -->
-        <div class="card" style="margin-bottom:16px">
+      <div style="max-width:900px">
+
+        <!-- 顶部标题栏 -->
+        <div class="card" style="margin-bottom:14px">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <span style="font-size:20px">🤖</span>
-            <div style="flex:1;min-width:200px">
-              <div style="font-weight:600;font-size:15px">Kimi AI 分析助手</div>
-              <div style="font-size:12px;color:var(--text-muted)">基于当前系统数据进行智能分析，支持自由提问</div>
+            <span style="font-size:22px">🤖</span>
+            <div style="flex:1;min-width:180px">
+              <div style="font-weight:700;font-size:16px">AI 智能分析 Agent</div>
+              <div style="font-size:12px;color:var(--text-muted)">支持数据分析、生成报告/PPT、上传附件解析</div>
             </div>
-            <select class="form-control" id="ai-data-scope" style="width:180px;font-size:13px">
+            <select class="form-control" id="ai-data-scope" style="width:170px;font-size:13px">
               <option value="all">📊 全部活动数据</option>
               <option value="review">🔍 复盘活动数据</option>
               <option value="channels">🤝 渠道数据</option>
@@ -1298,38 +1299,106 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
           </div>
         </div>
 
-        <!-- 快捷分析按钮 -->
-        <div class="card" style="margin-bottom:16px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:10px">⚡ 快捷分析</div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px" id="ai-quick-btns">
+        <!-- Agent 能力面板 -->
+        <div class="card" style="margin-bottom:14px;padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+            <span>⚡</span> Agent 能力
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
+            <!-- 生成PPT -->
+            <div onclick="aiAgentAction('ppt')" style="cursor:pointer;border:1.5px solid #e0e7ff;border-radius:10px;padding:12px;background:#f5f3ff;transition:all .2s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#eef2ff'" onmouseout="this.style.borderColor='#e0e7ff';this.style.background='#f5f3ff'">
+              <div style="font-size:22px;margin-bottom:6px">📊</div>
+              <div style="font-size:13px;font-weight:600;color:#4338ca">生成 PPT 大纲</div>
+              <div style="font-size:11px;color:#6366f1;margin-top:3px">自动生成可下载的活动复盘PPT</div>
+            </div>
+            <!-- 生成季报 -->
+            <div onclick="aiAgentAction('report')" style="cursor:pointer;border:1.5px solid #d1fae5;border-radius:10px;padding:12px;background:#f0fdf4;transition:all .2s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#d1fae5';this.style.background='#f0fdf4'">
+              <div style="font-size:22px;margin-bottom:6px">📝</div>
+              <div style="font-size:13px;font-weight:600;color:#15803d">生成季报</div>
+              <div style="font-size:11px;color:#16a34a;margin-top:3px">一键生成活动季度总结报告</div>
+            </div>
+            <!-- 预算分析报告 -->
+            <div onclick="aiAgentAction('budget_report')" style="cursor:pointer;border:1.5px solid #fef3c7;border-radius:10px;padding:12px;background:#fffbeb;transition:all .2s" onmouseover="this.style.borderColor='#f59e0b';this.style.background='#fef9c3'" onmouseout="this.style.borderColor='#fef3c7';this.style.background='#fffbeb'">
+              <div style="font-size:22px;margin-bottom:6px">💰</div>
+              <div style="font-size:13px;font-weight:600;color:#b45309">预算分析报告</div>
+              <div style="font-size:11px;color:#d97706;margin-top:3px">深度分析预算执行与超支情况</div>
+            </div>
+            <!-- 上传附件 -->
+            <div onclick="document.getElementById('ai-file-input').click()" style="cursor:pointer;border:1.5px dashed #cbd5e1;border-radius:10px;padding:12px;background:#f8fafc;transition:all .2s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#f5f3ff'" onmouseout="this.style.borderColor='#cbd5e1';this.style.background='#f8fafc'">
+              <div style="font-size:22px;margin-bottom:6px">📎</div>
+              <div style="font-size:13px;font-weight:600;color:#475569">上传附件分析</div>
+              <div style="font-size:11px;color:#64748b;margin-top:3px">Excel / PDF / 图片，AI提取内容分析</div>
+            </div>
+            <!-- 执行人绩效报告 -->
+            <div onclick="aiAgentAction('owner_report')" style="cursor:pointer;border:1.5px solid #fce7f3;border-radius:10px;padding:12px;background:#fdf4ff;transition:all .2s" onmouseover="this.style.borderColor='#ec4899';this.style.background='#fce7f3'" onmouseout="this.style.borderColor='#fce7f3';this.style.background='#fdf4ff'">
+              <div style="font-size:22px;margin-bottom:6px">👤</div>
+              <div style="font-size:13px;font-weight:600;color:#be185d">负责人绩效报告</div>
+              <div style="font-size:11px;color:#db2777;margin-top:3px">各负责人活动执行能力排名</div>
+            </div>
+            <!-- 改进建议 -->
+            <div onclick="aiAgentAction('improve')" style="cursor:pointer;border:1.5px solid #e0f2fe;border-radius:10px;padding:12px;background:#f0f9ff;transition:all .2s" onmouseover="this.style.borderColor='#0ea5e9';this.style.background='#e0f2fe'" onmouseout="this.style.borderColor='#e0f2fe';this.style.background='#f0f9ff'">
+              <div style="font-size:22px;margin-bottom:6px">💡</div>
+              <div style="font-size:13px;font-weight:600;color:#0369a1">改进建议</div>
+              <div style="font-size:11px;color:#0284c7;margin-top:3px">AI给出下一步优化落地方案</div>
+            </div>
+          </div>
+          <!-- 文件上传input（隐藏） -->
+          <input type="file" id="ai-file-input" style="display:none" accept=".pdf,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg,.docx"
+            onchange="aiHandleFileUpload(this)">
+          <!-- 已上传附件列表 -->
+          <div id="ai-file-list" style="margin-top:10px;display:none">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">📎 已上传附件：</div>
+            <div id="ai-file-tags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          </div>
+        </div>
+
+        <!-- 快捷提问 -->
+        <div class="card" style="margin-bottom:14px;padding:12px 16px">
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">💬 快捷提问</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="ai-quick-btns">
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('summary')" style="font-size:12px">📋 活动整体总结</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('budget')" style="font-size:12px">💰 预算执行分析</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('owner')" style="font-size:12px">👤 负责人绩效对比</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('channel')" style="font-size:12px">🤝 渠道效果分析</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('risk')" style="font-size:12px">⚠️ 风险与问题识别</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('suggest')" style="font-size:12px">💡 优化建议</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('roi_rank')" style="font-size:12px">📈 ROI 排行</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('city')" style="font-size:12px">🗺️ 地市分布分析</button>
           </div>
         </div>
 
         <!-- 对话区域 -->
-        <div class="card" style="margin-bottom:16px">
-          <div id="ai-chat-messages" style="min-height:300px;max-height:500px;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:12px">
-            <div style="text-align:center;color:var(--text-muted);font-size:13px;padding:40px 0">
-              👋 你好！我是 Kimi AI 助手，可以帮你分析活动数据。<br>
-              选择上方快捷分析，或在下方输入框自由提问。
+        <div class="card" style="margin-bottom:14px">
+          <div id="ai-chat-messages" style="min-height:320px;max-height:560px;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:12px">
+            <div data-welcome style="text-align:center;color:var(--text-muted);font-size:13px;padding:50px 20px 40px">
+              <div style="font-size:32px;margin-bottom:10px">🤖</div>
+              <div style="font-weight:600;font-size:15px;color:#374151;margin-bottom:8px">AI 智能分析 Agent</div>
+              <div style="line-height:1.8">
+                我可以帮你 <b>分析活动数据</b>、<b>生成 PPT 大纲</b>、<b>撰写季报</b><br>
+                也可以 <b>解析你上传的 Excel / PDF 附件</b> 进行深度分析<br>
+                <span style="font-size:12px;color:#94a3b8">点击上方 Agent 能力卡片，或直接输入问题开始</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- 输入区 -->
         <div class="card" style="padding:14px 16px">
+          <!-- 待发附件预览 -->
+          <div id="ai-pending-files" style="display:none;margin-bottom:10px;padding:8px 10px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
+            <div style="font-size:12px;color:#0369a1;font-weight:600;margin-bottom:4px">📎 附件待分析：</div>
+            <div id="ai-pending-file-tags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          </div>
           <div style="display:flex;gap:10px;align-items:flex-end">
-            <textarea id="ai-input" class="form-control" rows="3"
-              placeholder="输入问题，例如：哪个活动的ROI最高？有哪些活动超出了预算？"
-              style="flex:1;resize:none;font-size:14px"
-              onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){aiSendMessage()}"
-            ></textarea>
-            <button class="btn btn-primary" onclick="aiSendMessage()" id="ai-send-btn" style="padding:10px 20px;align-self:flex-end">
+            <div style="flex:1;position:relative">
+              <textarea id="ai-input" class="form-control" rows="3"
+                placeholder="输入问题，或点击上方 Agent 能力卡片自动生成提示词…"
+                style="flex:1;resize:none;font-size:14px;width:100%;box-sizing:border-box;padding-right:40px"
+                onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){aiSendMessage()}"
+              ></textarea>
+              <button onclick="document.getElementById('ai-file-input').click()" title="上传附件" style="position:absolute;right:8px;bottom:10px;background:none;border:none;cursor:pointer;font-size:18px;color:#64748b;padding:4px">📎</button>
+            </div>
+            <button class="btn btn-primary" onclick="aiSendMessage()" id="ai-send-btn" style="padding:10px 22px;align-self:flex-end;min-height:70px">
               发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>
             </button>
           </div>
@@ -1706,7 +1775,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.29-17';
+const APP_VERSION = 'v2026.03.29-18';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6250,7 +6319,7 @@ function aiAppendMessage(role, content, isLoading = false) {
   return bubble;
 }
 
-async function aiSendMessage() {
+async function aiSendMessage(agentType) {
   const input = document.getElementById('ai-input');
   const sendBtn = document.getElementById('ai-send-btn');
   const question = input?.value?.trim();
@@ -6263,29 +6332,46 @@ async function aiSendMessage() {
   }
 
   const scope = document.getElementById('ai-data-scope')?.value || 'all';
-  const model = _kimiModel();
+  // Agent 模式使用更强的模型
+  const model = agentType ? 'moonshot-v1-32k' : _kimiModel();
 
-  aiAppendMessage('user', question);
+  // 显示用户消息（如有附件，显示附件标签）
+  const fileNames = _aiPendingFiles.map(f=>f.name);
+  let userDisplay = question;
+  if (fileNames.length > 0) userDisplay += `\n📎 附件：${fileNames.join('、')}`;
+  aiAppendMessage('user', userDisplay);
   input.value = '';
   sendBtn.disabled = true;
-  sendBtn.textContent = '发送中…';
+  sendBtn.innerHTML = agentType ? '🤖 生成中…' : '发送中…';
 
-  // 构建 system prompt
-  const systemPrompt = `你是一个专业的市场活动数据分析师，擅长从活动运营数据中提取洞察。
-用户会提供市场活动管理系统的数据，请基于数据给出准确、具体、有价值的分析。
-回答时请：
-1. 引用具体数据支撑结论
-2. 按重要性排列发现
-3. 提供可执行的建议
-4. 使用简洁的中文，适当使用表格或列表提高可读性`;
+  // System prompt
+  const systemPrompt = agentType
+    ? `你是一个专业的市场活动数据分析师和报告撰写专家。用户会提供市场活动管理系统的真实数据，请：
+1. 严格基于数据，引用具体数字
+2. 使用 Markdown 格式，结构清晰
+3. 表格数据用 Markdown 表格展示
+4. 生成PPT时严格按要求输出 ppt-data JSON 代码块`
+    : `你是一个专业的市场活动数据分析师，擅长从活动运营数据中提取洞察。
+回答时请：引用具体数据、按重要性排列发现、提供可执行建议、使用简洁中文，适当使用表格或列表提高可读性`;
 
+  // 构建消息（注入附件内容）
   const dataContext = aiGetDataContext(scope);
+  let userContent = question;
+  if (_aiPendingFiles.length > 0) {
+    const fileCtx = _aiPendingFiles.map(f=>`【附件：${f.name}】\n${f.text}`).join('\n\n---\n\n');
+    userContent = `${question}\n\n以下是用户上传的附件内容，请结合分析：\n\n${fileCtx}`;
+  }
+
   const messages = [
     { role: 'system', content: systemPrompt },
-    { role: 'user', content: `【数据上下文】\n${dataContext}` },
+    { role: 'user', content: `【系统活动数据上下文】\n${dataContext}` },
     ..._aiChatHistory,
-    { role: 'user', content: question }
+    { role: 'user', content: userContent }
   ];
+
+  // 清空待发附件
+  _aiPendingFiles = [];
+  _renderPendingFileTags();
 
   const loadingBubble = aiAppendMessage('assistant', '', true);
 
@@ -6293,16 +6379,16 @@ async function aiSendMessage() {
     const res = await fetch('https://api.moonshot.cn/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: 2000 })
+      body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: agentType ? 4000 : 2000 })
     });
     const data = await res.json();
     if (data.choices?.[0]?.message?.content) {
       const reply = data.choices[0].message.content;
-      loadingBubble.textContent = reply;
+      // 富文本渲染（Markdown）
+      loadingBubble.innerHTML = _mdToHtml(reply);
       _aiChatHistory.push({ role: 'user', content: question });
       _aiChatHistory.push({ role: 'assistant', content: reply });
-      // 限制历史长度，避免 token 超限
-      if (_aiChatHistory.length > 20) _aiChatHistory = _aiChatHistory.slice(-20);
+      if (_aiChatHistory.length > 24) _aiChatHistory = _aiChatHistory.slice(-24);
     } else {
       throw new Error(data.error?.message || '返回数据格式异常');
     }
@@ -6322,7 +6408,9 @@ const _aiQuickPrompts = {
   owner: '请对比分析各负责人的绩效：活动数量、完成率、预算控制能力、KPI达成情况，给出排名和建议。',
   channel: '请分析渠道数据，包括渠道层级分布、各地市覆盖情况，以及与活动的关联情况（如有）。',
   risk: '请识别当前活动中存在的风险和问题：哪些活动进度滞后？预算风险？KPI达成风险？',
-  suggest: '基于以上所有数据，请给出3-5条具体可落地的优化建议，帮助提升活动效果和执行效率。'
+  suggest: '基于以上所有数据，请给出3-5条具体可落地的优化建议，帮助提升活动效果和执行效率。',
+  roi_rank: '请列出所有有ROI数据的活动排行榜，分析高ROI和低ROI活动的共同特征，给出提升建议。',
+  city: '请分析各地市的活动分布情况：哪些地市活动数量最多？哪些地市的KPI表现最好？资源投入是否合理？'
 };
 
 function aiQuickAsk(type) {
@@ -6333,13 +6421,275 @@ function aiQuickAsk(type) {
   }
 }
 
+function aiQuickAsk(type) {
+  const input = document.getElementById('ai-input');
+  if (input) {
+    input.value = _aiQuickPrompts[type] || '';
+    input.focus();
+  }
+}
+
+// ===== Agent 核心逻辑 =====
+
+// 已上传附件（已通过Kimi文件API处理的）
+let _aiUploadedFiles = []; // [{name, fileId, content_summary}]
+let _aiPendingFiles = []; // 待随本次消息发送的文件内容 [{name, text}]
+
+// Agent 动作分发
+const _agentPrompts = {
+  ppt: `请根据当前所有活动数据，生成一份《市场活动季度复盘PPT大纲》。
+要求：
+1. 用 Markdown 格式输出，使用 ## 作为每张幻灯片标题
+2. 包含：封面页、目录、活动概览、重点活动复盘（ROI/KPI）、预算执行分析、渠道效果、经验总结与建议、下季度计划
+3. 每张幻灯片内容要点用 - 列举，关键数字必须引用真实数据
+4. 最后附上 JSON 数据块（用 \`\`\`ppt-data 包裹），包含每张幻灯片的 title 和 points 数组，供系统生成可下载PPT
+
+示例格式：
+## 封面
+- 市场活动季度复盘报告
+- 时间：2026年Q1
+
+\`\`\`ppt-data
+[{"title":"封面","points":["市场活动季度复盘报告","时间：2026年Q1"]},...]
+\`\`\``,
+
+  report: `请根据当前所有活动数据，生成一份正式的《市场活动季度总结报告》。
+要求：
+1. 包含：执行摘要、活动执行概况（含数据表格）、重点活动分析、预算执行情况、KPI达成情况、渠道合作效果、问题与风险、下季度建议
+2. 格式：使用 Markdown，标题层级清晰，数据用表格展示
+3. 语言：专业、简洁，适合向管理层汇报
+4. 字数约1200-1800字`,
+
+  budget_report: `请对所有活动的预算执行情况进行深度分析，生成《预算执行专项报告》。
+要求：
+1. 汇总表：活动名称 | 预算 | 实际支出 | 差额 | 执行率
+2. 超支分析：哪些活动超支？超支原因分析
+3. 节余分析：哪些活动节余较多？资源利用是否充分？
+4. 总体预算利用率评价
+5. 改进建议`,
+
+  owner_report: `请分析所有活动数据中各负责人的绩效表现，生成《负责人绩效分析报告》。
+要求：
+1. 按负责人汇总：活动数量、完成率、平均ROI、预算控制、KPI达成率
+2. 生成绩效排名（综合评分）
+3. 找出表现优秀和需改进的负责人，分析原因
+4. 给出培训/激励建议`,
+
+  improve: `请基于全部活动数据，从以下5个维度给出具体可落地的改进方案：
+1. 活动策划（选题/时机/形式优化）
+2. 预算管理（成本控制/资源分配）
+3. 渠道协同（渠道开发/维护策略）
+4. KPI设置（目标合理性/追踪机制）
+5. 执行效率（流程优化/人员配置）
+每条建议需包含：现状问题 → 改进措施 → 预期效果`
+};
+
+async function aiAgentAction(type) {
+  const prompt = _agentPrompts[type];
+  if (!prompt) return;
+  const input = document.getElementById('ai-input');
+  if (input) input.value = prompt;
+  // 自动触发发送
+  await aiSendMessage(type);
+}
+
+// 渲染 Markdown 为 HTML（简单实现）
+function _mdToHtml(md) {
+  if (!md) return '';
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    // 代码块
+    .replace(/```ppt-data[\s\S]*?```/g, m => {
+      const json = m.replace(/```ppt-data\n?/,'').replace(/```$/,'').trim();
+      return `<div class="ai-ppt-block" data-ppt='${json.replace(/'/g,"&#39;")}'><button onclick="aiDownloadPPT(this)" style="margin-top:8px;padding:6px 16px;background:#6366f1;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">📥 下载 PPT（HTML版）</button></div>`;
+    })
+    .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre style="background:#1e293b;color:#e2e8f0;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;margin:8px 0"><code>$1</code></pre>')
+    // 标题
+    .replace(/^#### (.+)$/gm,'<h4 style="margin:10px 0 4px;font-size:14px;color:#374151">$1</h4>')
+    .replace(/^### (.+)$/gm,'<h3 style="margin:12px 0 6px;font-size:15px;color:#1e293b">$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2 style="margin:14px 0 6px;font-size:16px;color:#6366f1;border-bottom:1px solid #e0e7ff;padding-bottom:4px">$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1 style="margin:14px 0 8px;font-size:18px;color:#1e293b">$1</h1>')
+    // 粗体/斜体
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    // 表格
+    .replace(/(\|.+\|\n)+/g, t => {
+      const lines = t.trim().split('\n');
+      if (lines.length < 2) return t;
+      const header = lines[0].split('|').filter(c=>c.trim()).map(c=>`<th style="padding:6px 10px;background:#f1f5f9;font-weight:600;text-align:left;border:1px solid #e2e8f0">${c.trim()}</th>`).join('');
+      const rows = lines.slice(2).map(l=>'<tr>'+l.split('|').filter(c=>c.trim()).map(c=>`<td style="padding:6px 10px;border:1px solid #e2e8f0">${c.trim()}</td>`).join('')+'</tr>').join('');
+      return `<table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>`;
+    })
+    // 列表
+    .replace(/^- (.+)$/gm,'<li style="margin:3px 0;padding-left:4px">$1</li>')
+    .replace(/(<li[\s\S]*?<\/li>\n?)+/g, m=>`<ul style="padding-left:20px;margin:6px 0">${m}</ul>`)
+    // 段落换行
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+}
+
+// AI 回复气泡（支持 HTML 富文本）
+function aiAppendRichMessage(role, htmlContent) {
+  const container = document.getElementById('ai-chat-messages');
+  if (!container) return;
+  const welcome = container.querySelector('[data-welcome]');
+  if (welcome) welcome.remove();
+
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;gap:10px;align-items:flex-start;${role==='user'?'flex-direction:row-reverse':''}`;
+  const avatar = document.createElement('div');
+  avatar.style.cssText = `width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;${role==='user'?'background:#e0e7ff':'background:#f0fdf4'}`;
+  avatar.textContent = role === 'user' ? '👤' : '🤖';
+  const bubble = document.createElement('div');
+  bubble.style.cssText = `max-width:80%;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.7;word-break:break-word;${role==='user'?'background:#6366f1;color:#fff;border-bottom-right-radius:4px':'background:#f8fafc;border:1px solid var(--border);border-bottom-left-radius:4px'}`;
+  bubble.innerHTML = htmlContent;
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return bubble;
+}
+
+// 下载 PPT（HTML 幻灯片版）
+function aiDownloadPPT(btn) {
+  const block = btn.closest('.ai-ppt-block');
+  let slides = [];
+  try { slides = JSON.parse(block.dataset.ppt); } catch(e) { alert('PPT数据解析失败'); return; }
+
+  const slideHtml = slides.map((s, i) => `
+    <div class="slide" style="width:960px;min-height:540px;padding:60px;box-sizing:border-box;background:${i===0?'linear-gradient(135deg,#6366f1,#8b5cf6)':'#fff'};color:${i===0?'#fff':'#1e293b'};border-radius:16px;margin:20px auto;box-shadow:0 4px 24px rgba(0,0,0,.12);page-break-after:always;position:relative">
+      ${i===0 ? `<div style="font-size:13px;opacity:.7;margin-bottom:12px">市场活动管理系统</div>` : `<div style="position:absolute;top:20px;right:30px;font-size:12px;color:#94a3b8">${i+1} / ${slides.length}</div>`}
+      <h2 style="font-size:${i===0?'32px':'26px'};font-weight:700;margin:0 0 24px;${i===0?'':'color:#6366f1'}">${s.title||''}</h2>
+      <ul style="padding-left:${i===0?'0':'24px'};list-style:${i===0?'none':'disc'}">
+        ${(s.points||[]).map(p=>`<li style="font-size:${i===0?'18px':'15px'};margin:${i===0?'10px 0':'8px 0'};${i===0?'opacity:.9':'color:#374151'}">${p}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8">
+<title>市场活动复盘PPT</title>
+<style>body{margin:0;padding:20px;background:#f1f5f9;font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+@media print{.slide{margin:0!important;border-radius:0!important;box-shadow:none!important}}</style>
+</head><body>
+<div style="text-align:center;margin-bottom:20px">
+  <span style="font-size:13px;color:#64748b">共 ${slides.length} 张幻灯片 · </span>
+  <a href="javascript:window.print()" style="color:#6366f1;font-size:13px;text-decoration:none">🖨️ 打印/另存PDF</a>
+</div>
+${slideHtml}
+</body></html>`;
+
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `市场活动复盘PPT_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ===== 附件上传与解析 =====
+async function aiHandleFileUpload(input) {
+  const files = input.files;
+  if (!files || files.length === 0) return;
+  const apiKey = _kimiKey();
+  if (!apiKey) { alert('请先配置 Kimi API Key'); return; }
+
+  for (const file of files) {
+    const sizeMB = file.size / 1024 / 1024;
+    if (sizeMB > 20) { alert(`文件 ${file.name} 超过20MB限制`); continue; }
+
+    // 显示上传中状态
+    const tagId = 'file-tag-' + Date.now();
+    _addPendingFileTag(tagId, file.name, '⏳ 解析中…');
+
+    try {
+      // 调用 Kimi 文件上传 API
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('purpose', 'file-extract');
+
+      const uploadRes = await fetch('https://api.moonshot.cn/v1/files', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}` },
+        body: formData
+      });
+      const uploadData = await uploadRes.json();
+      const fileId = uploadData.id;
+
+      if (!fileId) throw new Error(uploadData.error?.message || '上传失败');
+
+      // 获取文件内容
+      const contentRes = await fetch(`https://api.moonshot.cn/v1/files/${fileId}/content`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      const contentData = await contentRes.json();
+      const extractedText = contentData.content || '（文件内容为空）';
+
+      // 存到附件列表
+      _aiPendingFiles.push({ name: file.name, fileId, text: extractedText.slice(0, 8000) });
+      _updatePendingFileTag(tagId, file.name, '✅ 已解析');
+
+    } catch(e) {
+      _updatePendingFileTag(tagId, file.name, '❌ 失败');
+      console.error('文件上传失败', e);
+    }
+  }
+  input.value = ''; // 清空 input 允许重复上传同名文件
+  _renderPendingFileTags();
+}
+
+function _renderPendingFileTags() {
+  const area = document.getElementById('ai-pending-files');
+  const tagsEl = document.getElementById('ai-pending-file-tags');
+  if (!area || !tagsEl) return;
+  if (_aiPendingFiles.length === 0) { area.style.display = 'none'; return; }
+  area.style.display = 'block';
+  tagsEl.innerHTML = _aiPendingFiles.map((f, i) => `
+    <span style="display:inline-flex;align-items:center;gap:4px;background:#e0f2fe;color:#0369a1;padding:3px 10px;border-radius:20px;font-size:12px">
+      📄 ${f.name}
+      <span onclick="_aiPendingFiles.splice(${i},1);_renderPendingFileTags()" style="cursor:pointer;color:#64748b;margin-left:2px">×</span>
+    </span>
+  `).join('');
+}
+
+function _addPendingFileTag(id, name, status) {
+  const tagsEl = document.getElementById('ai-pending-file-tags');
+  const area = document.getElementById('ai-pending-files');
+  if (!tagsEl) return;
+  area.style.display = 'block';
+  const span = document.createElement('span');
+  span.id = id;
+  span.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#fef9c3;color:#a16207;padding:3px 10px;border-radius:20px;font-size:12px';
+  span.textContent = `📄 ${name} ${status}`;
+  tagsEl.appendChild(span);
+}
+
+function _updatePendingFileTag(id, name, status) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = `📄 ${name} ${status}`; el.style.background = status.includes('✅') ? '#dcfce7' : '#fee2e2'; el.style.color = status.includes('✅') ? '#166534' : '#991b1b'; }
+}
+
 function aiClearChat() {
   _aiChatHistory = [];
+  // 清除附件上下文
+  _aiUploadedFiles = [];
+  _aiPendingFiles = [];
+  _renderPendingFileTags();
+  const fileList = document.getElementById('ai-file-list');
+  if (fileList) fileList.style.display = 'none';
   const container = document.getElementById('ai-chat-messages');
   if (container) {
-    container.innerHTML = `<div data-welcome style="text-align:center;color:var(--text-muted);font-size:13px;padding:40px 0">
-      👋 你好！我是 Kimi AI 助手，可以帮你分析活动数据。<br>
-      选择上方快捷分析，或在下方输入框自由提问。
+    container.innerHTML = `<div data-welcome style="text-align:center;color:var(--text-muted);font-size:13px;padding:50px 20px 40px">
+      <div style="font-size:32px;margin-bottom:10px">🤖</div>
+      <div style="font-weight:600;font-size:15px;color:#374151;margin-bottom:8px">AI 智能分析 Agent</div>
+      <div style="line-height:1.8">
+        我可以帮你 <b>分析活动数据</b>、<b>生成 PPT 大纲</b>、<b>撰写季报</b><br>
+        也可以 <b>解析你上传的 Excel / PDF 附件</b> 进行深度分析<br>
+        <span style="font-size:12px;color:#94a3b8">点击上方 Agent 能力卡片，或直接输入问题开始</span>
+      </div>
+    </div>`;
+  }
+}
     </div>`;
   }
 }
