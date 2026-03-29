@@ -919,7 +919,7 @@
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-14</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-15</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1686,7 +1686,7 @@
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.29-14';
+const APP_VERSION = 'v2026.03.29-15';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -4175,9 +4175,9 @@ function doLogin() {
   }
 
   if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '🔄 验证中…'; }
-  // 先从COS拉最新账号（超时8秒）
+  // 先从COS拉最新账号（超时5秒，超时后用本地数据或兜底账号）
   const syncPromise = fetchSysConfigFromCOS().catch(() => false);
-  const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 8000));
+  const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 5000));
   Promise.race([syncPromise, timeoutPromise]).then(syncResult => {
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
 
@@ -4187,20 +4187,21 @@ function doLogin() {
 
     // 如果COS拉取失败且本地也没有账号数据，用内置默认账号兜底（允许离线/新设备登录）
     if (syncResult !== true && !hasLocalUsers) {
-      // 内置兜底账号（超管/管理员，仅在无网络且本地无数据时使用）
+      // 内置兜底账号（新设备/网络差时使用，覆盖所有常用账号）
       const _BUILTIN_USERS = [
         { id: 'u_superadmin', username: 'superadmin', name: '超级管理员', role: 'superadmin', password: 'super2024', active: true },
-        { id: 'u_admin',      username: 'admin',      name: '管理员',     role: 'admin',      password: 'admin123',  active: true }
+        { id: 'u_admin',      username: 'admin',      name: '管理员',     role: 'admin',      password: 'admin123',  active: true },
+        { id: 'u_viewer',     username: 'viewer',     name: '使用人员',   role: 'viewer',     password: 'view123',   active: true }
       ];
       const builtinMatch = _BUILTIN_USERS.find(u => u.username === username && u.password === password);
       if (!builtinMatch) {
-        if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '⚠️ 无法连接云端，请检查网络后重试'; }
+        if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '账号或密码错误，请重新输入'; }
         if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
         const syncArea = document.getElementById('login-sync-area');
         if (syncArea) syncArea.style.display = 'block';
         return;
       }
-      // 兜底账号匹配成功
+      // 兜底账号匹配成功，先放行进入，后台继续尝试同步COS数据
       _currentRole = builtinMatch.role;
       _currentUser = { id: builtinMatch.id, username: builtinMatch.username, name: builtinMatch.name, role: builtinMatch.role };
       localStorage.setItem('mcm_auth_ts', Date.now().toString());
@@ -4212,6 +4213,8 @@ function doLogin() {
       if (usernameInput) usernameInput.value = '';
       if (pwdInput) pwdInput.value = '';
       updateRoleDisplay();
+      // 后台继续尝试从COS同步数据（不阻塞登录）
+      fetchSysConfigFromCOS().then(ok => { if (ok) { console.log('✅ 后台COS同步成功'); } });
       return;
     }
 
