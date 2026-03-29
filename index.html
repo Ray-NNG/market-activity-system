@@ -6,6 +6,12 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<script>
+  // Safari 兼容：http 自动跳 https，避免某些浏览器触发下载
+  if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    location.replace('https:' + location.href.slice(5));
+  }
+</script>
 <title>市场活动全流程管理系统 v2026.03.27-12</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -553,8 +559,10 @@
         const isWrite = method.toUpperCase() !== 'GET' && method.toUpperCase() !== 'HEAD';
         const ct = isWrite ? (contentType || 'application/octet-stream') : null;
 
+        // COS 签名规范：httpString 里的 uriPath 用原始路径（不编码中文），URL 用编码后路径
         const encodedKey = key.split('/').map(seg => encodeURIComponent(seg)).join('/');
-        const uriPath = '/' + encodedKey;
+        const uriPath = '/' + key;   // 签名用原始路径（不 encode）
+        const urlPath = '/' + encodedKey; // URL 用编码路径
         const httpParams = '';
         const httpHeaders = ct
             ? `content-type=${encodeURIComponent(ct)}&host=${host}`
@@ -584,7 +592,7 @@
             secretKey_tail: CONFIG.secretKey.slice(-4),
         });
 
-        const url = `https://${host}/${encodedKey}`;
+        const url = `https://${host}${urlPath}`;
         const headers = {
             'Host': host,
             ...(ct ? { 'Content-Type': ct } : {}),
@@ -705,20 +713,11 @@
         </div>
         <div class="login-error" id="login-error">账号或密码错误，请重新输入</div>
         <button id="login-btn" class="login-btn" onclick="doLogin()">登 录</button>
-        <!-- 云端账号同步（B设备首次使用时） -->
-        <div id="login-sync-area" style="display:none;margin-top:14px;padding:14px;background:#f0f9ff;border-radius:10px;border:1px solid #bae6fd">
-          <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">☁️ 从云端同步账号</div>
-          <div style="font-size:12px;color:#0284c7;margin-bottom:10px">首次在新设备使用？输入云存储 Bucket 名称即可同步账号信息</div>
-          <input id="login-sync-bucket" type="text" placeholder="例：market-data-1312345678"
-            style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid #bae6fd;font-size:13px;margin-bottom:6px">
-          <select id="login-sync-region" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:6px;border:1px solid #bae6fd;font-size:13px;margin-bottom:10px;background:#fff">
-            <option value="ap-guangzhou">广州（ap-guangzhou）</option>
-            <option value="ap-beijing">北京（ap-beijing）</option>
-            <option value="ap-shanghai">上海（ap-shanghai）</option>
-            <option value="ap-chengdu">成都（ap-chengdu）</option>
-          </select>
-          <button onclick="loginSyncFromBucket()" style="width:100%;padding:8px;border-radius:6px;border:none;background:#0ea5e9;color:#fff;font-size:13px;font-weight:600;cursor:pointer">🔄 立即同步</button>
-          <div id="login-sync-msg" style="font-size:12px;margin-top:6px;text-align:center;min-height:14px"></div>
+        <!-- 账号同步提示（全自动，无需手动操作） -->
+        <div id="login-sync-area" style="display:none;margin-top:14px;padding:12px 14px;background:#fef3c7;border-radius:10px;border:1px solid #fcd34d;font-size:12px;color:#92400e;text-align:center">
+          ⚠️ 无法连接到云端服务器，账号同步失败<br>
+          <span style="color:#78350f;font-size:11px">请检查网络后点「登录」重试</span><br>
+          <button onclick="location.reload()" style="margin-top:8px;padding:4px 14px;border-radius:6px;border:none;background:#f59e0b;color:#fff;font-size:12px;cursor:pointer">🔄 刷新重试</button>
         </div>
       </div>
     </div>
@@ -906,7 +905,7 @@
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.27-12</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-10</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1088,7 +1087,7 @@
           <div id="sales-channel-chart" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;min-height:180px"></div>
         </div>
         <div class="card">
-          <div class="card-header"><div class="card-title">🎤 讲师/运营推广成效</div></div>
+          <div class="card-header"><div class="card-title">🎤 讲师/售前推广成效</div></div>
           <div id="speaker-effect-chart" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;min-height:180px"></div>
         </div>
       </div>
@@ -1350,6 +1349,7 @@
             </label>
             <button class="btn btn-outline" onclick="exportChannelCsv()">📤 导出CSV</button>
             <button class="btn btn-outline" id="btn-add-channel" onclick="openAddChannelModal()">＋ 手动添加</button>
+            <button class="btn btn-outline" onclick="forceSyncChannelsToCOS()" title="将本地渠道数据强制同步到云端（B设备不同步时使用）">☁️ 强制同步</button>
           </div>
         </div>
         <!-- 统计汇总 -->
@@ -1672,7 +1672,7 @@
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.27-14';
+const APP_VERSION = 'v2026.03.29-10';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -1767,9 +1767,29 @@ async function saveJsonBinData(data, retryCount = 0) {
         console.warn('⚠️ 腾讯云 COS 适配器未加载，仅保存到本地');
         return;
       }
-      
-      await window.MarketActivityCOS.adapter.saveData(data);
-      console.log('✅ 数据已同步到腾讯云 COS');
+
+      // ⚠️ 上传到 COS 时，剥除 files 里的 dataUrl（base64 文件内容）
+      // dataUrl 只需保存在本地 localStorage，云端只存元数据（名称、大小、云端URL等）
+      // 这样避免 data.json 因 base64 内容过大而写入超时/失败，导致附件列表丢失
+      let cosData = data;
+      if (data.files && typeof data.files === 'object') {
+        const filesForCos = {};
+        for (const [aid, stages] of Object.entries(data.files)) {
+          filesForCos[aid] = {};
+          for (const [stage, flist] of Object.entries(stages)) {
+            filesForCos[aid][stage] = Array.isArray(flist)
+              ? flist.map(f => {
+                  const { dataUrl, ...meta } = f;  // 剥除 dataUrl
+                  return meta;
+                })
+              : flist;
+          }
+        }
+        cosData = { ...data, files: filesForCos };
+      }
+
+      await window.MarketActivityCOS.adapter.saveData(cosData);
+      console.log('✅ 数据已同步到腾讯云 COS（files 元数据已上传，dataUrl 仅存本地）');
     } catch (err) {
       console.log('⚠️ 腾讯云 COS 同步失败（本地已保存）:', err.message);
     }
@@ -1778,13 +1798,33 @@ async function saveJsonBinData(data, retryCount = 0) {
 }
 
 // ===== 文件存储（localStorage，Base64）=====
-// fileStore: { activityId: { plan:[], exec:[], review:[] } }
+// fileStore: { activityId: { docs:[], photos:[] } }
 // 每条: { id, name, size, type, stage, uploadTime, dataUrl }
 function loadFileStore() {
-  return fileStore || {};
+  // 优先从 localStorage 恢复（含 dataUrl），内存变量仅作运行时缓存
+  try {
+    return JSON.parse(localStorage.getItem('mcm_files_backup') || '{}');
+  } catch(e) { return {}; }
 }
 async function saveFileStore(store) {
   fileStore = store;
+  // localStorage 只保存元数据（去掉 dataUrl），避免超配额
+  // dataUrl 只存内存，上传云端后会清除
+  const storeForLocal = {};
+  for (const [aid, stages] of Object.entries(store)) {
+    storeForLocal[aid] = {};
+    for (const [stage, flist] of Object.entries(stages)) {
+      storeForLocal[aid][stage] = flist.map(f => {
+        const { dataUrl, ...meta } = f;
+        return meta; // 不存 dataUrl，节省 localStorage 空间
+      });
+    }
+  }
+  try {
+    localStorage.setItem('mcm_files_backup', JSON.stringify(storeForLocal));
+  } catch(e) {
+    console.warn('localStorage 写入失败（配额满），仅保存内存版本', e.message);
+  }
   await syncData();
 }
 var fileStore = loadFileStore();
@@ -1793,15 +1833,16 @@ function getFiles(activityId, stage) {
   const key = String(activityId);
   if(!fileStore[key]) return [];
   if(stage) return fileStore[key][stage] || [];
-  return [...(fileStore[key].plan||[]), ...(fileStore[key].exec||[]), ...(fileStore[key].review||[])];
+  return [...(fileStore[key].docs||[]), ...(fileStore[key].photos||[])];
 }
 
 function addFile(activityId, stage, fileObj) {
   const key = String(activityId);
-  if(!fileStore[key]) fileStore[key] = {plan:[], exec:[], review:[]};
+  if(!fileStore[key]) fileStore[key] = {docs:[], photos:[]};
   if(!fileStore[key][stage]) fileStore[key][stage] = [];
   fileStore[key][stage].push(fileObj);
-  saveFileStore(fileStore);
+  // 注意：只更新内存，不触发 saveFileStore（此时含 dataUrl，写 localStorage 会超配额）
+  // 文件会在「上传云端」后通过 saveFileStore 正式持久化（上传成功后 dataUrl 会被删除）
 }
 
 function deleteFile(activityId, stage, fileId) {
@@ -1829,8 +1870,8 @@ function formatSize(bytes) {
   return (bytes/1048576).toFixed(1) + ' MB';
 }
 
-const stageLabel = {plan:'前期策划', exec:'中期执行', review:'后期复盘'};
-let currentFileStage = 'plan';   // 当前文件面板阶段
+const stageLabel = {docs:'资料留存', photos:'照片'};
+let currentFileStage = 'docs';   // 当前文件面板阶段
 let currentDetailId = null;
 
 // ===== 数据模型（从腾讯云 COS 加载）=====
@@ -1845,7 +1886,36 @@ async function initData() {
     loadingText.textContent = '正在连接服务器...';
     const data = await getJsonBinData();
     activities = data.activities || [];
-    fileStore = data.files || {};
+    // 合并 COS 元数据 与 本地 localStorage 的完整数据（含 dataUrl）
+    // COS 里的 files 只有元数据（无 dataUrl），本地 backup 有完整内容
+    // 策略：以本地 backup 为主，用 COS 里的 cloudUploaded/cloudUrl 等字段补充
+    const cosFiles = data.files || {};
+    const localFiles = JSON.parse(localStorage.getItem('mcm_files_backup') || '{}');
+    const mergedFiles = {};
+    const allIds = new Set([...Object.keys(cosFiles), ...Object.keys(localFiles)]);
+    allIds.forEach(aid => {
+      mergedFiles[aid] = {};
+      const cosStages = cosFiles[aid] || {};
+      const localStages = localFiles[aid] || {};
+      const allStages = new Set([...Object.keys(cosStages), ...Object.keys(localStages)]);
+      allStages.forEach(stage => {
+        const cosList = cosStages[stage] || [];
+        const localList = localStages[stage] || [];
+        // 以本地为主，用 COS 数据补充 cloudUploaded/cloudUrl 等字段
+        const localMap = Object.fromEntries(localList.map(f => [f.id, f]));
+        const cosMap = Object.fromEntries(cosList.map(f => [f.id, f]));
+        const allFileIds = new Set([...localList.map(f=>f.id), ...cosList.map(f=>f.id)]);
+        mergedFiles[aid][stage] = [...allFileIds].map(fid => ({
+          ...(cosMap[fid] || {}),
+          ...(localMap[fid] || {}),
+          // COS 的云端字段优先
+          ...(cosMap[fid]?.cloudUploaded ? { cloudUploaded: true, cloudUrl: cosMap[fid].cloudUrl, cloudUploadTime: cosMap[fid].cloudUploadTime } : {})
+        }));
+      });
+    });
+    fileStore = mergedFiles;
+    // 同步回 localStorage 保持一致
+    localStorage.setItem('mcm_files_backup', JSON.stringify(fileStore));
     // 修复历史数据：有 actualCosts 的活动，spent 以 actualCosts 汇总为准
     activities.forEach(a => {
       if (a.actualCosts && a.actualCosts.length > 0) {
@@ -1883,7 +1953,28 @@ async function initData() {
 // ===== 离线队列系统 =====
 class OfflineSyncQueue {
   constructor() {
-    this.queue = JSON.parse(localStorage.getItem('mcm_sync_queue') || '[]');
+    // 加载队列时，过滤掉含 dataUrl 的旧任务（这些任务会导致 localStorage 超配额）
+    const rawQueue = JSON.parse(localStorage.getItem('mcm_sync_queue') || '[]');
+    this.queue = rawQueue.filter(task => {
+      // 检测任务数据是否含 dataUrl（旧格式），如有则丢弃
+      const hasDataUrl = task.data && task.data.files && 
+        Object.values(task.data.files).some(stages =>
+          Object.values(stages).some(flist =>
+            Array.isArray(flist) && flist.some(f => f.dataUrl)
+          )
+        );
+      if (hasDataUrl) {
+        console.warn('🧹 清理含 dataUrl 的旧队列任务');
+        return false;
+      }
+      return true;
+    });
+    // 如有过滤，立刻保存清理后的队列（防止再次加载时超配额）
+    if (this.queue.length < rawQueue.length) {
+      try { localStorage.setItem('mcm_sync_queue', JSON.stringify(this.queue)); } catch(e) {
+        try { localStorage.removeItem('mcm_sync_queue'); } catch(e2) {}
+      }
+    }
     this.isSyncing = false;
     this.syncStats = {
       total: 0,
@@ -2052,7 +2143,13 @@ class OfflineSyncQueue {
   }
 
   saveQueue() {
-    localStorage.setItem('mcm_sync_queue', JSON.stringify(this.queue));
+    try {
+      localStorage.setItem('mcm_sync_queue', JSON.stringify(this.queue));
+    } catch(e) {
+      console.warn('⚠️ 离线队列保存失败（localStorage 满），清空队列', e.message);
+      this.queue = [];
+      try { localStorage.removeItem('mcm_sync_queue'); } catch(e2) {}
+    }
   }
 
   // 获取队列状态
@@ -2079,23 +2176,40 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// 构建不含 dataUrl 的文件元数据（用于 COS 存储 + 离线队列）
+function buildFilesForSync(store) {
+  const result = {};
+  for (const [aid, stages] of Object.entries(store || {})) {
+    result[aid] = {};
+    for (const [stage, flist] of Object.entries(stages)) {
+      result[aid][stage] = (flist || []).map(f => {
+        const { dataUrl, ...meta } = f;
+        return meta;
+      });
+    }
+  }
+  return result;
+}
+
 // 保存数据到腾讯云 COS（改进版）
 async function syncData() {
+  // 始终用不含 dataUrl 的版本同步，避免 localStorage / 网络传输携带大体积 base64
+  const filesForSync = buildFilesForSync(fileStore);
   try {
     console.log('💾 [同步] 开始保存数据到服务器...');
-    await saveJsonBinData({ activities, files: fileStore });
+    await saveJsonBinData({ activities, files: filesForSync });
     console.log('✅ [同步] 数据同步成功');
-    // 本地备份
-    localStorage.setItem('mcm_activities_backup', JSON.stringify(activities));
-    localStorage.setItem('mcm_files_backup', JSON.stringify(fileStore));
+    // 本地备份（只存元数据）
+    try { localStorage.setItem('mcm_activities_backup', JSON.stringify(activities)); } catch(e) {}
+    try { localStorage.setItem('mcm_files_backup', JSON.stringify(filesForSync)); } catch(e) {}
   } catch (err) {
     console.error('❌ [同步] 数据同步失败:', err.message);
     console.warn('⚠️ [离线] 加入离线队列，等待网络恢复...');
     
-    // 将失败的保存操作加入离线队列
+    // 离线队列只存不含 dataUrl 的精简数据
     syncQueue.addTask({
       type: 'save',
-      data: { activities, files: fileStore }
+      data: { activities, files: filesForSync }
     });
     
     // 不再弹出 alert，而是显示离线提示
@@ -2511,40 +2625,66 @@ function renderAnalysis() {
     }
   }
 
-  // ===== 图表2：讲师/运营推广成效（历史推广记录汇总）=====
+  // ===== 图表2：讲师/售前推广成效（按人员×活动类型分布）=====
   const speakerChartEl = document.getElementById('speaker-effect-chart');
   if (speakerChartEl) {
-    // 从所有渠道的 history 记录中汇总 speaker 的出场次数
-    const speakerMap = {}; // { speaker: { count, types: Set, channels: Set } }
+    // 从所有渠道的 history 记录中汇总 speaker × 活动类型
+    // speakerMap: { speaker: { total: 0, types: { type: count } } }
+    const speakerMap = {};
     (typeof channels !== 'undefined' ? channels : []).forEach(c => {
       if (!Array.isArray(c.history)) return;
       c.history.forEach(r => {
         const sp = (r.speaker || '').trim();
         if (!sp) return;
-        if (!speakerMap[sp]) speakerMap[sp] = { count: 0, types: new Set(), channels: new Set() };
-        speakerMap[sp].count++;
-        if (r.type) speakerMap[sp].types.add(r.type);
-        speakerMap[sp].channels.add(c.name || c.id);
+        if (!speakerMap[sp]) speakerMap[sp] = { total: 0, types: {} };
+        speakerMap[sp].total++;
+        const t = (r.type || '其他').trim();
+        speakerMap[sp].types[t] = (speakerMap[sp].types[t] || 0) + 1;
       });
     });
-    const speakerEntries = Object.entries(speakerMap).sort((a,b) => b[1].count - a[1].count);
-    const spColors = ['#10b981','#4f46e5','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+
+    const speakerEntries = Object.entries(speakerMap).sort((a, b) => b[1].total - a[1].total);
+    // 收集所有类型，分配颜色
+    const allTypes = [...new Set(speakerEntries.flatMap(([, s]) => Object.keys(s.types)))];
+    const typeColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#84cc16','#ef4444','#14b8a6'];
+    const typeColorMap = Object.fromEntries(allTypes.map((t, i) => [t, typeColors[i % typeColors.length]]));
+
     if (speakerEntries.length === 0) {
-      speakerChartEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">暂无讲师/运营数据<br><span style="font-size:12px">请在渠道历史推广记录中填写「讲师/售前」</span></div>';
+      speakerChartEl.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted)">暂无讲师/售前数据<br><span style="font-size:12px">请在渠道「历史推广记录」中填写「讲师/售前」字段</span></div>`;
     } else {
-      const maxSp = speakerEntries[0][1].count;
-      speakerChartEl.innerHTML = speakerEntries.slice(0, 8).map(([name, stat], i) => `
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-            <span style="font-size:13px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
-            <span style="font-size:12px;color:var(--text-muted)">${stat.channels.size}个渠道·<span style="font-weight:700;color:${spColors[i%spColors.length]}">${stat.count}次</span></span>
-          </div>
-          <div style="background:#f1f5f9;border-radius:4px;height:10px;overflow:hidden">
-            <div style="height:100%;border-radius:4px;background:${spColors[i%spColors.length]};width:${Math.round(stat.count/maxSp*100)}%;transition:width .5s"></div>
-          </div>
-          ${stat.types.size > 0 ? `<div style="margin-top:2px;display:flex;gap:4px;flex-wrap:wrap">${[...stat.types].slice(0,3).map(t=>`<span style="font-size:10px;padding:1px 5px;background:#f1f5f9;border-radius:3px;color:#64748b">${t}</span>`).join('')}</div>` : ''}
-        </div>
-      `).join('');
+      const maxTotal = speakerEntries[0][1].total;
+      // 图例
+      const legendHtml = allTypes.length > 1 ? `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          ${allTypes.map(t => `<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)">
+            <span style="width:8px;height:8px;border-radius:2px;background:${typeColorMap[t]};flex-shrink:0"></span>${t}
+          </span>`).join('')}
+        </div>` : '';
+      const rowsHtml = speakerEntries.slice(0, 8).map(([name, stat]) => {
+        // 分段柱状图：每种类型占一段，宽度按比例
+        const segments = Object.entries(stat.types)
+          .sort((a, b) => b[1] - a[1])
+          .map(([t, cnt]) => {
+            const pct = (cnt / maxTotal * 100).toFixed(1);
+            return `<div title="${t}: ${cnt}次" style="height:100%;width:${pct}%;background:${typeColorMap[t]};transition:width .5s;flex-shrink:0"></div>`;
+          }).join('');
+        // 类型标签
+        const typeTags = Object.entries(stat.types).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([t, cnt]) =>
+          `<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:${typeColorMap[t]}22;color:${typeColorMap[t]};border:1px solid ${typeColorMap[t]}44;font-weight:600">${t} ×${cnt}</span>`
+        ).join('');
+        return `
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+              <span style="font-size:13px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+              <span style="font-size:12px;color:var(--text-muted)">共 <span style="font-weight:700;color:#4f46e5">${stat.total}</span> 次推广</span>
+            </div>
+            <div style="background:#f1f5f9;border-radius:4px;height:10px;overflow:hidden;display:flex">
+              ${segments}
+            </div>
+            <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${typeTags}</div>
+          </div>`;
+      }).join('');
+      speakerChartEl.innerHTML = legendHtml + rowsHtml;
     }
   }
 
@@ -2801,7 +2941,7 @@ function openDetail(id) {
   const a = activities.find(x=>String(x.id)===String(id));
   if(!a) { console.error('openDetail: 找不到活动 id=', id); return; }
   currentDetailId = String(id);
-  currentFileStage = a.status==='策划中'?'plan': a.status==='执行中'?'exec':'review';
+  currentFileStage = 'docs';
   document.getElementById('detail-title').textContent = a.name;
   const btn = document.getElementById('detail-action-btn');
   btn.disabled = false;
@@ -3018,7 +3158,7 @@ function removeActualCost(actId, idx) {
 
 // ===== 文件面板渲染 =====
 function renderFilePanel(activityId) {
-  const stages = [{key:'plan',label:'📋 前期策划'},{key:'exec',label:'⚡ 中期执行'},{key:'review',label:'🔍 后期复盘'}];
+  const stages = [{key:'docs',label:'📁 资料留存'},{key:'photos',label:'📷 照片'}];
   const files = getFiles(activityId, currentFileStage);
   return `
     <div class="file-stage-tabs">
@@ -3059,26 +3199,31 @@ function renderFileList(activityId, stage) {
   }
   return files.map(f => `
     <div class="file-item" id="fitem-${f.id}">
-      ${f.type.startsWith('image/') && f.dataUrl
-        ? `<img src="${f.dataUrl}" class="img-thumb" alt="${f.name}">`
+      ${f.type.startsWith('image/') && (f.dataUrl || f.cloudUrl)
+        ? `<img src="${f.dataUrl || f.cloudUrl.split('?')[0]}" class="img-thumb" alt="${f.name}">`
         : `<div class="file-item-icon">${fileIcon(f.type, f.name)}</div>`
       }
       <div class="file-item-body">
         <div class="file-item-name" title="${f.name}">${f.name}</div>
         <div class="file-item-meta">${formatSize(f.size)} · ${f.uploadTime}
           <span class="file-item-stage ${stage}">${stageLabel[stage]}</span>
+          ${!f.cloudUrl && f.dataUrl ? `<span style="color:#f59e0b;font-size:11px;font-weight:600;margin-left:4px">⚠️ 未上传，刷新后丢失</span>` : ''}
         </div>
       </div>
       <div class="file-item-actions">
         ${f.type.startsWith('image/') ? `<button class="btn btn-outline btn-sm" onclick="previewFile('${f.id}',${activityId},'${stage}')">👁 预览</button>` : ''}
         <button class="btn btn-outline btn-sm" onclick="downloadFile('${f.id}',${activityId},'${stage}')">⬇</button>
-        ${!f.cloudUploaded ? `
+        ${!f.cloudUrl && f.dataUrl ? `
           <button class="btn btn-primary btn-sm" onclick="uploadFileToCloud('${f.id}',${activityId},'${stage}')" id="upload-btn-${f.id}">
             ☁️ 上传云端
           </button>
-        ` : `
+        ` : f.cloudUrl ? `
           <span class="cloud-status" style="color:var(--success);font-size:12px;font-weight:600;">
             ✅ 已上传
+          </span>
+        ` : `
+          <span class="cloud-status" style="color:var(--text-muted);font-size:12px;">
+            云端文件
           </span>
         `}
         <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca" onclick="removeFile('${f.id}',${activityId},'${stage}')">✕</button>
@@ -3144,8 +3289,8 @@ function handleFiles(files, activityId) {
 function getCloudUploadStats(activityId, stage) {
   const files = getFiles(activityId, stage);
   const total = files.length;
-  const uploaded = files.filter(f => f.cloudUploaded).length;
-  const pending = total - uploaded;
+  const uploaded = files.filter(f => f.cloudUrl).length;  // 只要有cloudUrl就算已上传
+  const pendingUpload = files.filter(f => !f.cloudUrl && f.dataUrl).length; // 有dataUrl但未上传的
   
   if (total === 0) return '';
   
@@ -3155,11 +3300,11 @@ function getCloudUploadStats(activityId, stage) {
         <strong>云存储状态：</strong>
         <span style="color:var(--success);">✅ ${uploaded} 已上传</span>
         <span style="margin:0 8px;color:var(--border);">|</span>
-        <span style="color:var(--warning);">⏳ ${pending} 待上传</span>
+        <span style="color:${pendingUpload > 0 ? 'var(--warning)' : 'var(--text-muted)'};">⏳ ${pendingUpload} 待上传</span>
       </div>
-      ${pending > 0 ? `
+      ${pendingUpload > 0 ? `
         <button class="btn btn-primary btn-sm" onclick="uploadAllFilesToCloud(${activityId},'${stage}')" id="upload-all-btn-${activityId}-${stage}">
-          ☁️ 一键上传云端 (${pending})
+          ☁️ 一键上传云端 (${pendingUpload})
         </button>
       ` : ''}
     </div>
@@ -3219,34 +3364,25 @@ async function uploadFileToCloud(fileId, activityId, stage) {
     // 标记为已上传
     file.cloudUploaded = true;
     file.cloudUploadTime = new Date().toISOString();
-    file.cloudUrl = req.url;  // 直接用请求 URL（已包含 encode）
+    // 存静态网站域名的永久公有读直链（cos-website 域名不触发浏览器下载，且不需要签名）
+    const encodedCosKey = cosKey.split('/').map(seg => encodeURIComponent(seg)).join('/');
+    const cfg2 = window.MarketActivityCOS.adapter.getConfig?.() || {};
+    file.cloudUrl = `https://${cfg2.bucket}.cos-website.${cfg2.region}.myqcloud.com/${encodedCosKey}`;
+    // 上传成功后立即清除内存中的 dataUrl，释放内存 + 避免 localStorage 超配额
+    delete file.dataUrl;
+
+    // 保存到本地 + 同步到 COS（await 确保 cloudUploaded/cloudUrl 已写入再同步）
+    await saveFileStore(fileStore);
+    console.log(`✅ 文件 ${file.name} 已成功上传到腾讯云 COS`);
     
-    // 保存到本地存储
-    saveFileStore(fileStore);
-    
-    // 尝试同步到云端
-    try {
-      await syncData();
-      console.log(`✅ 文件 ${file.name} 已成功上传到腾讯云 COS`);
-    } catch (syncErr) {
-      console.warn('⚠️ 元数据同步失败，但文件已标记为已上传');
-    }
-    
-    // 刷新界面
-    const listEl = document.getElementById(`file-list-${activityId}`);
-    if (listEl) listEl.innerHTML = renderFileList(activityId, currentFileStage);
-    
-    // 刷新统计信息
+    // 刷新界面（重新渲染整个文件面板，最安全，避免 DOM 节点不一致报错）
     const panelEl = document.getElementById(`file-panel-${activityId}`);
     if (panelEl) {
-      const stats = getCloudUploadStats(activityId, currentFileStage);
-      const statsEl = panelEl.querySelector('.cloud-upload-stats');
-      if (statsEl) {
-        const newStatsEl = document.createElement('div');
-        newStatsEl.innerHTML = stats;
-        panelEl.insertBefore(newStatsEl, statsEl);
-        statsEl.remove();
-      }
+      panelEl.innerHTML = renderFilePanel(activityId);
+    } else {
+      // 降级：只刷新列表
+      const listEl = document.getElementById(`file-list-${activityId}`);
+      if (listEl) listEl.innerHTML = renderFileList(activityId, currentFileStage);
     }
     
   } catch (error) {
@@ -3265,7 +3401,7 @@ async function uploadAllFilesToCloud(activityId, stage) {
   const key = String(activityId);
   if (!fileStore[key] || !fileStore[key][stage]) return;
   
-  const files = fileStore[key][stage].filter(f => !f.cloudUploaded);
+  const files = fileStore[key][stage].filter(f => !f.cloudUploaded && f.dataUrl);
   if (files.length === 0) {
     alert('没有需要上传的文件');
     return;
@@ -3314,15 +3450,30 @@ function downloadFile(fileId, activityId, stage) {
   const f = getFiles(activityId, stage).find(x=>x.id===fileId);
   if(!f) return;
   const a = document.createElement('a');
-  a.href = f.dataUrl; a.download = f.name; a.click();
+  if (f.cloudUrl) {
+    // 优先用云端直链下载（只要 cloudUrl 有值即可，不依赖 cloudUploaded 字段）
+    // cloudUrl 已存 cos-website 永久公有读直链，兼容旧数据的签名参数去掉
+    a.href = f.cloudUrl.split('?')[0];
+    a.target = '_blank';
+  } else if (f.dataUrl) {
+    // 降级：本地 base64
+    a.href = f.dataUrl;
+  } else {
+    alert('文件内容已不在本地，请重新上传');
+    return;
+  }
+  a.download = f.name;
+  a.click();
 }
 
 function previewFile(fileId, activityId, stage) {
   const f = getFiles(activityId, stage).find(x=>x.id===fileId);
   if(!f) return;
   document.getElementById('file-preview-title').textContent = f.name;
-  document.getElementById('file-preview-body').innerHTML = f.type.startsWith('image/')
-    ? `<img src="${f.dataUrl}" class="file-preview-img" alt="${f.name}">`
+  // 图片预览：优先本地 dataUrl，次选云端直链（B设备没有 dataUrl 时）
+  const imgSrc = f.dataUrl || (f.cloudUrl ? f.cloudUrl.split('?')[0] : null);
+  document.getElementById('file-preview-body').innerHTML = (f.type.startsWith('image/') && imgSrc)
+    ? `<img src="${imgSrc}" class="file-preview-img" alt="${f.name}">`
     : `<div style="padding:30px;color:var(--text-muted)">该文件类型不支持在线预览，请下载后查看</div>`;
   document.getElementById('file-download-btn').onclick = () => downloadFile(fileId, activityId, stage);
   showModal('modal-file-preview');
@@ -3938,29 +4089,31 @@ function updateRoleDisplay() {
   }
 }
 
-// ===== 页面启动时静默同步 sys_config（自动配置COS，新设备无需手动填写）=====
-// 直接用公有读URL拉取，不依赖 adapter 是否已配置
+// ===== 页面启动时静默同步 sys_config（自动配置COS和账号，新设备无需任何手动操作）=====
+// 每次启动都拉取，确保账号密码始终是最新的云端版本
 (function() {
-  const localCfg = (() => { try { return JSON.parse(localStorage.getItem('cos_config') || '{}'); } catch(e) { return {}; } })();
-  if (!localCfg.secretId || !localCfg.secretKey) {
-    // 本地没有完整 COS 配置，立即从公有读地址拉取
-    fetch(_DEFAULT_SYS_CONFIG_URL + '?t=' + Date.now(), { signal: AbortSignal.timeout(8000) })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (!data) return;
-        if (data.cosConfig && data.cosConfig.secretId && data.cosConfig.secretKey) {
+  fetch(_DEFAULT_SYS_CONFIG_URL + '?t=' + Date.now(), { signal: AbortSignal.timeout(8000) })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data) return;
+      // 自动同步 COS 配置（新设备无需手动填写）
+      if (data.cosConfig && data.cosConfig.secretId && data.cosConfig.secretKey) {
+        const localCfg = (() => { try { return JSON.parse(localStorage.getItem('cos_config') || '{}'); } catch(e) { return {}; } })();
+        if (!localCfg.secretId || !localCfg.secretKey) {
           localStorage.setItem('cos_config', JSON.stringify(data.cosConfig));
           if (window.MarketActivityCOS?.adapter?.configure) {
             window.MarketActivityCOS.adapter.configure(data.cosConfig);
             console.log('🚀 新设备自动从云端获取 COS 配置，无需手动填写');
           }
         }
-        if (data.users && Array.isArray(data.users) && data.users.length > 0) {
-          localStorage.setItem('mcm_users', JSON.stringify(data.users));
-        }
-      })
-      .catch(() => {});
-  }
+      }
+      // 无条件同步账号列表（确保任何设备都能用最新账号密码登录）
+      if (data.users && Array.isArray(data.users) && data.users.length > 0) {
+        localStorage.setItem('mcm_users', JSON.stringify(data.users));
+        console.log('✅ 账号列表已从云端自动同步，共', data.users.length, '个账号');
+      }
+    })
+    .catch(() => {});
 })();
 
 // ===== 登录检测（页面加载时自动执行）=====
@@ -4007,9 +4160,25 @@ function doLogin() {
     return;
   }
 
-  if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '🔄 同步中…'; }
-  fetchSysConfigFromCOS().then(synced => {
+  if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = '🔄 验证中…'; }
+  // 先从COS拉最新账号（超时8秒）
+  const syncPromise = fetchSysConfigFromCOS().catch(() => false);
+  const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 8000));
+  Promise.race([syncPromise, timeoutPromise]).then(syncResult => {
     if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
+
+    const hasLocalUsers = (() => {
+      try { const u = JSON.parse(localStorage.getItem('mcm_users') || '[]'); return Array.isArray(u) && u.length > 0; } catch(e) { return false; }
+    })();
+
+    // 如果COS拉取失败且本地也没有账号数据，提示网络问题
+    if (syncResult !== true && !hasLocalUsers) {
+      if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '⚠️ 无法连接云端，请检查网络后重试'; }
+      if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登 录'; }
+      const syncArea = document.getElementById('login-sync-area');
+      if (syncArea) syncArea.style.display = 'block';
+      return;
+    }
 
     const users   = getUsers();
     const matched = users.find(u => u.username === username && u.password === password && u.active !== false);
@@ -4029,11 +4198,6 @@ function doLogin() {
     } else {
       if (errorEl) { errorEl.style.display = 'block'; errorEl.textContent = '账号或密码错误，请重新输入'; }
       if (pwdInput) { pwdInput.value = ''; pwdInput.focus(); }
-      const hasCosConfig = (() => { try { const c = JSON.parse(localStorage.getItem('cos_config')||'{}'); return !!(c.secretId && c.secretKey); } catch(e) { return false; } })();
-      if (!synced && !hasCosConfig) {
-        const syncArea = document.getElementById('login-sync-area');
-        if (syncArea) syncArea.style.display = 'block';
-      }
     }
   });
 }
@@ -5013,10 +5177,13 @@ function importChannelExcelInPanel(input, activityId) {
         panelEl.innerHTML = renderChannelLinkPanel(activityId);
         // 顶部显示导入结果提示
         const notice = document.createElement('div');
-        notice.style.cssText = 'padding:10px 14px;border-radius:8px;background:#d1fae5;color:#065f46;font-size:13px;margin-bottom:12px';
-        notice.textContent = `✅ 导入成功！新增 ${result.added} 家，更新 ${result.updated} 家渠道`;
+        const cosOk = result.cosOk;
+        notice.style.cssText = `padding:10px 14px;border-radius:8px;background:${cosOk ? '#d1fae5' : '#fef9c3'};color:${cosOk ? '#065f46' : '#92400e'};font-size:13px;margin-bottom:12px`;
+        notice.textContent = cosOk
+          ? `✅ 导入并同步云端成功！新增 ${result.added} 家，更新 ${result.updated} 家渠道`
+          : `⚠️ 导入成功但云端同步失败，数据已存本地，B设备暂不可见，请检查COS配置`;
         panelEl.insertBefore(notice, panelEl.firstChild);
-        setTimeout(() => notice.remove(), 4000);
+        setTimeout(() => notice.remove(), cosOk ? 3000 : 8000);
       }
     } else if (err) {
       alert('导入失败：' + err.message);
@@ -5233,10 +5400,14 @@ function loadChannels() {
     const raw = localStorage.getItem('mcm_channels');
     if (raw) channels = JSON.parse(raw);
   } catch(e) {}
+  // 确保 channels 一定是数组（防止 localStorage 损坏或格式异常）
+  if (!Array.isArray(channels)) channels = [];
 }
 
 function saveChannels() {
-  localStorage.setItem('mcm_channels', JSON.stringify(channels));
+  try { localStorage.setItem('mcm_channels', JSON.stringify(channels)); } catch(e) {
+    console.warn('⚠️ mcm_channels localStorage 写入失败:', e.message);
+  }
   // 异步同步到 COS（附着在主数据里）
   syncChannelsToCOS();
 }
@@ -5249,7 +5420,24 @@ async function syncChannelsToCOS() {
     const result = await adapter.saveChannelsData(channels);
     if (result.success) console.log('✅ 渠道数据已同步到 COS channels.json');
     else console.warn('⚠️ 渠道COS同步失败:', result.message);
-  } catch(e) { console.log('渠道同步失败:', e.message); }
+    return result;
+  } catch(e) { console.log('渠道同步失败:', e.message); return { success: false, message: e.message }; }
+}
+
+async function forceSyncChannelsToCOS() {
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 同步中…'; }
+  const resultEl = document.getElementById('channel-import-result');
+  if (resultEl) { resultEl.style.display = 'block'; resultEl.style.background = '#eff6ff'; resultEl.style.color = '#1e40af'; resultEl.textContent = `⏳ 正在将 ${channels.length} 家渠道同步到云端…`; }
+  const res = await syncChannelsToCOS();
+  if (btn) { btn.disabled = false; btn.textContent = '☁️ 强制同步'; }
+  if (resultEl) {
+    resultEl.style.background = res?.success ? '#d1fae5' : '#fee2e2';
+    resultEl.style.color = res?.success ? '#065f46' : '#991b1b';
+    resultEl.textContent = res?.success
+      ? `✅ 同步成功！共 ${channels.length} 家渠道已同步到云端，B设备刷新后可见`
+      : `❌ 同步失败：${res?.message || '未知错误'}，请检查 COS 配置`;
+  }
 }
 
 function renderChannelsPage() {
@@ -5591,7 +5779,7 @@ function exportChannelCsv() {
 
 // ===== Excel 导入（纯 JS 解析，无需外部库） =====
 // 支持 .csv（直接解析）和 .xlsx/.xls（读取 ZIP 内 SharedStrings + sheet）
-async function importChannelExcel(input, callback) {
+async function importChannelExcel(input, callback) {  // async: 等待 COS 同步结果
   const file = input.files[0];
   if (!file) return;
   input.value = '';
@@ -5648,18 +5836,32 @@ async function importChannelExcel(input, callback) {
       else { channels.push(nc); added++; }
     });
 
-    saveChannels();
+    // 先保存本地 + 刷新界面
+    try { localStorage.setItem('mcm_channels', JSON.stringify(channels)); } catch(e) {}
     updateChannelFilters();
     renderChannelList();
 
-    const msg = `✅ 导入成功！新增 ${added} 家，更新 ${updated} 家。字段映射：${Object.entries(colMap).filter(([,v])=>v!==-1).map(([k])=>k).join('、')}`;
+    const fieldList = Object.entries(colMap).filter(([,v])=>v!==-1).map(([k])=>k).join('、');
+    const preMsg = `✅ 解析完成！新增 ${added} 家，更新 ${updated} 家。正在同步到云端…`;
     if (resultEl) {
-      resultEl.style.background = '#d1fae5';
-      resultEl.style.color = '#065f46';
-      resultEl.textContent = msg;
+      resultEl.style.background = '#eff6ff';
+      resultEl.style.color = '#1e40af';
+      resultEl.textContent = preMsg;
+    }
+
+    // 等待 COS 同步完成，给出明确结果
+    const cosResult = await syncChannelsToCOS();
+    const cosOk = cosResult?.success;
+    const finalMsg = cosOk
+      ? `✅ 导入并同步成功！新增 ${added} 家，更新 ${updated} 家。字段：${fieldList}`
+      : `⚠️ 导入成功但云端同步失败（${cosResult?.message||'未知'}），数据已存本地，请检查 COS 配置后重试`;
+    if (resultEl) {
+      resultEl.style.background = cosOk ? '#d1fae5' : '#fef9c3';
+      resultEl.style.color = cosOk ? '#065f46' : '#92400e';
+      resultEl.textContent = finalMsg;
     }
     // 执行回调（如果有）
-    if (typeof callback === 'function') callback(null, {added, updated});
+    if (typeof callback === 'function') callback(null, {added, updated, cosOk});
   } catch(e) {
     if (resultEl) {
       resultEl.style.background = '#fee2e2';
