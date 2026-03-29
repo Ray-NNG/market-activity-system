@@ -927,7 +927,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-16</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-17</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1013,14 +1013,26 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="grid-2 section-gap">
         <div class="card">
           <div class="card-header"><div class="card-title">💰 费用支出概况</div></div>
-          <div style="text-align:center;padding:8px 0">
-            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px">本季度总支出</div>
-            <div style="font-size:32px;font-weight:700;color:var(--primary)" id="total-spent">¥ 0</div>
-            <div style="font-size:13px;color:var(--text-muted);margin-top:4px">
-              总部：<span id="hq-spent">¥ 0</span> &nbsp;·&nbsp; 子公司：<span id="sub-spent">¥ 0</span>
+          <!-- 顶部三列：预算 / 实际 / 差额 -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+            <div style="text-align:center;background:#f0f9ff;border-radius:10px;padding:10px 6px;border:1px solid #bae6fd">
+              <div style="font-size:11px;color:#0369a1;font-weight:600;margin-bottom:4px">📋 预算总额</div>
+              <div style="font-size:20px;font-weight:700;color:#0369a1" id="total-budget-disp">¥ 0</div>
+              <div style="font-size:10px;color:#64748b;margin-top:2px">总部 <span id="hq-budget-disp">¥0</span></div>
+            </div>
+            <div style="text-align:center;background:#fef9f0;border-radius:10px;padding:10px 6px;border:1px solid #fcd34d">
+              <div style="font-size:11px;color:#b45309;font-weight:600;margin-bottom:4px">💸 实际支出</div>
+              <div style="font-size:20px;font-weight:700;color:#d97706" id="total-spent">¥ 0</div>
+              <div style="font-size:10px;color:#64748b;margin-top:2px">总部 <span id="hq-spent">¥0</span></div>
+            </div>
+            <div style="text-align:center;background:#f0fdf4;border-radius:10px;padding:10px 6px;border:1px solid #bbf7d0" id="diff-card-bg">
+              <div style="font-size:11px;color:#15803d;font-weight:600;margin-bottom:4px" id="diff-label">💚 节余</div>
+              <div style="font-size:20px;font-weight:700;color:#16a34a" id="total-diff">¥ 0</div>
+              <div style="font-size:10px;color:#64748b;margin-top:2px">执行率 <span id="budget-exec-rate">--</span></div>
             </div>
           </div>
-          <div class="mt-16" style="display:flex;flex-direction:column;gap:8px;" id="budget-breakdown">
+          <!-- 活动明细列表 -->
+          <div style="display:flex;flex-direction:column;gap:6px;" id="budget-breakdown">
             <!-- 动态加载支出明细 -->
           </div>
         </div>
@@ -1694,7 +1706,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.29-16';
+const APP_VERSION = 'v2026.03.29-17';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -4602,64 +4614,106 @@ function savePasswordFromSettings() {
 
 // ===== 费用支出统计更新 =====
 function updateBudgetStats() {
-  // 汇总所有活动的支出，按总部/子公司拆分
-  let totalSpent = 0;
-  let hqSpent = 0;
-  let subSpent = 0;
+  let totalBudget = 0, hqBudget = 0;
+  let totalSpent = 0, hqSpent = 0;
 
-  activities.forEach(a => {
-    if (a.budgetItems && a.budgetItems.length > 0) {
-      a.budgetItems.forEach(item => {
-        const amt = Number(item.amount) || 0;
-        totalSpent += amt;
-        if (item.source === 'hq') hqSpent += amt;
-        else subSpent += amt;
-      });
-    } else {
-      // 兼容旧数据：活动有 spent 字段但没有 budgetItems
-      totalSpent += Number(a.spent) || 0;
-    }
+  // 计算每个活动的预算和实际支出
+  const actData = activities.map(a => {
+    // --- 预算 ---
+    const allBudgetItems = [...(a.budgetItems||[])];
+    if (Number(a.setupFee) > 0) allBudgetItems.push({ name:'售后搭建', amount: a.setupFee, source: a.setupSource||'hq' });
+    if (Number(a.logisticsFee) > 0) allBudgetItems.push({ name:'物流运输', amount: a.logisticsFee, source: a.logisticsSource||'subsidiary' });
+
+    let aBudget = 0, aBudgetHq = 0;
+    allBudgetItems.forEach(item => {
+      const amt = Number(item.amount) || 0;
+      aBudget += amt;
+      if (item.source === 'hq') aBudgetHq += amt;
+    });
+    // 兼容旧数据（无 budgetItems 时用 spent 字段作预算）
+    if (aBudget === 0 && Number(a.spent) > 0) { aBudget = Number(a.spent); aBudgetHq = aBudget; }
+
+    // --- 实际花费 ---
+    let aActual = 0, aActualHq = 0;
+    (a.actualCosts||[]).forEach(c => {
+      const amt = Number(c.amount) || 0;
+      aActual += amt;
+      if ((c.source||'hq') === 'hq') aActualHq += amt;
+    });
+
+    totalBudget += aBudget;
+    hqBudget += aBudgetHq;
+    totalSpent += aActual;
+    hqSpent += aActualHq;
+
+    return { a, aBudget, aActual };
   });
 
-  // 更新顶部汇总
+  // 顶部三卡
+  document.getElementById('total-budget-disp').textContent = `¥ ${totalBudget.toLocaleString()}`;
+  document.getElementById('hq-budget-disp').textContent = `¥ ${hqBudget.toLocaleString()}`;
   document.getElementById('total-spent').textContent = `¥ ${totalSpent.toLocaleString()}`;
   document.getElementById('hq-spent').textContent = `¥ ${hqSpent.toLocaleString()}`;
-  document.getElementById('sub-spent').textContent = `¥ ${subSpent.toLocaleString()}`;
 
-  // 动态生成支出明细（按活动列出）
+  const diff = totalBudget - totalSpent;
+  const execRate = totalBudget > 0 ? Math.round(totalSpent / totalBudget * 100) : 0;
+  const diffEl = document.getElementById('total-diff');
+  const diffLabel = document.getElementById('diff-label');
+  const diffCard = document.getElementById('diff-card-bg');
+  document.getElementById('budget-exec-rate').textContent = totalBudget > 0 ? `${execRate}%` : '--';
+  if (diff >= 0) {
+    diffEl.textContent = `¥ ${diff.toLocaleString()}`;
+    diffEl.style.color = '#16a34a';
+    diffLabel.textContent = '💚 节余';
+    diffLabel.style.color = '#15803d';
+    diffCard.style.background = '#f0fdf4';
+    diffCard.style.borderColor = '#bbf7d0';
+  } else {
+    diffEl.textContent = `¥ ${Math.abs(diff).toLocaleString()}`;
+    diffEl.style.color = '#dc2626';
+    diffLabel.textContent = '🔴 超支';
+    diffLabel.style.color = '#b91c1c';
+    diffCard.style.background = '#fff1f2';
+    diffCard.style.borderColor = '#fecaca';
+  }
+
+  // 明细列表（只显示有预算或有实际支出的活动）
   const breakdown = document.getElementById('budget-breakdown');
-  if (activities.length > 0) {
-    const rows = activities.map(a => {
-      let actSpent = 0;
-      let actHq = 0;
-      let actSub = 0;
-      if (a.budgetItems && a.budgetItems.length > 0) {
-        a.budgetItems.forEach(item => {
-          const amt = Number(item.amount) || 0;
-          actSpent += amt;
-          if (item.source === 'hq') actHq += amt;
-          else actSub += amt;
-        });
-      } else {
-        actSpent = Number(a.spent) || 0;
-      }
-      if (actSpent === 0) return '';
+  const rows = actData
+    .filter(({aBudget, aActual}) => aBudget > 0 || aActual > 0)
+    .map(({a, aBudget, aActual}) => {
+      const hasActual = aActual > 0;
+      const hasReview = a.status === 'done' || (a.actualCosts && a.actualCosts.length > 0);
+      const rowDiff = aBudget - aActual;
+      const rowRate = aBudget > 0 ? Math.min(Math.round(aActual / aBudget * 100), 999) : 0;
+      const barW = aBudget > 0 ? Math.min(aActual / aBudget * 100, 100) : 0;
+      const barColor = rowDiff >= 0 ? '#22c55e' : '#ef4444';
+      const diffStr = hasActual
+        ? (rowDiff >= 0
+            ? `<span style="color:#16a34a;font-size:11px">节余 ¥${rowDiff.toLocaleString()}</span>`
+            : `<span style="color:#dc2626;font-size:11px">超支 ¥${Math.abs(rowDiff).toLocaleString()}</span>`)
+        : `<span style="color:#94a3b8;font-size:11px">未填写实际</span>`;
+
       return `
-        <div style="padding:8px 0;border-bottom:1px solid var(--border)">
-          <div class="flex-between text-sm fw-600" style="margin-bottom:3px">
-            <span style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name}">${a.name}</span>
-            <span style="color:var(--primary)">¥ ${actSpent.toLocaleString()}</span>
+        <div style="padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span style="font-size:13px;font-weight:600;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${a.name}">${a.name}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--primary)">¥ ${aBudget.toLocaleString()}</span>
           </div>
-          <div style="font-size:11px;color:var(--text-muted)">
-            总部 ¥ ${actHq.toLocaleString()} &nbsp;·&nbsp; 子公司 ¥ ${actSub.toLocaleString()}
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:11px;color:#64748b">预算 ¥${aBudget.toLocaleString()}&nbsp;·&nbsp;实际 ${hasActual ? '¥'+aActual.toLocaleString() : '<span style=\'color:#94a3b8\'>--</span>'}</span>
+            ${diffStr}
           </div>
+          ${aBudget > 0 ? `
+          <div style="position:relative;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden">
+            <div style="position:absolute;left:0;top:0;height:100%;width:${barW}%;background:${barColor};border-radius:3px;transition:width .4s"></div>
+          </div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:3px;text-align:right">执行率 ${hasActual ? rowRate+'%' : '--'}</div>
+          ` : ''}
         </div>
       `;
-    }).filter(Boolean).join('');
-    breakdown.innerHTML = rows || '<div class="text-sm" style="color:var(--text-muted);text-align:center;padding:16px">暂无支出数据</div>';
-  } else {
-    breakdown.innerHTML = '<div class="text-sm" style="color:var(--text-muted);text-align:center;padding:16px">暂无支出数据</div>';
-  }
+    }).join('');
+  breakdown.innerHTML = rows || '<div style="color:var(--text-muted);text-align:center;padding:16px;font-size:13px">暂无支出数据</div>';
 }
 
 // ===== 日历渲染 =====
