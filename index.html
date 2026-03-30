@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-08</title>
+<title>市场活动全流程管理系统 v2026.03.30-09</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -931,7 +931,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-08</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-09</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1814,7 +1814,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-08';
+const APP_VERSION = 'v2026.03.30-09';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6814,15 +6814,26 @@ async function importChannelExcel(input, callback) {  // async: 等待 COS 同�
 
     if (!rows.length) throw new Error('文件中没有有效数据');
 
-    // 自动识别列（模糊匹配）
+    // 自动识别列（先看是否是标准模板，再用智能识别）
     const headers = rows[0].map(h => String(h || '').trim());
     const colMap = autoDetectColumns(headers);
+    
+    // 调试：输出识别到的列映射
+    console.log('[import] headers:', headers);
+    console.log('[import] colMap:', colMap);
 
     const imported = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       const name = colMap.name !== -1 ? String(row[colMap.name]||'').trim() : '';
       if (!name) continue;
+      // 加强过滤：公司名称不能是背景描述（如包含"主营："、"年流水"、"年贡献"等）
+      const isLikelyBackground = (name) => {
+        const lower = name.toLowerCase();
+        const backgroundMarkers = ['主营：','主营:','主要：','主要:','年流水','年贡献','年销售额','年营收','合作','专注','主营产品','主营业务','业务范围','主要客户','客户群体','客户分布'];
+        return backgroundMarkers.some(m => lower.includes(m.toLowerCase()));
+      };
+      if (isLikelyBackground(name) || name.length < 2 || /^[\d\s\p{P}]+$/u.test(name)) continue;
       imported.push({
         id:         'ch_' + Date.now() + '_' + i,
         name,
@@ -6889,7 +6900,7 @@ function autoDetectColumns(headers) {
   // 模糊匹配：header 包含某个词（兜底）
   // 注意：'渠道' 不能作为 name 的模糊词，否则会把'渠道背景'误识别为名称
   const matchers = {
-    name:       { exact: ['渠道名称','公司名称','单位名称','名称','渠道'], fuzzy: ['channel name','所在公司','公司','单位','机构','企业','organization','company'] },
+    name:       { exact: ['渠道名称','公司名称','单位名称','名称'], fuzzy: ['channel name','所在公司','公司','单位','机构','企业','organization','company'] },
     tier:       { exact: ['渠道分层','分层','级别'], fuzzy: ['tier','level'] },
     city:       { exact: ['所在地市','地市','城市'], fuzzy: ['city'] },
     district:   { exact: ['区/县','区县'], fuzzy: ['district','county'] },
@@ -6900,25 +6911,53 @@ function autoDetectColumns(headers) {
     history:    { exact: ['历史推广记录','历史记录','推广记录'], fuzzy: ['history'] },
     feedback:   { exact: ['商机反馈','商机'], fuzzy: ['feedback'] }
   };
+  
+  // 负向匹配：包含这些词的列绝对不能当name
+  const nameNegativePatterns = ['背景','主营','流水','贡献','合作','专注','产品','业务','客户','分布','范围','销售额','营收','时长','经验','主要','重点','核心','潜力','目标'];
   const result = {};
   const usedIdx = new Set(); // 防止同一列被两个字段抢占
-  // 第一轮：精确匹配
+  
+  // 第一轮：精确匹配（排除负向词列）
   Object.entries(matchers).forEach(([key, {exact}]) => {
-    const idx = headers.findIndex((h, i) =>
-      !usedIdx.has(i) && exact.some(p => h.trim().toLowerCase() === p.toLowerCase())
-    );
+    const idx = headers.findIndex((h, i) => {
+      if (usedIdx.has(i)) return false;
+      const hLow = h.trim().toLowerCase();
+      const matched = exact.some(p => hLow === p.toLowerCase());
+      // 关键：name 列不能包含负向词（如'背景'、'主营'）
+      if (key === 'name' && matched) {
+        const negativeHit = nameNegativePatterns.some(np => hLow.includes(np.toLowerCase()));
+        if (negativeHit) return false;
+      }
+      return matched;
+    });
     result[key] = idx;
     if (idx !== -1) usedIdx.add(idx);
   });
+  
   // 第二轮：模糊匹配（仅未匹配到的字段）
   Object.entries(matchers).forEach(([key, {fuzzy}]) => {
     if (result[key] !== -1) return;
-    const idx = headers.findIndex((h, i) =>
-      !usedIdx.has(i) && fuzzy.some(p => h.toLowerCase().includes(p.toLowerCase()))
-    );
+    const idx = headers.findIndex((h, i) => {
+      if (usedIdx.has(i)) return false;
+      const hLow = h.trim().toLowerCase();
+      const matched = fuzzy.some(p => hLow.includes(p.toLowerCase()));
+      // name 模糊匹配也要排除负向词
+      if (key === 'name' && matched) {
+        const negativeHit = nameNegativePatterns.some(np => hLow.includes(np.toLowerCase()));
+        if (negativeHit) return false;
+      }
+      return matched;
+    });
     result[key] = idx;
     if (idx !== -1) usedIdx.add(idx);
   });
+  
+  // 兜底：如果没识别到name列，默认第一列是公司名称
+  if (result.name === -1 && headers.length > 0) {
+    result.name = 0;
+    usedIdx.add(0);
+  }
+  
   return result;
 }
 
