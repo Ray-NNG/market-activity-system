@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-18</title>
+<title>市场活动全流程管理系统 v2026.03.30-19</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1056,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-17</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-19</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-18';
+const APP_VERSION = 'v2026.03.30-19';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -7862,6 +7862,35 @@ const _today = new Date();
 calYear = _today.getFullYear();
 calMonth = _today.getMonth();
 loadChannels(); // 加载本地渠道数据
+
+// ── 一次性迁移：修复已有渠道数据中地市名称缺少「市」后缀的问题 ──────────
+(function fixChannelCityNames() {
+  const MIGRATE_KEY = 'mcm_city_fix_v1';
+  if (localStorage.getItem(MIGRATE_KEY)) return; // 已执行过，跳过
+
+  const cityKeys = Object.keys(typeof GX_DISTRICTS !== 'undefined' ? GX_DISTRICTS : {});
+  const normalizeCity = (raw) => {
+    if (!raw) return raw;
+    if (/[市县区州]$/.test(raw)) return raw; // 已有后缀，不处理
+    const matched = cityKeys.find(c => c.replace(/市$/, '') === raw || c === raw + '市');
+    if (matched) return matched;
+    return raw + '市'; // 默认补「市」
+  };
+
+  let changed = 0;
+  channels = channels.map(ch => {
+    const fixed = normalizeCity(ch.city);
+    if (fixed !== ch.city) { changed++; return { ...ch, city: fixed }; }
+    return ch;
+  });
+
+  if (changed > 0) {
+    saveChannels(); // 保存本地 + 同步 COS
+    console.log(`✅ 地市名称修复完成，共修正 ${changed} 条渠道数据`);
+  }
+  localStorage.setItem(MIGRATE_KEY, '1'); // 标记已执行
+})();
+
 refreshInboxBadge(); // 初始化信息接收站红点
 renderDashboard();
 
