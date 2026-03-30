@@ -1679,7 +1679,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
     </div>
     <div id="detail-content"></div>
     <div class="modal-footer">
-      <button class="btn btn-outline" style="color:#ef4444;border-color:#fecaca;background:#fef2f2" onclick="doDeleteActivity(currentDetailId)">🗑️ 删除</button>
+      <button class="btn btn-outline" style="color:#ef4444;border-color:#fecaca;background:#fef2f2" onclick="confirmDeleteActivity(currentDetailId)">🗑️ 活动删除</button>
       <button class="btn btn-outline" onclick="closeModal('modal-detail')">关闭</button>
       <button class="btn btn-primary" id="detail-action-btn">推进阶段</button>
     </div>
@@ -1778,7 +1778,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-03';
+const APP_VERSION = 'v2026.03.30-04';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -2559,7 +2559,7 @@ function renderDashboard() {
         </div>
         <div class="text-sm color-text-muted mt-8" style="color:var(--text-muted)">${a.owner} · ${a.start} ~ ${a.end}</div>
       </div>
-      <button class="btn-delete" onclick="event.stopPropagation();doDeleteActivity('${a.id}')" title="删除活动">🗑️</button>
+      <button class="btn-delete" onclick="event.stopPropagation();confirmDeleteActivity('${a.id}')" title="删除活动">🗑️</button>
     </div>
   `).join('');
 
@@ -3679,11 +3679,44 @@ async function toggleTask(aid, idx, checked) {
   await syncData();
 }
 
+// ===== 删除活动确认弹窗 =====
+function confirmDeleteActivity(id) {
+  const a = activities.find(x => String(x.id) === String(id));
+  if (!a) return;
+
+  // 构建弹窗
+  let overlay = document.getElementById('delete-act-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'delete-act-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:700;display:flex;align-items:center;justify-content:center';
+    overlay.onclick = function(e) { if (e.target === this) this.remove(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;width:400px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden">
+      <div style="padding:24px 24px 0;text-align:center">
+        <div style="width:56px;height:56px;border-radius:50%;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px">🗑️</div>
+        <div style="font-weight:700;font-size:17px;color:#111;margin-bottom:8px">确定要删除此活动吗？</div>
+        <div style="font-size:14px;color:#6b7280;line-height:1.6;padding:0 8px">
+          即将删除活动：<br>
+          <strong style="color:#ef4444">${a.name}</strong><br>
+          <span style="font-size:12px;color:#9ca3af;margin-top:6px;display:block">⚠️ 删除后无法恢复，相关任务、KPI、附件数据将一并清除</span>
+        </div>
+      </div>
+      <div style="padding:20px 24px 24px;display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-outline" style="flex:1;max-width:140px" onclick="document.getElementById('delete-act-overlay').remove()">取消</button>
+        <button class="btn" style="flex:1;max-width:140px;background:#ef4444;color:#fff;border:none" onclick="document.getElementById('delete-act-overlay').remove();doDeleteActivity('${id}')">确认删除</button>
+      </div>
+    </div>
+  `;
+}
+
 // ===== 删除活动 =====
 async function doDeleteActivity(id) {
   const a = activities.find(x=>String(x.id)===String(id));
   if(!a) return;
-  if(!confirm(`确定要删除活动「${a.name}」吗？此操作不可恢复！`)) return;
 
   // 删除关联的文件
   const key = String(id);
