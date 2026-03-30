@@ -1778,7 +1778,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-02';
+const APP_VERSION = 'v2026.03.30-03';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5406,9 +5406,15 @@ async function importReviewChannels(input) {
     const headers = rows[0].map(h => String(h || '').trim());
 
     // ── 2. 尝试识别"渠道名称"列（只需名称用于匹配） ─────────────────
-    //    优先用 autoDetectColumns，退路：把第一列当渠道名
+    //    扩展识别：除了渠道名称，还支持"所在公司/公司名称/单位/公司"等邀请函/报名表常见列名
     const colMap = autoDetectColumns(headers);
-    const nameColIdx = colMap.name !== -1 ? colMap.name : 0;
+    let nameColIdx = colMap.name;
+    if (nameColIdx === -1) {
+      // 扩展：识别公司/单位/机构相关列
+      const companyPatterns = ['所在公司','公司名称','公司','单位名称','单位','机构','企业','organization','company'];
+      nameColIdx = headers.findIndex(h => companyPatterns.some(p => h.toLowerCase().includes(p.toLowerCase())));
+    }
+    if (nameColIdx === -1) nameColIdx = 0; // 最终退路：第一列
 
     // 提取文件中所有渠道名称（去空行）
     const importedNames = [];
@@ -6236,7 +6242,7 @@ async function importChannelExcel(input, callback) {  // async: 等待 COS 同�
 
 function autoDetectColumns(headers) {
   const matchers = {
-    name:       ['渠道名称','名称','渠道','channel name','name'],
+    name:       ['渠道名称','名称','渠道','channel name','name','所在公司','公司名称','公司','单位名称','单位','机构','企业','organization','company'],
     tier:       ['渠道分层','分层','级别','tier','level'],
     city:       ['所在地市','地市','城市','city'],
     district:   ['区/县','区县','district','county'],
