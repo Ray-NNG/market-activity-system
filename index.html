@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-09</title>
+<title>市场活动全流程管理系统 v2026.03.30-10</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -425,6 +425,126 @@
     padding: 16px; margin-bottom: 12px; cursor: pointer; transition: box-shadow .2s;
   }
   .owner-activity-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+}
+
+/* ============================================
+   移动端响应式适配（max-width: 768px）
+   ============================================ */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 60px; }  /* 侧边栏收窄 */
+  
+  body { flex-direction: column; }
+  
+  /* 侧边栏变窄 + 悬停展开 */
+  .sidebar {
+    width: var(--sidebar-w);
+    transition: width 0.2s ease;
+  }
+  .sidebar:hover,
+  .sidebar.mobile-expanded {
+    width: 240px;
+  }
+  .sidebar .nav-section-title,
+  .sidebar .nav-section > div:not(.nav-item),
+  .sidebar #app-version-label,
+  .sidebar > div:last-child > div:last-child {  /* 版本号 & 底部品牌 */
+    display: none;
+  }
+  .sidebar:hover .nav-section-title,
+  .sidebar.mobile-expanded .nav-section-title,
+  .sidebar:hover .nav-section > div:not(.nav-item),
+  .sidebar.mobile-expanded .nav-section > div:not(.nav-item) {
+    display: block;
+  }
+  .nav-item { padding: 12px 16px; font-size: 14px; }
+  .nav-item .icon { font-size: 18px; }
+  
+  /* 主内容区 */
+  .main {
+    margin-left: 0;
+    padding: 0 12px 70px; /* 底部留出空间给bottom-nav */
+  }
+  
+  /* 移动端底部导航栏（默认隐藏，需要时启用） */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around; z-index: 100;
+    padding: 8px 0; height: 60px; align-items: center;
+    display: none; /* 暂时隐藏，需要时打开 */
+  }
+  .bottom-nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    font-size: 11px; color: var(--text-muted); flex: 1; cursor: pointer;
+  }
+  .bottom-nav-item .icon { font-size: 20px; margin-bottom: 2px; }
+  .bottom-nav-item.active { color: var(--primary); font-weight: 600; }
+  
+  /* 页面标题响应 */
+  .page-title h1 { font-size: 18px; }
+  .page-title p { font-size: 12px; }
+  
+  /* 卡片间距 */
+  .card { padding: 16px; margin-bottom: 12px; }
+  
+  /* 按钮和控件 */
+  .btn { padding: 10px 16px; font-size: 14px; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .form-control { padding: 10px 14px; font-size: 14px; }
+  
+  /* 表格变卡片 */
+  .card table { display: block; overflow-x: auto; }
+  .card thead { display: none; }
+  .card tbody tr {
+    display: block; margin-bottom: 16px; border: 1px solid var(--border);
+    border-radius: 12px; background: var(--card); padding: 16px;
+  }
+  .card tbody td {
+    display: block; padding: 6px 0; border: none; text-align: left;
+  }
+  .card tbody td::before {
+    content: attr(data-label);
+    font-weight: 600; font-size: 12px; color: var(--text-muted);
+    display: block; margin-bottom: 4px;
+  }
+  
+  /* 活动列表卡片 */
+  .activity-card { flex-direction: column; }
+  .activity-card-left { width: 100%; margin-right: 0; margin-bottom: 12px; }
+  .activity-card-right { width: 100%; }
+  
+  /* 渠道筛选工具栏 */
+  .filter-bar { flex-wrap: wrap; gap: 8px; }
+  .filter-bar > div { flex-wrap: wrap; }
+  
+  /* 模态框 */
+  .modal { max-width: 92vw; padding: 20px; }
+  .modal-header h2 { font-size: 18px; }
+  
+  /* 折叠面板 */
+  .collapse-header { padding: 12px 16px; font-size: 14px; }
+  
+  /* 负责人分析特殊处理 */
+  .owner-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .owner-activity-card { padding: 12px; }
+}
+
+/* 更小屏幕（max-width: 480px）额外优化 */
+@media (max-width: 480px) {
+  .main { padding: 0 8px 70px; }
+  .card { padding: 12px; }
+  .page-title h1 { font-size: 16px; }
+  .btn { padding: 8px 12px; font-size: 13px; }
+  .form-control { padding: 8px 12px; font-size: 13px; }
+  .owner-stats-grid { grid-template-columns: 1fr; }
+  .filter-bar input, .filter-bar select { width: 100% !important; }
+}
+
+/* 触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+  .btn, .nav-item, .dropdown-item { min-height: 44px; } /* Apple 触摸最小尺寸 */
+  input, select, textarea { font-size: 16px; } /* 防止 iOS 自动缩放 */
+}
 </style>
 
 <style>
@@ -870,8 +990,13 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <h1>📊 活动管理系统</h1>
-    <span>Market Campaign Manager</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+      <div style="flex:1">
+        <h1>📊 活动管理系统</h1>
+        <span>Market Campaign Manager</span>
+      </div>
+      <button id="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" style="display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;padding:0;margin-left:8px">☰</button>
+    </div>
   </div>
   <!-- 当前登录角色标识 -->
   <div id="sidebar-role-bar" style="padding:8px 16px 0;"></div>
@@ -931,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-09</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-10</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1814,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-09';
+const APP_VERSION = 'v2026.03.30-10';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6376,15 +6501,15 @@ function renderChannelList() {
             ${filtered.map(c => `
               <tr id="channel-row-${c.id}">
                 ${checkboxCell(c.id)}
-                <td class="fw-600">${c.name}</td>
-                <td><span style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
-                <td class="text-sm">${[c.city, c.district].filter(Boolean).join(' / ')||'-'}</td>
-                <td>${c.sales||'-'}</td>
-                <td>${c.contact||'-'}</td>
-                <td>${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary)">${c.phone}</a>` : '-'}</td>
-                <td class="text-sm" style="max-width:200px;white-space:normal;word-break:break-all;color:var(--text-muted)">${(c.background||'-').substring(0,80)}${(c.background||'').length>80?'…':''}</td>
-                <td class="text-sm">${getChannelActivityCount(c.id)}</td>
-                <td class="text-sm" style="max-width:220px">${renderChannelHistory(c)}</td>
+                <td class="fw-600" data-label="渠道名称">${c.name}</td>
+                <td data-label="分层"><span style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
+                <td class="text-sm" data-label="地市/区县">${[c.city, c.district].filter(Boolean).join(' / ')||'-'}</td>
+                <td data-label="负责销售">${c.sales||'-'}</td>
+                <td data-label="关键联系人">${c.contact||'-'}</td>
+                <td data-label="联系方式">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary)">${c.phone}</a>` : '-'}</td>
+                <td class="text-sm" style="max-width:200px;white-space:normal;word-break:break-all;color:var(--text-muted)" data-label="渠道背景">${(c.background||'-').substring(0,80)}${(c.background||'').length>80?'…':''}</td>
+                <td class="text-sm" data-label="关联活动">${getChannelActivityCount(c.id)}</td>
+                <td class="text-sm" style="max-width:220px" data-label="历史推广">${renderChannelHistory(c)}</td>
                 <td>
                   ${canEdit ? `<button class="btn btn-outline btn-sm" onclick="openEditChannelModal('${c.id}')">编辑</button>
                   <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;margin-left:4px" onclick="deleteChannel('${c.id}')">删除</button>` : ''}
@@ -7662,6 +7787,42 @@ document.addEventListener('keydown', e => {
 document.addEventListener('click', e => {
   if(!document.getElementById('search-wrap').contains(e.target)) {
     hideSearchDropdown();
+  }
+});
+
+// ===== 移动端适配函数 =====
+function toggleMobileSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+  sidebar.classList.toggle('mobile-expanded');
+  const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+  if (toggleBtn) {
+    toggleBtn.textContent = sidebar.classList.contains('mobile-expanded') ? '✕' : '☰';
+  }
+}
+
+// 检测屏幕宽度，自动显示/隐藏汉堡按钮
+function checkMobileView() {
+  const isMobile = window.innerWidth <= 768;
+  const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+  if (toggleBtn) toggleBtn.style.display = isMobile ? 'block' : 'none';
+  const sidebar = document.querySelector('.sidebar');
+  if (sidebar && !isMobile) sidebar.classList.remove('mobile-expanded');
+}
+
+// 初始化检测
+window.addEventListener('load', checkMobileView);
+window.addEventListener('resize', checkMobileView);
+
+// 点击主内容区收起侧边栏（移动端）
+document.querySelector('.main')?.addEventListener('click', (e) => {
+  if (window.innerWidth <= 768) {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar?.classList.contains('mobile-expanded')) {
+      sidebar.classList.remove('mobile-expanded');
+      const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+      if (toggleBtn) toggleBtn.textContent = '☰';
+    }
   }
 });
 </script>
