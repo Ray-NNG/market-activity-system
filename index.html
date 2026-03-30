@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-12</title>
+<title>市场活动全流程管理系统 v2026.03.30-15</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1056,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-14</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-15</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1162,14 +1162,14 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
             </div>
           </div>
           <!-- 活动明细列表 -->
-          <div style="display:flex;flex-direction:column;gap:6px;" id="budget-breakdown">
+          <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px;" id="budget-breakdown">
             <!-- 动态加载支出明细 -->
           </div>
         </div>
 
         <div class="card">
           <div class="card-header"><div class="card-title">📊 各活动进度</div></div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px" id="progress-chart"></div>
+          <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-top:4px;padding-right:4px;" id="progress-chart"></div>
         </div>
       </div>
     </div>
@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-14';
+const APP_VERSION = 'v2026.03.30-15';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
