@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-04</title>
+<title>市场活动全流程管理系统 v2026.03.30-05</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -911,6 +911,10 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('channels')">
         <span class="icon">🤝</span> 渠道名单
       </div>
+      <div class="nav-item" id="nav-inbox" onclick="goto('inbox')" style="position:relative">
+        <span class="icon">📬</span> 信息接收站
+        <span id="inbox-badge" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;line-height:16px"></span>
+      </div>
       <div class="nav-item" onclick="goto('ai')">
         <span class="icon">🤖</span> AI 分析助手
       </div>
@@ -1434,6 +1438,37 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div id="owner-analysis-content"></div>
     </div>
 
+    <!-- ===== 信息接收站 ===== -->
+    <div id="page-inbox" class="page">
+      <!-- 顶部统计栏 -->
+      <div id="inbox-stats-bar" class="card" style="padding:16px 20px;margin-bottom:16px"></div>
+      <!-- 筛选工具栏 -->
+      <div class="card" style="padding:12px 20px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <input class="form-control" id="inbox-search" placeholder="🔍 搜索渠道名称、负责销售…" style="width:240px" oninput="renderInboxPage()">
+          <select class="form-control" id="inbox-filter-tier" onchange="renderInboxPage()" style="width:130px">
+            <option value="">全部分层</option>
+          </select>
+          <select class="form-control" id="inbox-filter-city" onchange="renderInboxPage()" style="width:130px">
+            <option value="">全部地市</option>
+          </select>
+          <select class="form-control" id="inbox-filter-level" onchange="renderInboxPage()" style="width:140px">
+            <option value="">全部预警等级</option>
+            <option value="critical">🔴 严重（>180天）</option>
+            <option value="warning">🟠 警告（>80天）</option>
+            <option value="none">⚫ 从未推广</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="inbox-filter-no-history" onchange="renderInboxPage()">
+            只看从未推广
+          </label>
+          <button class="btn btn-outline btn-sm" onclick="refreshInboxBadge()" style="margin-left:auto">🔄 刷新</button>
+        </div>
+      </div>
+      <!-- 提醒列表 -->
+      <div id="inbox-list-container"></div>
+    </div>
+
     <!-- ===== 渠道名单 ===== -->
     <div id="page-channels" class="page">
       <!-- 顶部操作栏 -->
@@ -1779,7 +1814,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-06';
+const APP_VERSION = 'v2026.03.30-05';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -2498,6 +2533,7 @@ const pageTitles = {
   owner: ['负责人分析','按负责人查看活动数据与效果'],
   activities: ['活动档案','所有活动记录与查询'],
   channels: ['渠道名单','渠道资源管理与活动关联'],
+  inbox: ['信息接收站','超80天未更新的渠道跟进提醒'],
   settings: ['系统设置','数据存储与账户配置'],
   usermgmt: ['账户权限','管理各角色登录密码'],
   ai: ['AI 分析助手','由 Kimi 驱动的智能数据分析']
@@ -2528,6 +2564,7 @@ function renderPage(page) {
   if(page === 'owner') renderOwnerPage();
   if(page === 'activities') renderActivities();
   if(page === 'channels') renderChannelsPage();
+  if(page === 'inbox') renderInboxPage();
   if(page === 'settings') { renderSettings(); loadKimiConfigToForm(); }
   if(page === 'usermgmt') renderUserMgmt();
   if(page === 'ai') renderAiPage();
@@ -6036,6 +6073,205 @@ async function forceSyncChannelsToCOS() {
   }
 }
 
+// ===== 信息接收站 =====
+const INBOX_WARN_DAYS = 80;   // 超过多少天算预警
+const INBOX_CRIT_DAYS = 180;  // 超过多少天算严重
+
+// 获取渠道最近一次历史推广日期（返回 Date 或 null）
+function getChannelLastPromoDate(c) {
+  const history = Array.isArray(c.history) ? c.history : [];
+  const dates = history.map(r => r.date ? new Date(r.date) : null).filter(Boolean);
+  if (!dates.length) return null;
+  return new Date(Math.max(...dates.map(d => d.getTime())));
+}
+
+// 计算距今天数（正整数，永不推广返回 Infinity）
+function daysSincePromo(c) {
+  const last = getChannelLastPromoDate(c);
+  if (!last) return Infinity;
+  return Math.floor((Date.now() - last.getTime()) / 86400000);
+}
+
+// 刷新侧边栏信息接收站红点
+function refreshInboxBadge() {
+  loadChannels();
+  const cnt = channels.filter(c => daysSincePromo(c) >= INBOX_WARN_DAYS).length;
+  const badge = document.getElementById('inbox-badge');
+  if (!badge) return;
+  if (cnt > 0) {
+    badge.textContent = cnt > 99 ? '99+' : cnt;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// 更新信息接收站的筛选下拉框选项（分层/地市）
+function updateInboxFilters() {
+  const tiers = [...new Set(channels.map(c => c.tier).filter(Boolean))];
+  const cities = [...new Set(channels.map(c => c.city).filter(Boolean))];
+  const tierSel = document.getElementById('inbox-filter-tier');
+  const citySel = document.getElementById('inbox-filter-city');
+  if (tierSel) {
+    const prev = tierSel.value;
+    tierSel.innerHTML = '<option value="">全部分层</option>' + tiers.map(t => `<option value="${t}" ${prev===t?'selected':''}>${t}</option>`).join('');
+  }
+  if (citySel) {
+    const prev = citySel.value;
+    citySel.innerHTML = '<option value="">全部地市</option>' + cities.map(c => `<option value="${c}" ${prev===c?'selected':''}>${c}</option>`).join('');
+  }
+}
+
+function renderInboxPage() {
+  loadChannels();
+  updateInboxFilters();
+
+  const container = document.getElementById('inbox-list-container');
+  const statsBar   = document.getElementById('inbox-stats-bar');
+  const search     = (document.getElementById('inbox-search')?.value || '').toLowerCase();
+  const tierF      = document.getElementById('inbox-filter-tier')?.value  || '';
+  const cityF      = document.getElementById('inbox-filter-city')?.value  || '';
+  const levelF     = document.getElementById('inbox-filter-level')?.value || '';
+  const noHistOnly = document.getElementById('inbox-filter-no-history')?.checked || false;
+
+  // 先统计全量
+  const allOverdue = channels.filter(c => daysSincePromo(c) >= INBOX_WARN_DAYS);
+  const crit  = channels.filter(c => daysSincePromo(c) >= INBOX_CRIT_DAYS).length;
+  const warn  = channels.filter(c => { const d = daysSincePromo(c); return d >= INBOX_WARN_DAYS && d < INBOX_CRIT_DAYS; }).length;
+  const never = channels.filter(c => daysSincePromo(c) === Infinity).length;
+
+  // 统计栏
+  if (statsBar) {
+    statsBar.innerHTML = `
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:20px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">📬 信息接收站 · 渠道跟进提醒</div>
+          <div style="font-size:12px;color:var(--text-muted)">超过 ${INBOX_WARN_DAYS} 天未新增历史推广记录的渠道将出现在此</div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#ef4444">${crit}</div>
+            <div style="font-size:11px;color:var(--text-muted)">严重 (>180天)</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#f97316">${warn}</div>
+            <div style="font-size:11px;color:var(--text-muted)">警告 (>80天)</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#6b7280">${never}</div>
+            <div style="font-size:11px;color:var(--text-muted)">从未推广</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:22px;font-weight:800;color:var(--primary)">${allOverdue.length}</div>
+            <div style="font-size:11px;color:var(--text-muted)">总待跟进</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 筛选 + 排序
+  let filtered = channels.filter(c => {
+    const days = daysSincePromo(c);
+    if (days < INBOX_WARN_DAYS) return false;  // 正常的不显示
+    if (noHistOnly && days !== Infinity) return false;
+    if (levelF === 'critical' && days < INBOX_CRIT_DAYS) return false;
+    if (levelF === 'warning' && (days < INBOX_WARN_DAYS || days >= INBOX_CRIT_DAYS)) return false;
+    if (levelF === 'none' && days !== Infinity) return false;
+    if (tierF && c.tier !== tierF) return false;
+    if (cityF && c.city !== cityF) return false;
+    if (search) {
+      const q = (c.name||'') + (c.sales||'') + (c.contact||'') + (c.city||'');
+      if (!q.toLowerCase().includes(search)) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    // 从未推广 > 严重 > 警告，相同等级按渠道分层排序
+    const da = daysSincePromo(a), db = daysSincePromo(b);
+    if (da === Infinity && db !== Infinity) return -1;
+    if (db === Infinity && da !== Infinity) return 1;
+    return db - da;  // 天数多的排前面
+  });
+
+  if (!container) return;
+  if (!filtered.length) {
+    container.innerHTML = `
+      <div class="card" style="text-align:center;padding:48px 20px;color:var(--text-muted)">
+        <div style="font-size:48px;margin-bottom:12px">🎉</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">暂无需要跟进的渠道</div>
+        <div style="font-size:13px">所有渠道均在 ${INBOX_WARN_DAYS} 天内有过推广记录</div>
+      </div>`;
+    return;
+  }
+
+  const tierBg2  = t => t==='核心渠道'?'#ede9fe':t==='重点渠道'?'#dbeafe':'#f1f5f9';
+  const tierClr2 = t => t==='核心渠道'?'#7c3aed':t==='重点渠道'?'#2563eb':'#64748b';
+
+  container.innerHTML = `
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;padding:0 2px">共 ${filtered.length} 家渠道需要跟进</div>
+    <div class="card" style="overflow:hidden;padding:0">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
+            <th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border)">渠道名称</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)">分层</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)">地市/区县</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)">负责销售</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)">最近推广时间</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)">距今</th>
+            <th style="padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)">预警等级</th>
+            <th style="padding:10px 16px;text-align:left;border-bottom:1px solid var(--border)">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map((c, idx) => {
+            const days = daysSincePromo(c);
+            const lastDate = getChannelLastPromoDate(c);
+            const isCrit  = days >= INBOX_CRIT_DAYS;
+            const isNever = days === Infinity;
+            const levelLabel = isNever  ? '<span style="background:#f1f5f9;color:#6b7280;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">⚫ 从未推广</span>'
+                             : isCrit   ? '<span style="background:#fef2f2;color:#ef4444;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🔴 严重</span>'
+                             :            '<span style="background:#fff7ed;color:#f97316;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🟠 警告</span>';
+            const rowBg = idx % 2 === 0 ? '#fff' : '#fafafa';
+            const daysText = isNever ? '-' : `${days} 天`;
+            const daysColor = isCrit ? '#ef4444' : '#f97316';
+            return `
+            <tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
+              <td style="padding:12px 16px;font-weight:600;font-size:13px">${c.name||'-'}</td>
+              <td style="padding:12px 12px">
+                ${c.tier ? `<span style="background:${tierBg2(c.tier)};color:${tierClr2(c.tier)};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${c.tier}</span>` : '<span style="color:var(--text-muted)">-</span>'}
+              </td>
+              <td style="padding:12px 12px;font-size:13px;color:var(--text-muted)">${[c.city,c.district].filter(Boolean).join(' / ')||'-'}</td>
+              <td style="padding:12px 12px;font-size:13px">${c.sales||'-'}</td>
+              <td style="padding:12px 12px;font-size:13px;color:var(--text-muted)">${lastDate ? lastDate.toLocaleDateString('zh-CN') : '<span style="color:#9ca3af">暂无记录</span>'}</td>
+              <td style="padding:12px 12px;font-size:13px;font-weight:700;color:${daysColor}">${daysText}</td>
+              <td style="padding:12px 12px">${levelLabel}</td>
+              <td style="padding:12px 16px">
+                <button class="btn btn-outline btn-sm" style="font-size:12px" onclick="inboxGotoChannel('${c.id}')">查看详情</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// 从信息接收站跳转到渠道名单并定位该渠道
+function inboxGotoChannel(channelId) {
+  goto('channels');
+  // 等页面渲染完后高亮并滚动到该渠道行
+  setTimeout(() => {
+    const el = document.getElementById('channel-row-' + channelId);
+    if (el) {
+      el.style.transition = 'background .3s';
+      el.style.background = '#ede9fe';
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => { el.style.background = ''; }, 2000);
+    }
+  }, 400);
+}
+
 function renderChannelsPage() {
   loadChannels();
   updateChannelFilters();
@@ -6491,6 +6727,7 @@ function saveChannel() {
   closeModal('modal-channel');
   updateChannelFilters();
   renderChannelList();
+  refreshInboxBadge();
 }
 
 function deleteChannel(id) {
@@ -6499,6 +6736,7 @@ function deleteChannel(id) {
   saveChannels();
   updateChannelFilters();
   renderChannelList();
+  refreshInboxBadge();
 }
 
 // ===== 下载渠道导入模板 =====
@@ -7337,6 +7575,7 @@ const _today = new Date();
 calYear = _today.getFullYear();
 calMonth = _today.getMonth();
 loadChannels(); // 加载本地渠道数据
+refreshInboxBadge(); // 初始化信息接收站红点
 renderDashboard();
 
 // 点击遮罩关闭
