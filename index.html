@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-02</title>
+<title>市场活动全流程管理系统 v2026.03.30-03</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -5059,25 +5059,38 @@ function renderOwnerAnalysis() {
       </div>
     </div>
 
-    <!-- 预算执行 -->
+    <!-- 预算执行（按大类分组） -->
     <div class="card section-gap">
         <div class="card-header"><div class="card-title">💰 预算执行情况</div></div>
         <div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">
-          ${filtered.map(a => {
-            const totalBudget = (a.budgetItems||[]).reduce((s,x)=>s+(Number(x.amount)||0),0)
-              + (Number(a.setupFee)||0) + (Number(a.logisticsFee)||0);
-            const totalActual = (a.actualCosts||[]).reduce((s,x)=>s+(Number(x.amount)||0),0);
-            const pct = totalBudget > 0 ? Math.round(totalActual/totalBudget*100) : 0;
-            return `
-              <div>
-                <div class="flex-between text-sm mb-16" style="margin-bottom:5px">
-                  <span class="fw-600">${a.name.substring(0,12)}</span>
-                  <span>${pct}% <span style="color:var(--text-muted);font-weight:400">实际 ¥${totalActual.toLocaleString()} / 预算 ¥${totalBudget.toLocaleString()}</span></span>
+          ${(() => {
+            // 按活动类型（大类）分组汇总
+            const groupMap = {};
+            filtered.forEach(a => {
+              const key = (a.type || '其他').trim() || '其他';
+              if (!groupMap[key]) groupMap[key] = { budget: 0, actual: 0, count: 0 };
+              const b = (a.budgetItems||[]).reduce((s,x)=>s+(Number(x.amount)||0),0)
+                + (Number(a.setupFee)||0) + (Number(a.logisticsFee)||0);
+              const ac = (a.actualCosts||[]).reduce((s,x)=>s+(Number(x.amount)||0),0);
+              groupMap[key].budget += b;
+              groupMap[key].actual += ac;
+              groupMap[key].count += 1;
+            });
+            const groups = Object.entries(groupMap);
+            if (!groups.length) return '<div class="text-muted" style="text-align:center;padding:20px">暂无预算数据</div>';
+            return groups.map(([type, g]) => {
+              const pct = g.budget > 0 ? Math.round(g.actual/g.budget*100) : 0;
+              return `
+                <div>
+                  <div class="flex-between text-sm mb-16" style="margin-bottom:5px">
+                    <span class="fw-600">${type}<span style="font-weight:400;color:var(--text-muted);font-size:11px;margin-left:6px">${g.count} 个活动</span></span>
+                    <span>${pct}% <span style="color:var(--text-muted);font-weight:400">实际 ¥${g.actual.toLocaleString()} / 预算 ¥${g.budget.toLocaleString()}</span></span>
+                  </div>
+                  <div class="progress-wrap"><div class="progress-bar ${pct>=100?'progress-danger':pct>=70?'progress-warning':'progress-success'}" style="width:${Math.min(pct,100)}%"></div></div>
                 </div>
-                <div class="progress-wrap"><div class="progress-bar ${pct>=100?'progress-danger':pct>=70?'progress-warning':'progress-success'}" style="width:${Math.min(pct,100)}%"></div></div>
-              </div>
-            `;
-          }).join('') || '<div class="text-muted" style="text-align:center;padding:20px">暂无预算数据</div>'}
+              `;
+            }).join('');
+          })()}
         </div>
       </div>
 
