@@ -1779,7 +1779,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-05';
+const APP_VERSION = 'v2026.03.30-06';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5915,18 +5915,37 @@ function renderChannelList() {
     return;
   }
 
+  const canEdit = role !== 'viewer';
+  const checkboxCol = canEdit ? `<th style="width:36px;padding:8px 6px 8px 14px"><input type="checkbox" id="channel-select-all" onchange="channelSelectAll(this)" style="cursor:pointer;width:15px;height:15px"></th>` : '';
+  const checkboxCell = (id) => canEdit ? `<td style="padding:8px 6px 8px 14px"><input type="checkbox" class="channel-row-check" data-id="${id}" onchange="channelRowCheck()" style="cursor:pointer;width:15px;height:15px"></td>` : '';
+
   container.innerHTML = `
+    <!-- 批量操作浮动栏 -->
+    <div id="channel-batch-bar" style="display:none;position:sticky;top:56px;z-index:50;background:#1e1b4b;color:#fff;border-radius:10px;padding:10px 18px;margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 16px rgba(0,0,0,.2)">
+      <span id="channel-batch-count" style="font-size:13px;font-weight:600">已选 0 家</span>
+      <div style="flex:1"></div>
+      <select id="channel-batch-tier-select" class="form-control" style="width:130px;font-size:13px;height:32px;padding:0 8px">
+        <option value="">批量改分层…</option>
+        <option>核心渠道</option><option>重点渠道</option><option>一般渠道</option><option>待开发</option><option>敌对渠道</option>
+      </select>
+      <button class="btn btn-sm" style="background:#4f46e5;color:#fff;border:none" onclick="channelBatchChangeTier()">✔ 应用分层</button>
+      <button class="btn btn-sm" style="background:#059669;color:#fff;border:none" onclick="channelBatchExport()">📤 导出所选</button>
+      <button class="btn btn-sm" style="background:#ef4444;color:#fff;border:none" onclick="channelBatchDelete()">🗑️ 批量删除</button>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:none" onclick="channelClearSelect()">✕ 取消选择</button>
+    </div>
     <div class="card" style="padding:0;overflow:hidden">
       <div class="table-wrap">
         <table>
           <thead><tr>
+            ${checkboxCol}
             <th>渠道名称</th><th>分层</th><th>地市/区县</th><th>负责销售</th>
             <th>关键联系人</th><th>联系方式</th><th>渠道背景</th>
             <th>市场活动</th><th>历史推广记录</th><th>操作</th>
           </tr></thead>
           <tbody>
             ${filtered.map(c => `
-              <tr>
+              <tr id="channel-row-${c.id}">
+                ${checkboxCell(c.id)}
                 <td class="fw-600">${c.name}</td>
                 <td><span style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
                 <td class="text-sm">${[c.city, c.district].filter(Boolean).join(' / ')||'-'}</td>
@@ -5937,7 +5956,7 @@ function renderChannelList() {
                 <td class="text-sm">${getChannelActivityCount(c.id)}</td>
                 <td class="text-sm" style="max-width:220px">${renderChannelHistory(c)}</td>
                 <td>
-                  ${role !== 'viewer' ? `<button class="btn btn-outline btn-sm" onclick="openEditChannelModal('${c.id}')">编辑</button>
+                  ${canEdit ? `<button class="btn btn-outline btn-sm" onclick="openEditChannelModal('${c.id}')">编辑</button>
                   <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;margin-left:4px" onclick="deleteChannel('${c.id}')">删除</button>` : ''}
                 </td>
               </tr>
@@ -5946,6 +5965,131 @@ function renderChannelList() {
         </table>
       </div>
     </div>`;
+}
+
+// ===== 渠道批量操作 =====
+function channelGetSelectedIds() {
+  return Array.from(document.querySelectorAll('.channel-row-check:checked')).map(el => el.dataset.id);
+}
+
+function channelRowCheck() {
+  const all   = document.querySelectorAll('.channel-row-check');
+  const checked = document.querySelectorAll('.channel-row-check:checked');
+  const allCb = document.getElementById('channel-select-all');
+  if (allCb) allCb.indeterminate = checked.length > 0 && checked.length < all.length;
+  if (allCb) allCb.checked = checked.length === all.length && all.length > 0;
+  _updateChannelBatchBar(checked.length);
+}
+
+function channelSelectAll(cb) {
+  document.querySelectorAll('.channel-row-check').forEach(el => { el.checked = cb.checked; });
+  _updateChannelBatchBar(cb.checked ? document.querySelectorAll('.channel-row-check').length : 0);
+}
+
+function channelClearSelect() {
+  document.querySelectorAll('.channel-row-check').forEach(el => { el.checked = false; });
+  const allCb = document.getElementById('channel-select-all');
+  if (allCb) { allCb.checked = false; allCb.indeterminate = false; }
+  _updateChannelBatchBar(0);
+}
+
+function _updateChannelBatchBar(count) {
+  const bar = document.getElementById('channel-batch-bar');
+  if (!bar) return;
+  if (count > 0) {
+    bar.style.display = 'flex';
+    const countEl = document.getElementById('channel-batch-count');
+    if (countEl) countEl.textContent = `已选 ${count} 家`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+async function channelBatchDelete() {
+  const ids = channelGetSelectedIds();
+  if (!ids.length) return;
+  // 确认弹窗
+  let overlay = document.getElementById('channel-batch-del-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'channel-batch-del-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:700;display:flex;align-items:center;justify-content:center';
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;width:380px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden">
+      <div style="padding:24px 24px 0;text-align:center">
+        <div style="width:56px;height:56px;border-radius:50%;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px">🗑️</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:8px">批量删除确认</div>
+        <div style="font-size:14px;color:#6b7280">确定要删除选中的 <strong style="color:#ef4444">${ids.length}</strong> 家渠道吗？<br>
+        <span style="font-size:12px;color:#9ca3af;margin-top:6px;display:block">⚠️ 删除后无法恢复，相关活动关联也将断开</span></div>
+      </div>
+      <div style="padding:20px 24px 24px;display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-outline" style="flex:1;max-width:130px" onclick="document.getElementById('channel-batch-del-overlay').remove()">取消</button>
+        <button class="btn" style="flex:1;max-width:130px;background:#ef4444;color:#fff;border:none" onclick="document.getElementById('channel-batch-del-overlay').remove();_doBatchDeleteChannels(${JSON.stringify(ids)})">确认删除</button>
+      </div>
+    </div>`;
+}
+
+async function _doBatchDeleteChannels(ids) {
+  ids.forEach(id => {
+    const idx = channels.findIndex(c => c.id === id);
+    if (idx !== -1) channels.splice(idx, 1);
+    // 断开活动中的关联
+    activities.forEach(a => {
+      if (a.channelIds) a.channelIds = a.channelIds.filter(cid => cid !== id);
+    });
+  });
+  await saveChannels();
+  renderChannelList();
+  const resultEl = document.getElementById('channel-import-result');
+  if (resultEl) {
+    resultEl.style.display = 'block';
+    resultEl.style.background = '#d1fae5'; resultEl.style.color = '#065f46';
+    resultEl.textContent = `✅ 已删除 ${ids.length} 家渠道`;
+    setTimeout(() => { resultEl.style.display = 'none'; }, 5000);
+  }
+}
+
+async function channelBatchChangeTier() {
+  const ids = channelGetSelectedIds();
+  const tier = document.getElementById('channel-batch-tier-select')?.value;
+  if (!ids.length) { alert('请先勾选渠道'); return; }
+  if (!tier) { alert('请选择要改成的分层'); return; }
+  ids.forEach(id => {
+    const ch = channels.find(c => c.id === id);
+    if (ch) ch.tier = tier;
+  });
+  await saveChannels();
+  renderChannelList();
+  const resultEl = document.getElementById('channel-import-result');
+  if (resultEl) {
+    resultEl.style.display = 'block';
+    resultEl.style.background = '#dbeafe'; resultEl.style.color = '#1e40af';
+    resultEl.textContent = `✅ 已将 ${ids.length} 家渠道改为「${tier}」`;
+    setTimeout(() => { resultEl.style.display = 'none'; }, 5000);
+  }
+}
+
+function channelBatchExport() {
+  const ids = channelGetSelectedIds();
+  if (!ids.length) return;
+  const selected = channels.filter(c => ids.includes(c.id));
+  const headers = ['渠道名称','渠道分层','所在地市','区/县','负责销售','关键联系人','联系方式','渠道背景','历史推广记录','商机反馈'];
+  const BOM = '\uFEFF';
+  const escape = v => { const s=String(v??''); return s.includes(',')||s.includes('"')||s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; };
+  const lines = [
+    headers.map(escape).join(','),
+    ...selected.map(c => [c.name,c.tier,c.city,c.district,c.sales,c.contact,c.phone,c.background,
+      (c.history||[]).map(h=>`${h.date} ${h.actName} ${h.note||''}`).join('|'), c.feedback
+    ].map(escape).join(','))
+  ];
+  const blob = new Blob([BOM + lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `渠道导出_${ids.length}家_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
 }
 
 function tierBg(tier) {
