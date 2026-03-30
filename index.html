@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.27-12</title>
+<title>市场活动全流程管理系统 v2026.03.30-02</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -5364,22 +5364,103 @@ function filterChannelLinkPanel(activityId) {
     return;
   }
 
-  container.innerHTML = filtered.map(c => `
-    <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid ${linkedIds.includes(c.id)?'#6366f1':'var(--border)'};background:${linkedIds.includes(c.id)?'#ede9fe':'#fff'};cursor:${role==='viewer'?'default':'pointer'};transition:all .15s">
-      <input type="checkbox" ${linkedIds.includes(c.id)?'checked':''} ${role==='viewer'?'disabled':''}
-        onchange="toggleActivityChannel('${activityId}','${c.id}',this.checked)"
-        style="width:16px;height:16px;cursor:inherit;accent-color:#6366f1">
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:13px">${c.name}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
-          <span style="padding:1px 6px;border-radius:20px;font-size:10px;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'未分层'}</span>
-          ${[c.city,c.district].filter(Boolean).join('/')||''} 
-          ${c.sales?'· 负责：'+c.sales:''} 
-          ${c.contact?'· 联系人：'+c.contact:''}
-        </div>
+  // 全选栏 + 批量操作栏 + 渠道列表
+  const filteredIds = filtered.map(c => c.id);
+  container.innerHTML = `
+    <!-- 全选 & 批量操作栏 -->
+    <div id="channel-link-select-bar-${activityId}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-radius:8px;background:#f8fafc;border:1px solid var(--border);margin-bottom:6px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text);user-select:none">
+        <input type="checkbox" id="channel-link-select-all-${activityId}"
+          style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer"
+          onchange="channelLinkSelectAll('${activityId}',this.checked)">
+        <span id="channel-link-select-label-${activityId}">全选当前筛选结果（${filtered.length} 家）</span>
+      </label>
+      <div id="channel-link-batch-btns-${activityId}" style="display:none;gap:8px;flex-wrap:wrap">
+        ${role !== 'viewer' ? `
+        <button class="btn btn-sm" style="background:#6366f1;color:#fff;font-size:12px" onclick="batchLinkChannels('${activityId}',true)">✅ 批量关联</button>
+        <button class="btn btn-sm btn-outline" style="font-size:12px" onclick="batchLinkChannels('${activityId}',false)">❌ 批量取消关联</button>
+        ` : ''}
       </div>
-    </label>
-  `).join('');
+    </div>
+    <!-- 渠道条目列表 -->
+    ${filtered.map(c => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid ${linkedIds.includes(c.id)?'#6366f1':'var(--border)'};background:${linkedIds.includes(c.id)?'#ede9fe':'#fff'};transition:all .15s" id="channel-link-row-${activityId}-${c.id}">
+      ${role !== 'viewer' ? `
+      <input type="checkbox" class="channel-link-sel-${activityId}" data-cid="${c.id}"
+        style="width:15px;height:15px;accent-color:#6366f1;cursor:pointer;flex-shrink:0"
+        onchange="channelLinkSelChange('${activityId}')">
+      ` : ''}
+      <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:${role==='viewer'?'default':'pointer'}">
+        <input type="checkbox" ${linkedIds.includes(c.id)?'checked':''} ${role==='viewer'?'disabled':''}
+          onchange="toggleActivityChannel('${activityId}','${c.id}',this.checked)"
+          style="width:16px;height:16px;cursor:inherit;accent-color:#6366f1;flex-shrink:0">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${c.name}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">
+            <span style="padding:1px 6px;border-radius:20px;font-size:10px;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'未分层'}</span>
+            ${[c.city,c.district].filter(Boolean).join('/')||''} 
+            ${c.sales?'· 负责：'+c.sales:''} 
+            ${c.contact?'· 联系人：'+c.contact:''}
+          </div>
+        </div>
+      </label>
+    </div>
+    `).join('')}
+  `;
+}
+
+// 全选/取消全选 关联渠道面板中的多选框
+function channelLinkSelectAll(activityId, checked) {
+  const boxes = document.querySelectorAll('.channel-link-sel-' + activityId);
+  boxes.forEach(b => b.checked = checked);
+  channelLinkSelChange(activityId);
+}
+
+// 选中状态变化时更新批量操作栏
+function channelLinkSelChange(activityId) {
+  const boxes = document.querySelectorAll('.channel-link-sel-' + activityId);
+  const total = boxes.length;
+  const checked = Array.from(boxes).filter(b => b.checked).length;
+  const allBox = document.getElementById('channel-link-select-all-' + activityId);
+  const label = document.getElementById('channel-link-select-label-' + activityId);
+  const batchBtns = document.getElementById('channel-link-batch-btns-' + activityId);
+  if (allBox) {
+    allBox.checked = (checked === total && total > 0);
+    allBox.indeterminate = (checked > 0 && checked < total);
+  }
+  if (label) {
+    if (checked > 0) {
+      label.textContent = `已选 ${checked} / ${total} 家`;
+    } else {
+      label.textContent = `全选当前筛选结果（${total} 家）`;
+    }
+  }
+  if (batchBtns) {
+    batchBtns.style.display = checked > 0 ? 'flex' : 'none';
+  }
+}
+
+// 批量关联/取消关联
+function batchLinkChannels(activityId, link) {
+  const boxes = document.querySelectorAll('.channel-link-sel-' + activityId);
+  const selectedIds = Array.from(boxes).filter(b => b.checked).map(b => b.dataset.cid);
+  if (!selectedIds.length) return;
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a) return;
+  let linkedIds = [...(a.channelIds || [])];
+  if (link) {
+    selectedIds.forEach(id => { if (!linkedIds.includes(id)) linkedIds.push(id); });
+  } else {
+    linkedIds = linkedIds.filter(id => !selectedIds.includes(id));
+  }
+  a.channelIds = linkedIds;
+  saveActivities();
+  syncData();
+  // 更新计数器
+  const countEl = document.getElementById('channel-link-count-' + activityId);
+  if (countEl) countEl.textContent = linkedIds.length;
+  // 重新渲染列表（保持当前筛选）
+  filterChannelLinkPanel(activityId);
 }
 
 // 在关联渠道面板中导入 Excel 渠道名单
