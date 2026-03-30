@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-10</title>
+<title>市场活动全流程管理系统 v2026.03.30-11</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1056,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-10</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-11</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-10';
+const APP_VERSION = 'v2026.03.30-11';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -2731,20 +2731,36 @@ function renderDashboard() {
 
   // 进度横向条状图
   const chart = document.getElementById('progress-chart');
-  const colors = ['#4f46e5','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899'];
+  // 使用基于状态的统一颜色方案，避免花哨
+  const getProgressColor = (progress, status) => {
+    // 按进度区间分配更专业的颜色
+    if (status === '已完成') return '#10b981'; // 绿色 - 已完成
+    if (status === '执行中') return '#f59e0b'; // 橙色 - 执行中
+    if (status === '策划中') return '#3b82f6'; // 蓝色 - 策划中
+    
+    // 根据进度值分配渐变色：低进度用蓝色，高进度用绿色
+    if (progress >= 90) return '#10b981'; // 深绿色 - 接近完成
+    if (progress >= 70) return '#22c55e'; // 绿色 - 进展良好
+    if (progress >= 50) return '#3b82f6'; // 蓝色 - 中等进度
+    if (progress >= 30) return '#6366f1'; // 靛蓝 - 初期进展
+    return '#8b5cf6'; // 紫色 - 刚开始
+  };
+  
   chart.innerHTML = activities.length === 0
     ? '<div class="text-muted" style="text-align:center;padding:20px">暂无活动数据</div>'
-    : activities.map((a,i) => `
+    : activities.map((a,i) => {
+      const color = getProgressColor(a.progress, a.status);
+      return `
       <div>
         <div class="flex-between text-sm" style="margin-bottom:4px">
           <span style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</span>
-          <span style="color:${colors[i%colors.length]};font-weight:600">${a.progress}%</span>
+          <span style="color:${color};font-weight:600">${a.progress}%</span>
         </div>
         <div class="progress-wrap">
-          <div class="progress-bar" style="background:${colors[i%colors.length]};width:${a.progress}%"></div>
+          <div class="progress-bar" style="background:${color};width:${a.progress}%"></div>
         </div>
       </div>
-    `).join('');
+    `}).join('');
 }
 
 // ===== 策划页 =====
@@ -2885,7 +2901,8 @@ function renderAnalysis() {
       salesMap[s] = (salesMap[s] || 0) + 1;
     });
     const salesEntries = Object.entries(salesMap).sort((a,b) => b[1]-a[1]);
-    const chartColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+    const chartColors = ['#3b82f6','#6366f1','#8b5cf6','#a855f7','#ec4899','#f59e0b','#84cc16','#10b981'];
+    // 使用蓝色系为主，搭配少数暖色，更协调
     if (salesEntries.length === 0) {
       salesChartEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted)">暂无渠道数据<br><span style="font-size:12px">请在渠道名单中填写「负责销售」</span></div>';
     } else {
@@ -2925,7 +2942,8 @@ function renderAnalysis() {
     const speakerEntries = Object.entries(speakerMap).sort((a, b) => b[1].total - a[1].total);
     // 收集所有类型，分配颜色
     const allTypes = [...new Set(speakerEntries.flatMap(([, s]) => Object.keys(s.types)))];
-    const typeColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#84cc16','#ef4444','#14b8a6'];
+    const typeColors = ['#3b82f6','#10b981','#f59e0b','#6366f1','#8b5cf6','#ec4899','#06b6d4','#84cc16','#ef4444','#14b8a6'];
+    // 优化颜色方案：保持区分度但更协调
     const typeColorMap = Object.fromEntries(allTypes.map((t, i) => [t, typeColors[i % typeColors.length]]));
 
     if (speakerEntries.length === 0) {
@@ -3020,7 +3038,8 @@ function renderCityAnalysis() {
   }
 
   const maxCount = Math.max(...cities.map(([,v])=>v.count), 1);
-  const barColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16','#a855f7','#ef4444','#0ea5e9','#d946ef'];
+  const barColors = ['#3b82f6','#6366f1','#8b5cf6','#a855f7','#ec4899','#f59e0b','#84cc16','#10b981','#14b8a6','#06b6d4','#0ea5e9','#84cc16','#22c55e','#ef4444'];
+  // 优化颜色方案：以蓝色系为主，搭配橙、绿、红色系，更协调
 
   container.innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -5271,7 +5290,8 @@ function renderOwnerAnalysis() {
       const totalActual = Object.values(costMap).reduce((s,v)=>s+v,0);
       const entries = Object.entries(costMap).sort((a,b)=>b[1]-a[1]);
       if (!entries.length) return '';
-      const barColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#84cc16','#ef4444','#14b8a6'];
+      const barColors = ['#3b82f6','#6366f1','#8b5cf6','#a855f7','#ec4899','#f59e0b','#84cc16','#10b981','#14b8a6','#06b6d4'];
+      // 优化颜色方案：统一使用协调的颜色序列
       return `
       <div class="card section-gap" style="margin-top:20px">
         <div class="card-header">

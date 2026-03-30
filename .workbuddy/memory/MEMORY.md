@@ -45,11 +45,30 @@
 
 ## 系统特性
 
-**前台功能**：
-- 活动报名表单（姓名、联系方式、单位、时间段）
-- 支持导出功能
+**权限体系**（2026-03-27 重构）：
+- **账号体系**：每个用户有独立 username/password/role/name，数据存 `mcm_users` + COS `sys_config.json` users字段
+- 三级角色：👑超级管理员 / 🛡️管理员 / 👤使用人员
+- 默认账号：superadmin/super2024, admin/admin123, viewer/view123
+- 登录：输入账号+密码，从users列表匹配，确定角色
+- 超级管理员：全部菜单，含系统设置、账户权限管理（创建/编辑/删除账号）
+- 管理员：可增删改活动/渠道 + 可访问系统设置（改自己密码），不可访问账户权限管理
+- 使用人员：只读，隐藏新建按钮和系统管理菜单
+- 账号数据通过 COS sys_config.json 跨设备同步，B设备可用bucket同步账号列表
 
-**后台管理**：
+**复盘页渠道功能**（2026-03-25）：
+- 复盘列表新增地市筛选、渠道导入按钮、关联渠道摘要显示
+- 活动详情「关联渠道」Tab 新增：地市自动预选筛选、搜索框、分层筛选、只看已关联、面板内导入按钮
+
+**COS集中管理**（2026-03-25）：
+- 超管保存COS配置时写 sys_config.json 到COS（包含密码）
+- 其他设备启动时 fetchSysConfigFromCOS() 自动同步
+
+**渠道名单**（2026-03-25）：
+- 侧边栏「渠道名单」页面，支持 Excel 导入（SheetJS），字段自动识别
+- 渠道数据存 localStorage mcm_channels + COS data.json channels 字段
+- 活动详情第6个Tab「关联渠道」，创建活动时可多选关联
+
+**后台管理**（原有）：
 - 默认账户: admin / admin123
 - 功能: 数据查看、筛选、导出、设置
 
@@ -148,4 +167,9 @@ python3 local-server.py
 
 - 2026-03-23: 创建 MEMORY.md，更新服务器密码为 cvte2020，诊断 SSH 账户禁用问题
 - 2026-03-23: 实现离线队列系统、腾讯云 COS 部署、本地服务器方案
-- 2026-03-23: 创建多套部署脚本和指南文档
+- 2026-03-27: 修复COS签名终极错误（signKey UTF-8字节处理），新密钥已全面验证
+- 2026-03-27: COS配置完全修通：新密钥 AKIDS3QaXHxPcbQ1NTLzlJc2DAtOegT0Mmlz / HEzWpwd7XqX2V9jEdtwkgYDdpmUWJrAE，存储桶 nnqgcvte2026-1414699807（ap-guangzhou），sys_config.json已写入COS，公有读私有写+空referer允许，data.json/channels.json读写全部200✅
+- 2026-03-29: Safari 对 myqcloud.com 域名触发下载弹窗无法解决，改用 Cloudflare Pages 托管静态文件。**正式访问地址改为 https://market-activity-system.pages.dev**（数据读写仍用腾讯云 COS）
+- 2026-03-29: COS 强制下载根本原因：**腾讯云2024年1月后新建存储桶的安全策略**，所有默认域名（对象存储域名、静态网站域名）访问均强制下载（x-cos-force-download: true），无法通过API或控制台关闭，唯一官方方案是绑定已备案自定义域名。❌ COS 任何默认域名都无法在浏览器直接打开 index.html。✅ 正式地址用 **https://market-activity-system.pages.dev**（Cloudflare Pages，无此限制，访问正常）
+- 2026-03-29: 登录兜底修复（v2026.03.29-12）：新设备/新域名本地无数据+COS连不上时，用内置账号 superadmin/super2024 和 admin/admin123 兜底登录
+- 2026-03-30: 视觉优化（v2026.03.30-11）：针对用户反馈进度条颜色"太花里胡哨，看着眼花缭乱"，进行全面颜色方案优化。**主要改进**：1) 进度条从随机多色改为基于状态和进度的统一配色（完成=绿色，执行中=橙色，策划中=蓝色，进度值决定深浅）；2) 各图表颜色从鲜艳混乱改为以蓝色系为主的协调方案；3) 整体视觉更专业、清爽。
