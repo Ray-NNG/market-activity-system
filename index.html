@@ -1056,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-13</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-14</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-13';
+const APP_VERSION = 'v2026.03.30-14';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6995,33 +6995,72 @@ async function importChannelExcel(input, callback) {  // async: 等待 COS 同�
     //       同一公司多个联系人/销售 → 用"、"连接合并到同一条记录
     const get = (row, idx) => idx !== -1 ? String(row[idx] || '').trim() : '';
 
+    // 判断是否是真正的公司名（不是背景描述/说明文字）
+    const isValidCompanyName = (s) => {
+      if (!s || s.length < 2) return false;
+      // 纯数字/标点
+      if (/^[\d\s\p{P}]+$/u.test(s)) return false;
+      // 背景描述关键词开头（说明这行是背景说明，不是公司名）
+      const descPrefixes = [
+        '主营：','主营:','主要：','主要:','客户情况','县领导','做过','合作','专注',
+        '年流水','年贡献','年销售','年营收','业务范围','客户群','主营产品','主营业务',
+        '负责','参与','主要客户','【','重点','日常','基本',
+      ];
+      const lower = s;
+      if (descPrefixes.some(p => lower.startsWith(p))) return false;
+      // 超长的一般是背景描述（公司名通常不超过40字）
+      if (s.length > 40) return false;
+      // 包含多个逗号（说明整行数据堆在一个格子里）
+      if ((s.match(/,/g) || []).length >= 3) return false;
+      return true;
+    };
+
     // 第一遍：按公司分组，收集所有行
     const companyMap = new Map(); // name → 数组 of 行
+    const companyOrder = []; // 保持插入顺序
     let lastCompanyName = '';
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      let rawName = get(row, colMap.name);
+      // 单元格内可能有换行符（一格写了多家公司）
+      const rawCell = get(row, colMap.name);
+      // 把单元格内的多行公司名拆开
+      const cellLines = rawCell.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+      // 有效的公司名列表（过滤掉描述性文字）
+      const validNames = cellLines.filter(isValidCompanyName);
 
-      // 公司名称为空 → 继承上一行的公司名（Excel合并单元格/留空写法）
-      if (!rawName) {
-        rawName = lastCompanyName;
+      let companyName = '';
+      if (validNames.length > 0) {
+        // 单元格有有效公司名，用第一个作为当前行主公司名
+        companyName = validNames[0];
+        lastCompanyName = companyName;
+        // 如果有多家公司（换行写法），把后续几家也注册到 map 里（共享同一行数据）
+        for (let j = 1; j < validNames.length; j++) {
+          const extraName = validNames[j];
+          if (!companyMap.has(extraName)) {
+            companyMap.set(extraName, []);
+            companyOrder.push(extraName);
+          }
+          companyMap.get(extraName).push(row);
+        }
       } else {
-        lastCompanyName = rawName;
+        // 公司名为空或无效 → 继承上一行（Excel合并单元格/留空写法）
+        companyName = lastCompanyName;
       }
 
-      if (!rawName || rawName.length < 2) continue;
-      // 过滤明显不是公司名的行（如说明行、纯数字等）
-      if (/^[\d\s\p{P}]+$/u.test(rawName)) continue;
+      if (!companyName || companyName.length < 2) continue;
 
-      if (!companyMap.has(rawName)) {
-        companyMap.set(rawName, []);
+      if (!companyMap.has(companyName)) {
+        companyMap.set(companyName, []);
+        companyOrder.push(companyName);
       }
-      companyMap.get(rawName).push(row);
+      companyMap.get(companyName).push(row);
     }
 
-    // 第二遍：每个公司合并多行数据
+    // 第二遍：每个公司合并多行数据（按录入顺序）
     const imported = [];
-    companyMap.forEach((rowList, name) => {
+    companyOrder.forEach(name => {
+      const rowList = companyMap.get(name);
+      if (!rowList || rowList.length === 0) return;
       // 非多值字段：取第一行有值的
       const pickFirst = (idx) => {
         for (const r of rowList) {
