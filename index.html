@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-20</title>
+<title>市场活动全流程管理系统 v2026.03.30-21</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-20';
+const APP_VERSION = 'v2026.03.30-21';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -7025,12 +7025,12 @@ async function importChannelExcel(input, callback) {  // async: 等待 COS 同�
     const CITY_LIST = Object.keys(GX_DISTRICTS || {}).concat(['海口市','三亚市','儋州市','文昌市','琼海市','万宁市','东方市','澄迈县','定安县','屯昌县','临高县']);
     const normalizeCity = (raw) => {
       if (!raw) return raw;
-      // 已经以「市」「县」「区」结尾的，不处理
-      if (/[市县区州]$/.test(raw)) return raw;
-      // 尝试匹配已知地市（忽略末尾「市」）
-      const matched = CITY_LIST.find(c => c.replace(/市$/, '') === raw || c === raw + '市');
-      if (matched) return matched;
-      // 默认：加「市」
+      // 第一步：精确匹配已知城市列表（含/不含「市」均尝试）
+      if (CITY_LIST.includes(raw)) return raw; // 已是标准名，直接返回
+      const matchedFull = CITY_LIST.find(c => c.replace(/[市县区]$/, '') === raw);
+      if (matchedFull) return matchedFull; // 「玉林」→「玉林市」，「梧州」→「梧州市」
+      // 第二步：未在列表中，末尾已有「市/县/区」则保持不变，否则补「市」
+      if (/[市县区]$/.test(raw)) return raw;
       return raw + '市';
     };
 
@@ -7865,16 +7865,20 @@ loadChannels(); // 加载本地渠道数据
 
 // ── 一次性迁移：修复已有渠道数据中地市名称缺少「市」后缀的问题 ──────────
 (function fixChannelCityNames() {
-  const MIGRATE_KEY = 'mcm_city_fix_v2';
+  const MIGRATE_KEY = 'mcm_city_fix_v3';
   if (localStorage.getItem(MIGRATE_KEY)) return; // 已执行过，跳过
 
-  const cityKeys = Object.keys(typeof GX_DISTRICTS !== 'undefined' ? GX_DISTRICTS : {});
+  const cityKeys = Object.keys(typeof GX_DISTRICTS !== 'undefined' ? GX_DISTRICTS : {})
+    .concat(['海口市','三亚市','儋州市','文昌市','琼海市','万宁市','东方市']);
   const normalizeCity = (raw) => {
     if (!raw) return raw;
-    if (/[市县区州]$/.test(raw)) return raw; // 已有后缀，不处理
-    const matched = cityKeys.find(c => c.replace(/市$/, '') === raw || c === raw + '市');
-    if (matched) return matched;
-    return raw + '市'; // 默认补「市」
+    // 第一步：精确匹配已知城市列表（「梧州」→「梧州市」，不被「州」后缀误拦）
+    if (cityKeys.includes(raw)) return raw;
+    const matchedFull = cityKeys.find(c => c.replace(/[市县区]$/, '') === raw);
+    if (matchedFull) return matchedFull;
+    // 第二步：末尾已有「市/县/区」则不处理，否则补「市」
+    if (/[市县区]$/.test(raw)) return raw;
+    return raw + '市';
   };
 
   let changed = 0;
@@ -7888,7 +7892,7 @@ loadChannels(); // 加载本地渠道数据
     saveChannels(); // 保存本地 + 同步 COS
     console.log(`✅ 地市名称修复完成，共修正 ${changed} 条渠道数据`);
   }
-  localStorage.setItem(MIGRATE_KEY, '1'); // 标记已执行（v2）
+  localStorage.setItem(MIGRATE_KEY, '1'); // 标记已执行（v3）
 })();
 
 refreshInboxBadge(); // 初始化信息接收站红点
