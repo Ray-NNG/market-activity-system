@@ -1056,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-12</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-13</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-12';
+const APP_VERSION = 'v2026.03.30-13';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6990,33 +6990,69 @@ async function importChannelExcel(input, callback) {  // async: 等待 COS 同�
     }
     console.log('[import] headers:', headers, 'colMap:', colMap);
 
-    const imported = [];
+    // ── 行解析：按公司名称分组，同一公司多行合并 ──────────────────────
+    // 规则：公司名称为空 → 沿用上一行的公司名称（合并单元格或留空均支持）
+    //       同一公司多个联系人/销售 → 用"、"连接合并到同一条记录
+    const get = (row, idx) => idx !== -1 ? String(row[idx] || '').trim() : '';
+
+    // 第一遍：按公司分组，收集所有行
+    const companyMap = new Map(); // name → 数组 of 行
+    let lastCompanyName = '';
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      const name = colMap.name !== -1 ? String(row[colMap.name]||'').trim() : '';
-      if (!name) continue;
-      // 加强过滤：公司名称不能是背景描述（如包含"主营："、"年流水"、"年贡献"等）
-      const isLikelyBackground = (name) => {
-        const lower = name.toLowerCase();
-        const backgroundMarkers = ['主营：','主营:','主要：','主要:','年流水','年贡献','年销售额','年营收','合作','专注','主营产品','主营业务','业务范围','主要客户','客户群体','客户分布'];
-        return backgroundMarkers.some(m => lower.includes(m.toLowerCase()));
+      let rawName = get(row, colMap.name);
+
+      // 公司名称为空 → 继承上一行的公司名（Excel合并单元格/留空写法）
+      if (!rawName) {
+        rawName = lastCompanyName;
+      } else {
+        lastCompanyName = rawName;
+      }
+
+      if (!rawName || rawName.length < 2) continue;
+      // 过滤明显不是公司名的行（如说明行、纯数字等）
+      if (/^[\d\s\p{P}]+$/u.test(rawName)) continue;
+
+      if (!companyMap.has(rawName)) {
+        companyMap.set(rawName, []);
+      }
+      companyMap.get(rawName).push(row);
+    }
+
+    // 第二遍：每个公司合并多行数据
+    const imported = [];
+    companyMap.forEach((rowList, name) => {
+      // 非多值字段：取第一行有值的
+      const pickFirst = (idx) => {
+        for (const r of rowList) {
+          const v = get(r, idx);
+          if (v) return v;
+        }
+        return '';
       };
-      if (isLikelyBackground(name) || name.length < 2 || /^[\d\s\p{P}]+$/u.test(name)) continue;
+      // 多值字段（联系人、负责销售、联系方式）：合并所有行，去重，用"、"拼接
+      const mergeField = (idx) => {
+        const vals = rowList.map(r => get(r, idx)).filter(v => !!v);
+        // 去重
+        const unique = [...new Set(vals)];
+        return unique.join('、');
+      };
+
       imported.push({
-        id:         'ch_' + Date.now() + '_' + i,
+        id:         'ch_' + Date.now() + '_' + imported.length,
         name,
-        tier:       colMap.tier !== -1 ? String(row[colMap.tier]||'').trim() : '',
-        city:       colMap.city !== -1 ? String(row[colMap.city]||'').trim() : '',
-        district:   colMap.district !== -1 ? String(row[colMap.district]||'').trim() : '',
-        sales:      colMap.sales !== -1 ? String(row[colMap.sales]||'').trim() : '',
-        contact:    colMap.contact !== -1 ? String(row[colMap.contact]||'').trim() : '',
-        phone:      colMap.phone !== -1 ? String(row[colMap.phone]||'').trim() : '',
-        background: colMap.background !== -1 ? String(row[colMap.background]||'').trim() : '',
-        history:    colMap.history !== -1 ? String(row[colMap.history]||'').trim() : '',
-        feedback:   colMap.feedback !== -1 ? String(row[colMap.feedback]||'').trim() : '',
+        tier:       pickFirst(colMap.tier),
+        city:       pickFirst(colMap.city),
+        district:   pickFirst(colMap.district),
+        sales:      mergeField(colMap.sales),     // 负责销售：多行合并
+        contact:    mergeField(colMap.contact),   // 关键联系人：多行合并
+        phone:      mergeField(colMap.phone),     // 联系方式：多行合并
+        background: pickFirst(colMap.background),
+        history:    pickFirst(colMap.history !== undefined ? colMap.history : -1),
+        feedback:   pickFirst(colMap.feedback !== undefined ? colMap.feedback : -1),
         updatedAt:  new Date().toISOString()
       });
-    }
+    });
 
     // 去重（按名称）
     let added = 0, updated = 0;
