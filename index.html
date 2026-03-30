@@ -1100,10 +1100,12 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
           </select>
           <label class="btn btn-outline btn-sm" style="cursor:pointer;font-size:12px" id="review-import-channel-btn">
             📥 导入渠道名单
-            <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importChannelExcel(this)">
+            <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importReviewChannels(this)">
           </label>
         </div>
       </div>
+      <!-- 导入结果提示区 -->
+      <div id="review-channel-import-result" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px"></div>
       <div style="display:flex;flex-direction:column;gap:16px;" id="review-list"></div>
     </div>
 
@@ -1776,7 +1778,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-01';
+const APP_VERSION = 'v2026.03.30-02';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5368,6 +5370,187 @@ function importChannelExcelInPanel(input, activityId) {
       alert('导入失败：' + err.message);
     }
   });
+}
+
+// ===== 复盘页：导入渠道名单 + 自动匹配关联活动 =====
+async function importReviewChannels(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  const resultEl = document.getElementById('review-channel-import-result');
+  function showResult(msg, type) {
+    if (!resultEl) return;
+    const bg   = { success:'#d1fae5', warn:'#fef9c3', error:'#fee2e2', info:'#eff6ff' }[type] || '#eff6ff';
+    const color = { success:'#065f46', warn:'#92400e', error:'#991b1b', info:'#1e40af' }[type] || '#1e40af';
+    resultEl.style.display = 'block';
+    resultEl.style.background = bg;
+    resultEl.style.color = color;
+    resultEl.innerHTML = msg;
+  }
+
+  showResult('📊 正在解析文件…', 'info');
+
+  try {
+    // ── 1. 解析文件 ──────────────────────────────────────────────────
+    let rows = [];
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      rows = await parseCsvFile(file);
+    } else if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+      rows = await parseXlsxFile(file);
+    } else {
+      throw new Error('仅支持 .xlsx / .xls / .csv 格式');
+    }
+    if (!rows.length) throw new Error('文件中没有有效数据');
+
+    const headers = rows[0].map(h => String(h || '').trim());
+
+    // ── 2. 尝试识别"渠道名称"列（只需名称用于匹配） ─────────────────
+    //    优先用 autoDetectColumns，退路：把第一列当渠道名
+    const colMap = autoDetectColumns(headers);
+    const nameColIdx = colMap.name !== -1 ? colMap.name : 0;
+
+    // 提取文件中所有渠道名称（去空行）
+    const importedNames = [];
+    for (let i = 1; i < rows.length; i++) {
+      const name = String(rows[i][nameColIdx] || '').trim();
+      if (name) importedNames.push(name);
+    }
+    if (!importedNames.length) throw new Error('未能识别出渠道名称列，请确保表格第一行有"渠道名称"表头');
+
+    showResult(`📋 识别到 ${importedNames.length} 个渠道名称，正在匹配渠道库…`, 'info');
+
+    // ── 3. 与渠道库做精确 / 模糊匹配 ──────────────────────────────────
+    loadChannels(); // 确保最新
+    const matched   = [];   // { name, channel }
+    const unmatched = [];   // string[]
+
+    importedNames.forEach(name => {
+      // 精确匹配
+      let ch = channels.find(c => c.name === name);
+      if (!ch) {
+        // 模糊匹配：渠道库名称包含导入名，或导入名包含渠道库名称（长度 ≥ 4 防止误匹配）
+        ch = channels.find(c =>
+          name.length >= 4 && (c.name.includes(name) || name.includes(c.name))
+        );
+      }
+      if (ch) matched.push({ name, channel: ch });
+      else     unmatched.push(name);
+    });
+
+    if (!matched.length) {
+      showResult(
+        `⚠️ 未能匹配到任何渠道（共 ${importedNames.length} 个名称）。<br>` +
+        `请先确认渠道名单页面已有对应渠道，或先导入渠道库后再操作。`,
+        'warn'
+      );
+      return;
+    }
+
+    // ── 4. 确定目标活动（复盘中/已完成） ──────────────────────────────
+    const reviewActivities = activities.filter(a => a.status === '复盘中' || a.status === '已完成');
+    if (!reviewActivities.length) {
+      showResult('⚠️ 当前没有"复盘中"或"已完成"的活动，无法关联渠道。', 'warn');
+      return;
+    }
+
+    // 筛选地市（如果当前有筛选）
+    const filterCity = document.getElementById('review-filter-city')?.value || '';
+    const candidates = filterCity
+      ? reviewActivities.filter(a => a.city === filterCity)
+      : reviewActivities;
+
+    if (candidates.length === 1) {
+      // 只有一个目标活动，直接关联
+      await _doLinkChannelsToActivity(candidates[0], matched, unmatched, showResult);
+    } else {
+      // 多个活动，弹窗让用户选择
+      _showSelectActivityModal(candidates, matched, unmatched, showResult);
+    }
+
+  } catch(e) {
+    showResult('❌ 导入失败：' + e.message, 'error');
+  }
+}
+
+// 弹窗选择目标活动
+function _showSelectActivityModal(candidates, matched, unmatched, showResult) {
+  let overlay = document.getElementById('review-select-act-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'review-select-act-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;display:flex;align-items:center;justify-content:center';
+    overlay.onclick = function(e) { if (e.target === this) this.remove(); };
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:0;width:480px;max-width:95vw;max-height:80vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.2);display:flex;flex-direction:column">
+      <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-weight:700;font-size:16px">📥 选择要关联渠道的活动</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">
+          已匹配 <strong>${matched.length}</strong> 个渠道，请选择要关联到哪个活动
+          ${unmatched.length ? `，<span style="color:#d97706">${unmatched.length} 个未匹配</span>` : ''}
+        </div>
+      </div>
+      <div style="overflow-y:auto;padding:14px 20px;display:flex;flex-direction:column;gap:8px">
+        ${candidates.map(a => `
+          <div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:all .15s"
+            onmouseover="this.style.borderColor='#6366f1';this.style.background='#f5f3ff'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.background=''"
+            onclick="document.getElementById('review-select-act-overlay').remove();_doLinkChannelsToActivity(activities.find(x=>x.id==='${a.id}'),window._reviewMatchedChannels,window._reviewUnmatchedChannels,window._reviewShowResult)">
+            <div style="font-weight:600;font-size:14px">${a.name}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap">
+              ${a.city ? `<span>📍 ${a.city}</span>` : ''}
+              <span>状态：${a.status}</span>
+              <span>当前已关联 ${(a.channelIds||[]).length} 家渠道</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);text-align:right">
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('review-select-act-overlay').remove()">取消</button>
+      </div>
+    </div>
+  `;
+  // 临时挂到 window 供 onclick 调用
+  window._reviewMatchedChannels  = matched;
+  window._reviewUnmatchedChannels = unmatched;
+  window._reviewShowResult = showResult;
+}
+
+// 执行关联
+async function _doLinkChannelsToActivity(activity, matched, unmatched, showResult) {
+  if (!activity) return;
+  if (!activity.channelIds) activity.channelIds = [];
+
+  let newLinked = 0;
+  matched.forEach(({ channel }) => {
+    if (!activity.channelIds.includes(channel.id)) {
+      activity.channelIds.push(channel.id);
+      newLinked++;
+    }
+  });
+
+  await syncData();
+  renderReview(); // 刷新复盘列表
+
+  const total   = activity.channelIds.length;
+  const already = matched.length - newLinked;
+  let msg = `✅ 已将 <strong>${matched.length}</strong> 个渠道关联到「${activity.name}」`;
+  if (newLinked > 0)  msg += `（新增 ${newLinked} 家`;
+  if (already > 0)    msg += `，${already} 家已关联`;
+  if (newLinked > 0)  msg += `）`;
+  msg += `，共 ${total} 家。`;
+  if (unmatched.length) {
+    msg += `<br><span style="color:#d97706">⚠️ ${unmatched.length} 个名称未在渠道库中找到匹配：${unmatched.slice(0,5).map(n=>`「${n}」`).join('、')}${unmatched.length>5?`…等`:''}。如需关联，请先在「渠道名单」页面添加。</span>`;
+  }
+  showResult(msg, 'success');
+  // 8秒后自动隐藏
+  setTimeout(() => {
+    const el = document.getElementById('review-channel-import-result');
+    if (el) el.style.display = 'none';
+  }, 10000);
 }
 
 function toggleActivityChannel(activityId, channelId, checked) {
