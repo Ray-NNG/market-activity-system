@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-03</title>
+<title>市场活动全流程管理系统 v2026.03.30-04</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -5093,6 +5093,106 @@ function renderOwnerAnalysis() {
           })()}
         </div>
       </div>
+
+    <!-- 费用结构分析（按实际费用项归类） -->
+    ${(() => {
+      // 汇总所有实际花费项，按名称分类
+      const costMap = {};
+      filtered.forEach(a => {
+        (a.actualCosts||[]).forEach(c => {
+          const key = (c.name||'其他').trim() || '其他';
+          costMap[key] = (costMap[key] || 0) + (Number(c.amount)||0);
+        });
+        if (Number(a.setupFee) > 0) costMap['搭建费用'] = (costMap['搭建费用']||0) + Number(a.setupFee);
+        if (Number(a.logisticsFee) > 0) costMap['物流运输'] = (costMap['物流运输']||0) + Number(a.logisticsFee);
+      });
+      const totalActual = Object.values(costMap).reduce((s,v)=>s+v,0);
+      const entries = Object.entries(costMap).sort((a,b)=>b[1]-a[1]);
+      if (!entries.length) return '';
+      const barColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#06b6d4','#84cc16','#ef4444','#14b8a6'];
+      return `
+      <div class="card section-gap" style="margin-top:20px">
+        <div class="card-header">
+          <div class="card-title">📊 费用结构分析</div>
+          <span style="font-size:12px;color:var(--text-muted)">实际支出合计 ¥${totalActual.toLocaleString()}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+          ${entries.map(([name, amt], i) => {
+            const pct = totalActual > 0 ? Math.round(amt/totalActual*100) : 0;
+            const color = barColors[i % barColors.length];
+            return `
+            <div style="display:grid;grid-template-columns:130px 1fr 100px;align-items:center;gap:10px">
+              <span style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${name}">${name}</span>
+              <div style="background:#f1f5f9;border-radius:4px;height:14px;overflow:hidden">
+                <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:4px;background:${color};transition:width .3s"></div>
+              </div>
+              <span style="font-size:12px;color:var(--text-muted);text-align:right;white-space:nowrap">
+                ¥${amt.toLocaleString()} <span style="color:${color};font-weight:600">${pct}%</span>
+              </span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    })()}
+
+    <!-- 讲师/运营成效 -->
+    ${!showByOwner ? (() => {
+      // 收集该负责人活动关联的所有渠道的历史推广记录中的 speaker
+      const activityIds = new Set(filtered.map(a => String(a.id)));
+      // 找到关联到这些活动的渠道
+      const linkedChannels = (typeof channels !== 'undefined' ? channels : []).filter(c =>
+        Array.isArray(c.channelIds) ? false : // 渠道本身不含活动id
+        activities.some(a => activityIds.has(String(a.id)) && (a.channelIds||[]).includes(c.id))
+      );
+      // 从渠道history中提取speaker数据（按活动类型统计）
+      const speakerMap = {};
+      linkedChannels.forEach(c => {
+        (c.history||[]).forEach(r => {
+          const sp = (r.speaker||'').trim();
+          if (!sp) return;
+          if (!speakerMap[sp]) speakerMap[sp] = { total: 0, types: {}, channels: new Set() };
+          speakerMap[sp].total++;
+          const t = (r.type||'其他').trim();
+          speakerMap[sp].types[t] = (speakerMap[sp].types[t]||0) + 1;
+          speakerMap[sp].channels.add(c.name);
+        });
+      });
+      const speakerEntries = Object.entries(speakerMap).sort((a,b)=>b[1].total-a[1].total);
+      if (!speakerEntries.length) return '';
+      const tColors = ['#4f46e5','#10b981','#f59e0b','#3b82f6','#8b5cf6','#ec4899'];
+      const allTypes = [...new Set(speakerEntries.flatMap(([,s])=>Object.keys(s.types)))];
+      const typeColorMap = Object.fromEntries(allTypes.map((t,i)=>[t, tColors[i%tColors.length]]));
+      const maxTotal = Math.max(...speakerEntries.map(([,s])=>s.total), 1);
+      return `
+      <div class="card section-gap" style="margin-top:20px">
+        <div class="card-header"><div class="card-title">🎤 讲师/运营成效</div></div>
+        ${allTypes.length > 1 ? `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          ${allTypes.map(t=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)">
+            <span style="width:8px;height:8px;border-radius:2px;background:${typeColorMap[t]};flex-shrink:0"></span>${t}
+          </span>`).join('')}
+        </div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${speakerEntries.slice(0,8).map(([name, stat]) => {
+            const segments = Object.entries(stat.types).sort((a,b)=>b[1]-a[1])
+              .map(([t,n])=>`<div style="height:100%;width:${(n/maxTotal)*100}%;background:${typeColorMap[t]||'#4f46e5'};min-width:3px" title="${t}: ${n}次"></div>`).join('');
+            const typeTags = Object.entries(stat.types).map(([t,n])=>
+              `<span style="font-size:10px;padding:1px 6px;border-radius:20px;background:${typeColorMap[t]||'#4f46e5'}22;color:${typeColorMap[t]||'#4f46e5'}">${t} ×${n}</span>`).join('');
+            return `
+            <div style="display:grid;grid-template-columns:90px 1fr auto;align-items:center;gap:10px">
+              <span style="font-size:13px;font-weight:600;white-space:nowrap">${name}</span>
+              <div>
+                <div style="height:14px;border-radius:4px;overflow:hidden;background:#f1f5f9;display:flex">${segments}</div>
+                <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">${typeTags}</div>
+              </div>
+              <span style="font-size:12px;color:var(--text-muted);text-align:right;white-space:nowrap">共 <strong>${stat.total}</strong> 次<br>
+                <span style="font-size:10px">${stat.channels.size} 家渠道</span>
+              </span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    })() : ''}
 
     <!-- 活动列表 -->
     <div class="card">
