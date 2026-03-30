@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-19</title>
+<title>市场活动全流程管理系统 v2026.03.30-20</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1056,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-19</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-20</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -7865,7 +7865,7 @@ loadChannels(); // 加载本地渠道数据
 
 // ── 一次性迁移：修复已有渠道数据中地市名称缺少「市」后缀的问题 ──────────
 (function fixChannelCityNames() {
-  const MIGRATE_KEY = 'mcm_city_fix_v1';
+  const MIGRATE_KEY = 'mcm_city_fix_v2';
   if (localStorage.getItem(MIGRATE_KEY)) return; // 已执行过，跳过
 
   const cityKeys = Object.keys(typeof GX_DISTRICTS !== 'undefined' ? GX_DISTRICTS : {});
@@ -7888,7 +7888,7 @@ loadChannels(); // 加载本地渠道数据
     saveChannels(); // 保存本地 + 同步 COS
     console.log(`✅ 地市名称修复完成，共修正 ${changed} 条渠道数据`);
   }
-  localStorage.setItem(MIGRATE_KEY, '1'); // 标记已执行
+  localStorage.setItem(MIGRATE_KEY, '1'); // 标记已执行（v2）
 })();
 
 refreshInboxBadge(); // 初始化信息接收站红点
