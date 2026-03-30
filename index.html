@@ -1449,6 +1449,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
             </select>
           </div>
           <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="downloadChannelTemplate()" title="下载渠道导入模板">📋 下载模板</button>
             <label class="btn btn-primary" style="cursor:pointer" id="excel-import-btn">
               📥 导入Excel
               <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importChannelExcel(this)">
@@ -1778,7 +1779,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-04';
+const APP_VERSION = 'v2026.03.30-05';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6160,6 +6161,37 @@ function deleteChannel(id) {
   saveChannels();
   updateChannelFilters();
   renderChannelList();
+}
+
+// ===== 下载渠道导入模板 =====
+function downloadChannelTemplate() {
+  // 模板字段：公司名称、所在地市、负责销售、关键联系人（用户要求的4个核心字段）+ 其他常用字段
+  const headers = ['公司名称','所在地市','负责销售','关键联系人','联系方式','渠道分层','区/县'];
+  const examples = [
+    ['广州联通渠道代理商','广州','张三','李经理','13800000001','一级渠道','天河区'],
+    ['深圳移动合作伙伴','深圳','王五','陈总','13900000002','二级渠道','南山区'],
+    ['（请在此行开始填写，可删除示例数据）','','','','','',''],
+  ];
+
+  // 生成 CSV（UTF-8 BOM，Excel 直接打开不乱码）
+  const BOM = '\uFEFF';
+  const escape = v => {
+    const s = String(v ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  const lines = [
+    headers.map(escape).join(','),
+    ...examples.map(row => row.map(escape).join(','))
+  ];
+  const csv = BOM + lines.join('\r\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = '渠道导入模板.csv';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function exportChannelCsv() {
