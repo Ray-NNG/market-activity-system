@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-06</title>
+<title>市场活动全流程管理系统 v2026.03.30-07</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -931,7 +931,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.29-18</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-07</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1814,7 +1814,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-06';
+const APP_VERSION = 'v2026.03.30-07';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6744,11 +6744,11 @@ function deleteChannel(id) {
 // ===== 下载渠道导入模板 =====
 function downloadChannelTemplate() {
   // 模板字段：公司名称、所在地市、负责销售、关键联系人（用户要求的4个核心字段）+ 其他常用字段
-  const headers = ['公司名称','所在地市','负责销售','关键联系人','联系方式','渠道分层','区/县'];
+  const headers = ['公司名称','所在地市','负责销售','关键联系人','联系方式','渠道分层','区/县','渠道背景'];
   const examples = [
-    ['广州联通渠道代理商','广州','张三','李经理','13800000001','一级渠道','天河区'],
-    ['深圳移动合作伙伴','深圳','王五','陈总','13900000002','二级渠道','南山区'],
-    ['（请在此行开始填写，可删除示例数据）','','','','','',''],
+    ['广州联通渠道代理商','广州','张三','李经理','13800000001','一级渠道','天河区','合作五年以上，主营政企客户，年贡献流水约200万，配合度高'],
+    ['深圳移动合作伙伴','深圳','王五','陈总','13900000002','二级渠道','南山区','专注中小企业市场，有固定门店，本季度重点拓展对象'],
+    ['（请在此行开始填写，可删除示例数据）','','','','','','',''],
   ];
 
   // 生成 CSV（UTF-8 BOM，Excel 直接打开不乱码）
