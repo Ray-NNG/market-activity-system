@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-16</title>
+<title>市场活动全流程管理系统 v2026.03.30-17</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1056,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-15</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-17</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-16';
+const APP_VERSION = 'v2026.03.30-17';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6992,27 +6992,29 @@ async function importChannelExcel(input, callback) {  // async: 等待 COS 同�
 
     // ── 行解析：一行 Excel = 一条渠道记录 ──────────────────────────────
     // 规则：
-    //   1. 公司名称单元格内有换行（多家公司）→ 全部名称用"、"合并为一个 name（同一行显示）
-    //   2. 公司名称为空 → 继承上一行的公司名（支持 Excel 合并单元格/留空）
-    //   3. 每个 Excel 行对应一条记录，不拆不合并行
+    //   1. 公司名称单元格内有换行（多家公司）→ 全部有效名称用"、"合并为 name
+    //   2. 公司名称为空，且其他字段也全为空 → 合并单元格的后续空行，直接跳过
+    //   3. 公司名称为空，其他字段有值 → 继承上一行的公司名（同一公司多行联系人）
     const get = (row, idx) => idx !== -1 ? String(row[idx] || '').trim() : '';
 
-    // 从单元格文本中提取有效公司名（过滤纯描述性内容）
+    // 检查一行除公司名之外是否还有其他有效数据
+    const hasOtherData = (row) => {
+      const checkIdxs = [colMap.city, colMap.sales, colMap.contact, colMap.phone, colMap.tier, colMap.district, colMap.background];
+      return checkIdxs.some(idx => idx !== -1 && get(row, idx) !== '');
+    };
+
+    // 从单元格文本中提取有效公司名（过滤纯描述性内容行）
     const extractCompanyNames = (cellText) => {
-      // 按换行拆分，每行单独判断
       const lines = cellText.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
       return lines.filter(s => {
         if (s.length < 2) return false;
-        // 纯数字/标点行排除
         if (/^[\d\s\p{P}]+$/u.test(s)) return false;
-        // 以描述性关键词开头的行排除（这些是背景说明，不是公司名）
         const descPrefixes = [
           '主营：','主营:','主要：','主要:','客户情况','县领导','做过','合作','专注',
           '年流水','年贡献','年销售','年营收','业务范围','客户群','主营产品','主营业务',
           '负责','参与','主要客户','【','重点','日常','基本',
         ];
         if (descPrefixes.some(p => s.startsWith(p))) return false;
-        // 超长字符串一般是描述（公司名通常不超过40字）
         if (s.length > 40) return false;
         return true;
       });
@@ -7030,11 +7032,16 @@ async function importChannelExcel(input, callback) {  // async: 等待 COS 同�
 
       let name = '';
       if (validNames.length > 0) {
-        // 把同一单元格内所有公司名合并为一条记录的 name（用"、"连接）
+        // 把同一单元格内所有公司名合并为 name（用"、"连接）
         name = validNames.join('、');
         lastCompanyName = name;
       } else {
-        // 公司名为空或无效 → 继承上一行（Excel 合并单元格 / 留空写法）
+        // 公司名为空：检查其他字段是否有数据
+        if (!hasOtherData(row)) {
+          // 其他字段也全空 → 这是合并单元格展开的后续空行，直接跳过
+          continue;
+        }
+        // 其他字段有数据但公司名为空 → 继承上一行的公司名
         name = lastCompanyName;
       }
 
