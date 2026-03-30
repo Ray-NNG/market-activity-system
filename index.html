@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-11</title>
+<title>市场活动全流程管理系统 v2026.03.30-12</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1056,7 +1056,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-11</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-12</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-11';
+const APP_VERSION = 'v2026.03.30-12';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6959,13 +6959,36 @@ async function importChannelExcel(input, callback) {  // async: 等待 COS 同�
 
     if (!rows.length) throw new Error('文件中没有有效数据');
 
-    // 自动识别列（先看是否是标准模板，再用智能识别）
+    // ── 列识别：优先按模板列顺序直接映射 ──────────────────────────────
+    // 模板列顺序：公司名称(0) 所在地市(1) 负责销售(2) 关键联系人(3) 联系方式(4) 渠道分层(5) 区/县(6) 渠道背景(7)
+    const TEMPLATE_COLS = ['公司名称','所在地市','负责销售','关键联系人','联系方式','渠道分层','区/县','渠道背景'];
     const headers = rows[0].map(h => String(h || '').trim());
-    const colMap = autoDetectColumns(headers);
-    
-    // 调试：输出识别到的列映射
-    console.log('[import] headers:', headers);
-    console.log('[import] colMap:', colMap);
+
+    // 检查是否是标准模板（第一列是"公司名称"或"渠道名称"）
+    const isTemplateFmt = headers.length >= 1 && (headers[0] === '公司名称' || headers[0] === '渠道名称');
+
+    let colMap;
+    if (isTemplateFmt) {
+      // ✅ 标准模板：按固定列位直接映射，简单可靠
+      colMap = {
+        name:       0,  // 公司名称
+        city:       1,  // 所在地市
+        sales:      2,  // 负责销售
+        contact:    3,  // 关键联系人
+        phone:      4,  // 联系方式
+        tier:       5,  // 渠道分层
+        district:   6,  // 区/县
+        background: 7,  // 渠道背景
+        history:    -1,
+        feedback:   -1
+      };
+      console.log('[import] 标准模板格式，按列位直接映射');
+    } else {
+      // 兜底：非标准格式才走模糊识别
+      colMap = autoDetectColumns(headers);
+      console.log('[import] 非标准格式，使用模糊识别');
+    }
+    console.log('[import] headers:', headers, 'colMap:', colMap);
 
     const imported = [];
     for (let i = 1; i < rows.length; i++) {
