@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-11</title>
+<title>市场活动全流程管理系统 v2026.03.31-12</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1979,7 +1979,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-11';
+const APP_VERSION = 'v2026.03.31-12';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -3448,11 +3448,20 @@ function openDetail(id) {
   document.getElementById('detail-title').textContent = a.name;
   const btn = document.getElementById('detail-action-btn');
   btn.disabled = false;
-  if(a.status==='策划中') { btn.textContent='转为执行中'; btn.className='btn btn-success'; }
-  else if(a.status==='执行中') { btn.textContent='进入复盘阶段'; btn.className='btn btn-primary'; }
-  else if(a.status==='复盘中') { btn.textContent='标记已完成'; btn.className='btn btn-success'; }
-  else { btn.textContent='已完成'; btn.className='btn btn-outline'; btn.disabled=true; }
-  btn.onclick = () => { advanceActivity(id); closeModal('modal-detail'); };
+  if(a.status==='策划中') { btn.textContent='转为执行中'; btn.className='btn btn-success'; btn.onclick = () => { advanceActivity(id); closeModal('modal-detail'); }; }
+  else if(a.status==='执行中') { btn.textContent='进入复盘阶段'; btn.className='btn btn-primary'; btn.onclick = () => { advanceActivity(id); closeModal('modal-detail'); }; }
+  else if(a.status==='复盘中') {
+    btn.textContent='活动完结';
+    btn.className='btn btn-outline';
+    btn.style.borderColor='#ef4444';
+    btn.style.color='#ef4444';
+    btn.onclick = () => {
+      if(!confirm(`确定将「${a.name}」标记为已完成？\n\n活动完结后状态将无法回退，请确认复盘工作已全部完成。`)) return;
+      advanceActivity(id);
+      closeModal('modal-detail');
+    };
+  }
+  else { btn.textContent='已完成'; btn.className='btn btn-outline'; btn.disabled=true; btn.onclick=null; }
 
   const doneTasks = a.tasks.filter(t=>t.done).length;
   const totalFiles = getFiles(id).length;
@@ -6118,11 +6127,11 @@ function confirmAddFollowupChannel(activityId) {
     finalChannelId = newChannel.id;
     matchedChannel = newChannel; // 标记为已匹配
   } else {
-    // 已匹配到渠道：如果用户填写了联系人或背景，更新渠道名单中的信息
+    // 已匹配到渠道：如果用户填写了联系人或背景，覆盖更新渠道名单中的信息（不论原来是否有值）
     const idx = channels.findIndex(c => c.id === matchedChannel.id);
     if (idx !== -1) {
-      if (channelContact && !channels[idx].contact) channels[idx].contact = channelContact;
-      if (channelBackground && !channels[idx].background) channels[idx].background = channelBackground;
+      if (channelContact) channels[idx].contact = channelContact;
+      if (channelBackground) channels[idx].background = channelBackground;
       channels[idx].updatedAt = new Date().toISOString();
       saveChannels();
     }
