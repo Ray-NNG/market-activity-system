@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-19</title>
+<title>市场活动全流程管理系统 v2026.03.31-20</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1984,7 +1984,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-19';
+const APP_VERSION = 'v2026.03.31-20';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5874,7 +5874,7 @@ function renderChannelFollowupTable(activityId) {
           <button type="button" class="btn btn-primary btn-sm" onclick="addFollowupChannel('${activityId}')" style="font-size:12px;padding:4px 10px">+ 添加渠道</button>
         </div>
         ${followupData.length === 0 ? '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px">暂无预约渠道，点击右上角按钮添加</div>' : `
-          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:360px;overflow-y:auto">
             ${followupData.map((item, idx) => {
               const channel = channels.find(c => c.id === item.channelId);
               const channelName = channel?.name || item.channelName || '未知渠道';
@@ -5883,9 +5883,13 @@ function renderChannelFollowupTable(activityId) {
               // 负责销售：优先取保存时记录的活动负责销售（item.sales），再备选渠道名单的 sales
               const matchedSales = item.sales || channel?.sales || '';
               const isMatched = item.matched !== false; // 默认视为已匹配
+              // 渠道背景摘要：最多显示30字
+              const bgSummary = channelBackground ? (channelBackground.length > 30 ? channelBackground.slice(0, 30) + '…' : channelBackground) : '';
+              const bgEscaped = channelBackground.replace(/'/g, "\\'").replace(/\n/g, '\\n');
+              const nameEscaped = channelName.replace(/'/g, "\\'");
               return `
                 <div class="followup-row" style="display:flex;flex-direction:column;padding:12px;border-bottom:1px solid var(--border);${idx === followupData.length - 1 ? 'border-bottom:none' : ''}">
-                  <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
+                  <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
                     <div style="flex:1;min-width:0">
                       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
                         <span style="font-weight:600;font-size:14px;color:var(--text)">${channelName}</span>
@@ -5893,11 +5897,15 @@ function renderChannelFollowupTable(activityId) {
                       </div>
                       ${matchedSales ? `<div style="font-size:12px;color:var(--text-muted)">👤 负责销售：${matchedSales}</div>` : ''}
                       ${channelContact ? `<div style="font-size:12px;color:var(--text-muted)">📞 主要联系人：${channelContact}</div>` : ''}
+                      ${channelBackground ? `
+                      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;display:flex;align-items:center;gap:6px">
+                        <span style="color:#94a3b8">📄 背景：</span>
+                        <span style="color:#64748b">${bgSummary}</span>
+                        <button type="button" onclick="showChannelBgDetail('${nameEscaped}','${bgEscaped}')"
+                          style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--primary);font-size:11px;padding:1px 6px;cursor:pointer;white-space:nowrap">查看详情</button>
+                      </div>` : ''}
                     </div>
                     <button type="button" onclick="removeFollowupChannel('${activityId}',${idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px">×</button>
-                  </div>
-                  <div style="font-size:12px;color:var(--text-muted);background:#f8fafc;padding:8px;border-radius:6px;line-height:1.5">
-                    <strong>渠道背景：</strong>${channelBackground || '暂无背景信息'}
                   </div>
                 </div>
               `;
@@ -6215,6 +6223,33 @@ function confirmAddFollowupChannel(activityId) {
       panel.innerHTML = renderChannelFollowupTable(activityId);
     }
   })();
+}
+
+// 渠道背景详情弹窗
+function showChannelBgDetail(name, background) {
+  const existing = document.getElementById('modal-channel-bg-detail');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'modal-channel-bg-detail';
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  div.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:0;width:460px;max-width:92vw;box-shadow:0 20px 60px rgba(30,144,255,.18)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px 14px;background:linear-gradient(135deg,#e8f4ff 0%,#f0f8ff 100%);border-radius:20px 20px 0 0;border-bottom:1px solid #d6e8f7">
+        <div style="font-size:15px;font-weight:700;color:#0070e0">📄 渠道背景</div>
+        <button onclick="document.getElementById('modal-channel-bg-detail').remove()"
+          style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;line-height:1;padding:2px 6px;border-radius:50%;transition:all .2s"
+          onmouseover="this.style.background='#e0eeff'" onmouseout="this.style.background='none'">×</button>
+      </div>
+      <div style="padding:16px 24px 4px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">${name}</div>
+      </div>
+      <div style="padding:0 24px 20px">
+        <div style="font-size:13px;color:#374151;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;line-height:1.8;max-height:300px;overflow-y:auto;white-space:pre-wrap">${background || '暂无背景信息'}</div>
+      </div>
+    </div>
+  `;
+  div.addEventListener('click', e => { if (e.target === div) div.remove(); });
+  document.body.appendChild(div);
 }
 
 function removeFollowupChannel(activityId, idx) {
