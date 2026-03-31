@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.30-21</title>
+<title>市场活动全流程管理系统 v2026.03.31-03</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1853,6 +1853,13 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <label>活动简介</label>
       <textarea class="form-control" id="new-desc" placeholder="活动背景、主要内容说明..."></textarea>
     </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" id="new-need-followup" style="width:16px;height:16px;accent-color:var(--primary)">
+        <span>需要跟进渠道反馈</span>
+      </label>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">勾选后，活动执行过程中可添加渠道跟进表，记录预约渠道名单和反馈情况</div>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('modal-new')">取消</button>
       <button class="btn btn-primary" onclick="createActivity()">创建活动</button>
@@ -1968,7 +1975,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-02';
+const APP_VERSION = 'v2026.03.31-03';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -3445,14 +3452,16 @@ function openDetail(id) {
 
   const doneTasks = a.tasks.filter(t=>t.done).length;
   const totalFiles = getFiles(id).length;
+  const showFollowupTab = a.needFollowup || false;
   document.getElementById('detail-content').innerHTML = `
     <div class="tabs" style="margin-bottom:16px">
       <div class="tab active" onclick="detailTab(this,0)">基本信息</div>
       <div class="tab" onclick="detailTab(this,1)">任务清单</div>
       <div class="tab" onclick="detailTab(this,2)">KPI 追踪</div>
       <div class="tab" onclick="detailTab(this,3)">复盘总结</div>
-      <div class="tab" onclick="detailTab(this,4)">📎 文件附件${totalFiles>0?`<span class="file-count-badge">${totalFiles}</span>`:''}</div>
-      <div class="tab" onclick="detailTab(this,5)">🤝 关联渠道</div>
+      ${showFollowupTab ? '<div class="tab" onclick="detailTab(this,4)">📋 渠道跟进表</div>' : ''}
+      <div class="tab" onclick="detailTab(this,${showFollowupTab?5:4})">📎 文件附件${totalFiles>0?`<span class="file-count-badge">${totalFiles}</span>`:''}</div>
+      <div class="tab" onclick="detailTab(this,${showFollowupTab?6:5})">🤝 关联渠道</div>
     </div>
     <div id="dtab-0">
       <div class="grid-2" style="gap:12px">
@@ -3573,10 +3582,15 @@ function openDetail(id) {
       </div>
       <button class="btn btn-primary" onclick="saveReview('${a.id}')">💾 保存复盘</button>
     </div>
+    ${showFollowupTab ? `
     <div id="dtab-4" style="display:none">
+      ${renderChannelFollowupTable(id)}
+    </div>
+    ` : ''}
+    <div id="dtab-${showFollowupTab?5:4}" style="display:none">
       ${renderFilePanel(id)}
     </div>
-    <div id="dtab-5" style="display:none">
+    <div id="dtab-${showFollowupTab?6:5}" style="display:none">
       ${renderChannelLinkPanel(id)}
     </div>
   `;
@@ -3982,13 +3996,14 @@ function refreshFileTabBadge(activityId) {
 function detailTab(el, idx) {
   el.closest('#detail-content').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  for(let i=0;i<6;i++){
+  for(let i=0;i<7;i++){
     const tab = document.getElementById('dtab-'+i);
     if(tab) tab.style.display = i===idx?'block':'none';
   }
   // 切换到关联渠道Tab时，触发筛选渲染（首次进入时 setTimeout 10ms 可能还不够）
-  if (idx === 5) {
-    const panel = document.getElementById('dtab-5');
+  const linkTabIdx = el.closest('#detail-content').querySelector('.tab:last-child').getAttribute('onclick')?.match(/detailTab\(this,(\d+)\)/)?.[1];
+  if (idx === parseInt(linkTabIdx)) {
+    const panel = document.getElementById(`dtab-${linkTabIdx}`);
     if (panel) {
       // 读取当前活动id（从 channel-link-count 的 id 属性提取）
       const countEl = panel.querySelector('[id^="channel-link-count-"]');
@@ -4303,6 +4318,8 @@ async function createActivity() {
     progress: 10,
     goal: document.getElementById('new-goal').value,
     desc: document.getElementById('new-desc').value,
+    needFollowup: document.getElementById('new-need-followup').checked || false, // 是否需要跟进渠道反馈
+    channelFollowup: [], // 渠道跟进表数据
     budgetItems: budgetItems,
     actualCosts: [],
     kpis: window._aiPlanKpis || [
@@ -5770,6 +5787,191 @@ function getCurrentPage() {
 window.addEventListener('error', function(e) {
   console.error('全局错误:', e.message, 'at', e.filename, 'line', e.lineno);
 });
+
+// ===== 渠道跟进表 =====
+function renderChannelFollowupTable(activityId) {
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a) return '<div style="color:var(--text-muted);padding:20px">活动不存在</div>';
+  const followupData = a.channelFollowup || [];
+  loadChannels();
+  const salesAccounts = getSalesAccounts();
+
+  // 左侧：预约渠道名单，右侧：反馈情况
+  const followupHtml = `
+    <div style="display:flex;gap:16px">
+      <!-- 左侧：预约渠道名单 -->
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-weight:700;font-size:15px;color:#4f46e5">📋 预约渠道名单</div>
+          <button type="button" class="btn btn-primary btn-sm" onclick="addFollowupChannel('${activityId}')" style="font-size:12px;padding:4px 10px">+ 添加渠道</button>
+        </div>
+        ${followupData.length === 0 ? '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px">暂无预约渠道，点击右上角按钮添加</div>' : `
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            ${followupData.map((item, idx) => {
+              // 查找对应的渠道信息以获取背景
+              const channel = channels.find(c => c.id === item.channelId);
+              const channelName = channel?.name || item.channelName || '未知渠道';
+              const channelBackground = channel?.background || item.channelBackground || '';
+              const matchedSales = channel?.sales || item.sales || '';
+              return `
+                <div class="followup-row" style="display:flex;flex-direction:column;padding:12px;border-bottom:1px solid var(--border);${idx === followupData.length - 1 ? 'border-bottom:none' : ''}">
+                  <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:4px">${channelName}</div>
+                      ${matchedSales ? `<div style="font-size:12px;color:var(--text-muted)">👤 负责销售：${matchedSales}</div>` : ''}
+                    </div>
+                    <button type="button" onclick="removeFollowupChannel('${activityId}',${idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px">×</button>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);background:#f8fafc;padding:8px;border-radius:6px;line-height:1.5">
+                    <strong>渠道背景：</strong>${channelBackground || '暂无背景信息'}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+      <!-- 右侧：反馈情况 -->
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:15px;color:#10b981;margin-bottom:12px">📝 反馈情况</div>
+        ${followupData.length === 0 ? '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px">请先在左侧添加预约渠道</div>' : `
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            ${followupData.map((item, idx) => {
+              const feedback = item.feedback || '';
+              return `
+                <div style="padding:12px;border-bottom:1px solid var(--border);${idx === followupData.length - 1 ? 'border-bottom:none' : ''}">
+                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
+                    <strong>${channels.find(c => c.id === item.channelId)?.name || item.channelName || '未知渠道'}</strong> 反馈
+                  </div>
+                  <textarea class="form-control" style="min-height:80px;font-size:13px;padding:8px" placeholder="记录该渠道的来访反馈情况..." onchange="updateFollowupFeedback('${activityId}',${idx},this.value)">${feedback}</textarea>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+  return followupHtml;
+}
+
+function addFollowupChannel(activityId) {
+  loadChannels();
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a) return;
+  if (!a.channelFollowup) a.channelFollowup = [];
+
+  // 如果没有渠道可选，提示用户
+  if (channels.length === 0) {
+    alert('暂无渠道数据，请先在「渠道名单」页面导入渠道');
+    return;
+  }
+
+  // 弹出渠道选择框
+  const channelOptions = channels.map(c => `
+    <label style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="radio" name="followup-channel-select" value="${c.id}" style="width:16px;height:16px;accent-color:var(--primary)">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${c.name}</div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          ${c.city ? c.city : ''} ${c.tier ? `| ${c.tier}` : ''} ${c.sales ? `| 负责人：${c.sales}` : ''}
+        </div>
+      </div>
+    </label>
+  `).join('');
+
+  const modalHtml = `
+    <div class="modal-overlay show" id="modal-followup-channel" onclick="if(event.target===this)closeFollowupChannelModal()">
+      <div class="modal" style="width:500px;max-height:80vh;overflow-y:auto">
+        <div class="modal-header">
+          <div class="modal-title">选择要跟进的渠道</div>
+          <button class="modal-close" onclick="closeFollowupChannelModal()">×</button>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto">
+          ${channelOptions}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeFollowupChannelModal()">取消</button>
+          <button class="btn btn-primary" onclick="confirmAddFollowupChannel('${activityId}')">确定</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeFollowupChannelModal() {
+  const modal = document.getElementById('modal-followup-channel');
+  if (modal) modal.remove();
+}
+
+function confirmAddFollowupChannel(activityId) {
+  const selected = document.querySelector('input[name="followup-channel-select"]:checked');
+  if (!selected) {
+    alert('请选择一个渠道');
+    return;
+  }
+
+  const channelId = selected.value;
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a) return;
+  if (!a.channelFollowup) a.channelFollowup = [];
+
+  // 检查是否已经添加过
+  if (a.channelFollowup.some(item => item.channelId === channelId)) {
+    alert('该渠道已在跟进列表中');
+    return;
+  }
+
+  const channel = channels.find(c => c.id === channelId);
+  a.channelFollowup.push({
+    channelId,
+    channelName: channel?.name || '',
+    channelBackground: channel?.background || '',
+    sales: channel?.sales || '',
+    feedback: ''
+  });
+
+  (async () => {
+    await syncData();
+    closeFollowupChannelModal();
+    // 重新渲染渠道跟进表
+    const panel = document.getElementById('dtab-4');
+    if (panel) {
+      panel.innerHTML = renderChannelFollowupTable(activityId);
+    }
+  })();
+}
+
+function removeFollowupChannel(activityId, idx) {
+  if (!confirm('确定要移除该渠道吗？')) return;
+
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a || !a.channelFollowup) return;
+
+  a.channelFollowup.splice(idx, 1);
+  (async () => {
+    await syncData();
+    // 重新渲染渠道跟进表
+    const panel = document.getElementById('dtab-4');
+    if (panel) {
+      panel.innerHTML = renderChannelFollowupTable(activityId);
+    }
+  })();
+}
+
+function updateFollowupFeedback(activityId, idx, feedback) {
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a || !a.channelFollowup || !a.channelFollowup[idx]) return;
+  a.channelFollowup[idx].feedback = feedback;
+  // 实时保存
+  syncData();
+}
+
+function getSalesAccounts() {
+  const stored = localStorage.getItem('mcm_sales_accounts');
+  return stored ? JSON.parse(stored) : [];
+}
 
 // ===== 活动关联渠道面板 =====
 function renderChannelLinkPanel(activityId) {
