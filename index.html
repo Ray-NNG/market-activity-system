@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-24</title>
+<title>市场活动全流程管理系统 v2026.03.31-25</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1049,6 +1049,9 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <span class="icon">📬</span> 信息接收站
         <span id="inbox-badge" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;line-height:16px"></span>
       </div>
+      <div class="nav-item" onclick="goto('feedback')">
+        <span class="icon">💬</span> 渠道反馈汇总
+      </div>
       <div class="nav-item" onclick="goto('ai')">
         <span class="icon">🤖</span> AI 分析助手
       </div>
@@ -1599,6 +1602,61 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
       <!-- 分析内容区 -->
       <div id="owner-analysis-content"></div>
+    </div>
+
+    <!-- ===== 渠道反馈汇总 ===== -->
+    <div id="page-feedback" class="page">
+      <!-- 筛选栏 -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">活动</label>
+            <select id="fb-filter-activity" class="form-control" style="min-width:160px" onchange="renderFeedbackPage()">
+              <option value="">全部活动</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">负责人</label>
+            <select id="fb-filter-owner" class="form-control" style="min-width:120px" onchange="renderFeedbackPage()">
+              <option value="">全部销售</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">反馈日期（起）</label>
+            <input type="date" id="fb-filter-date-start" class="form-control" style="min-width:130px" onchange="renderFeedbackPage()">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">反馈日期（止）</label>
+            <input type="date" id="fb-filter-date-end" class="form-control" style="min-width:130px" onchange="renderFeedbackPage()">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">关键词</label>
+            <input type="text" id="fb-filter-keyword" class="form-control" style="min-width:140px" placeholder="搜索渠道名/反馈内容…" oninput="renderFeedbackPage()">
+          </div>
+          <button onclick="clearFeedbackFilters()" class="btn btn-secondary" style="height:36px">重置</button>
+        </div>
+      </div>
+      <!-- 统计小卡片 -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px" id="fb-stat-cards"></div>
+      <!-- 反馈列表 -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">💬 渠道反馈明细</div><div id="fb-result-count" style="font-size:13px;color:var(--text-muted)"></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:140px">活动名称</th>
+                <th>负责人</th>
+                <th style="min-width:160px">渠道名称</th>
+                <th>跟进日期</th>
+                <th>反馈日期</th>
+                <th style="min-width:320px">反馈内容</th>
+              </tr>
+            </thead>
+            <tbody id="fb-table-body"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- ===== 信息接收站 ===== -->
@@ -2717,7 +2775,8 @@ const pageTitles = {
   inbox: ['信息接收站','超80天未更新的渠道跟进提醒'],
   settings: ['系统设置','数据存储与账户配置'],
   usermgmt: ['账户权限','管理各角色登录密码'],
-  ai: ['AI 分析助手','由 Kimi 驱动的智能数据分析']
+  ai: ['AI 分析助手','由 Kimi 驱动的智能数据分析'],
+  feedback: ['渠道反馈汇总','所有活动的渠道跟进反馈一览']
 };
 
 function goto(page) {
@@ -2746,6 +2805,7 @@ function renderPage(page) {
   if(page === 'activities') renderActivities();
   if(page === 'channels') renderChannelsPage();
   if(page === 'inbox') renderInboxPage();
+  if(page === 'feedback') initFeedbackPage();
   if(page === 'settings') { renderSettings(); loadKimiConfigToForm(); }
   if(page === 'usermgmt') renderUserMgmt();
   if(page === 'ai') renderAiPage();
@@ -6540,6 +6600,107 @@ function updateFollowupFeedback(activityId, idx, feedback) {
   if (!a || !a.channelFollowup || !a.channelFollowup[idx]) return;
   a.channelFollowup[idx].feedback = feedback;
   // 仅更新内存，不自动sync（由保存按钮触发）
+}
+
+// ===== 渠道反馈汇总页 =====
+function initFeedbackPage() {
+  // 填充活动下拉
+  const actSel = document.getElementById('fb-filter-activity');
+  const ownerSel = document.getElementById('fb-filter-owner');
+  if (!actSel || !ownerSel) return;
+  const oldAct = actSel.value, oldOwner = ownerSel.value;
+  // 活动选项
+  actSel.innerHTML = '<option value="">全部活动</option>' +
+    activities.filter(a => a.channelFollowup && a.channelFollowup.length > 0)
+      .map(a => `<option value="${a.id}" ${String(a.id) === String(oldAct) ? 'selected' : ''}>${a.name}</option>`)
+      .join('');
+  // 负责人选项
+  const owners = [...new Set(activities.map(a => a.owner).filter(Boolean))];
+  ownerSel.innerHTML = '<option value="">全部销售</option>' +
+    owners.map(o => `<option value="${o}" ${o === oldOwner ? 'selected' : ''}>${o}</option>`).join('');
+  renderFeedbackPage();
+}
+
+function clearFeedbackFilters() {
+  document.getElementById('fb-filter-activity').value = '';
+  document.getElementById('fb-filter-owner').value = '';
+  document.getElementById('fb-filter-date-start').value = '';
+  document.getElementById('fb-filter-date-end').value = '';
+  document.getElementById('fb-filter-keyword').value = '';
+  renderFeedbackPage();
+}
+
+function renderFeedbackPage() {
+  const filterAct     = document.getElementById('fb-filter-activity')?.value || '';
+  const filterOwner   = document.getElementById('fb-filter-owner')?.value || '';
+  const filterDateS   = document.getElementById('fb-filter-date-start')?.value || '';
+  const filterDateE   = document.getElementById('fb-filter-date-end')?.value || '';
+  const filterKw      = (document.getElementById('fb-filter-keyword')?.value || '').trim().toLowerCase();
+
+  // 收集所有有反馈的跟进条目
+  const rows = [];
+  activities.forEach(act => {
+    if (!act.channelFollowup || act.channelFollowup.length === 0) return;
+    if (filterAct && String(act.id) !== String(filterAct)) return;
+    if (filterOwner && act.owner !== filterOwner) return;
+    act.channelFollowup.forEach(item => {
+      if (!item.feedback || !item.feedback.trim()) return; // 没有反馈内容的跳过
+      const feedDate = item.feedbackDate || item.followupDate || '';
+      if (filterDateS && feedDate && feedDate < filterDateS) return;
+      if (filterDateE && feedDate && feedDate > filterDateE) return;
+      const chName = item.channelName || item.channelId || '';
+      if (filterKw && !chName.toLowerCase().includes(filterKw) && !item.feedback.toLowerCase().includes(filterKw)) return;
+      rows.push({ act, item, chName, feedDate });
+    });
+  });
+
+  // 按反馈日期倒序
+  rows.sort((a, b) => (b.feedDate || '').localeCompare(a.feedDate || ''));
+
+  // 统计卡片
+  const totalRows = rows.length;
+  const totalActs = new Set(rows.map(r => r.act.id)).size;
+  const totalChs  = new Set(rows.map(r => r.chName)).size;
+  const statsEl = document.getElementById('fb-stat-cards');
+  if (statsEl) {
+    const statItems = [
+      { icon: '💬', label: '反馈条数', value: totalRows, color: '#4f46e5' },
+      { icon: '🎯', label: '涉及活动', value: totalActs, color: '#0ea5e9' },
+      { icon: '🤝', label: '涉及渠道', value: totalChs, color: '#10b981' },
+    ];
+    statsEl.innerHTML = statItems.map(s => `
+      <div class="card" style="padding:16px 18px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:26px">${s.icon}</span>
+        <div>
+          <div style="font-size:22px;font-weight:700;color:${s.color}">${s.value}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${s.label}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // 结果数量
+  const countEl = document.getElementById('fb-result-count');
+  if (countEl) countEl.textContent = `共 ${totalRows} 条`;
+
+  // 表格
+  const tbody = document.getElementById('fb-table-body');
+  if (!tbody) return;
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">暂无符合条件的反馈记录</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(({ act, item, chName, feedDate }) => {
+    const followupDate = item.followupDate || '-';
+    const feedbackText = (item.feedback || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<tr>
+      <td class="fw-600" style="color:var(--primary);cursor:pointer" onclick="openActivityDetail('${act.id}')" title="点击查看活动详情">${act.name}</td>
+      <td><span style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600">${act.owner || '-'}</span></td>
+      <td>${chName || '-'}</td>
+      <td style="color:var(--text-muted);font-size:13px">${followupDate}</td>
+      <td style="color:var(--text-muted);font-size:13px">${feedDate || '-'}</td>
+      <td style="white-space:pre-wrap;font-size:13px;line-height:1.6;max-width:400px">${feedbackText}</td>
+    </tr>`;
+  }).join('');
 }
 
 function saveFollowupFeedbacks(activityId) {
