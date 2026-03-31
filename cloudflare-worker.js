@@ -1,154 +1,228 @@
 /**
- * Cloudflare Workers 代理 - 市场活动管理系统
+ * Cloudflare Workers 反向代理 - 市场活动管理系统
  *
- * 作用：把 jsonbin.io 的 Master Key 存放在 Worker 的环境变量里，
- *       前端只需调用这个 Worker，不再直接持有敏感密钥。
+ * 作用：代理腾讯云 COS，自动去掉 Content-Disposition: attachment，
+ *       让 index.html / admin.html 能在浏览器正常打开而不触发下载。
+ *       同时处理数据文件（data.json / sys_config.json）的 CORS 跨域。
  *
  * ============ 部署步骤 ============
  *
- * 1. 注册/登录 Cloudflare：https://dash.cloudflare.com
+ * 1. 登录 Cloudflare：https://dash.cloudflare.com
  *
  * 2. 进入 Workers & Pages → Create application → Create Worker
- *    把本文件全部内容粘贴进去，Worker 名称建议：mcm-api-proxy
+ *    Worker 名称：mcm-cos-proxy（或任意名称）
+ *    把本文件全部内容粘贴进去，点 Deploy
  *
- * 3. 部署后，进入 Worker → Settings → Variables → 添加环境变量：
- *    变量名：JSONBIN_MASTER_KEY
- *    变量值：$2a$10$qPXYw8sncxMpyTyfamrf2.uiMaK9BwgDig//LaW9NSYySggFytYde
- *    (勾选 Encrypt)
+ * 3. 进入 Worker → Settings → Variables，添加环境变量：
  *
- *    变量名：JSONBIN_BIN_ID
- *    变量值：69bd20d6b7ec241ddc86e1c2
+ *    COS_BUCKET   = nnqgcvte2026-1414699807
+ *    COS_REGION   = ap-guangzhou
+ *    COS_SECRET_ID  = AKIDS3QaXHxPcbQ1NTLzlJc2DAtOegT0Mmlz   (勾选 Encrypt)
+ *    COS_SECRET_KEY = HEzWpwd7XqX2V9jEdtwkgYDdpmUWJrAE       (勾选 Encrypt)
  *
- *    变量名：ALLOWED_ORIGIN
- *    变量值：https://ray-nng.github.io
+ * 4. Worker 部署后地址类似：
+ *    https://mcm-cos-proxy.<your-subdomain>.workers.dev
  *
- * 4. 部署完成后，Worker 的访问地址类似：
- *    https://mcm-api-proxy.<your-subdomain>.workers.dev
- *    把这个地址填入 index.html 和 admin.html 的 PROXY_API 变量中。
+ * 5. 【重要】把 index.html 和 admin.html 里所有 COS 请求域名改为 Worker 地址：
+ *    原来：https://nnqgcvte2026-1414699807.cos.ap-guangzhou.myqcloud.com/xxx
+ *    改为：https://mcm-cos-proxy.<subdomain>.workers.dev/xxx
  *
- * 5. 完成后，从 index.html / admin.html 中删除 JSONBIN_MASTER_KEY 明文。
+ *    数据读写（PUT/GET data.json）也改为 Worker 地址，不需要改代码逻辑，
+ *    Worker 会自动带上 COS 签名转发。
  *
  * ===================================
+ *
+ * 路由说明：
+ *   GET  /index.html   → 代理到 COS，删掉 Content-Disposition，正常显示页面
+ *   GET  /admin.html   → 同上
+ *   GET  /data.json    → 代理到 COS，允许跨域
+ *   PUT  /data.json    → 带签名上传到 COS
+ *   GET  /sys_config.json → 代理到 COS
+ *   PUT  /sys_config.json → 带签名上传到 COS
+ *   GET  /channels.json   → 代理到 COS
+ *   PUT  /channels.json   → 带签名上传到 COS
+ *   ...所有路径均被代理
  */
 
 export default {
   async fetch(request, env) {
-    // ===== CORS 预检处理 =====
-    const allowedOrigin = env.ALLOWED_ORIGIN || '*';
+    const bucket    = env.COS_BUCKET    || 'nnqgcvte2026-1414699807';
+    const region    = env.COS_REGION    || 'ap-guangzhou';
+    const secretId  = env.COS_SECRET_ID;
+    const secretKey = env.COS_SECRET_KEY;
 
+    const cosHost = `${bucket}.cos.${region}.myqcloud.com`;
+    const url = new URL(request.url);
+    const cosPath = url.pathname || '/';
+    const cosQuery = url.search || '';
+
+    // CORS 预检
     if (request.method === 'OPTIONS') {
       return new Response(null, {
         status: 204,
-        headers: corsHeaders(allowedOrigin),
+        headers: corsHeaders(),
       });
     }
 
-    const url = new URL(request.url);
-    const path = url.pathname; // e.g. /data  or /data/latest
+    // 构造 COS 请求 URL
+    const cosUrl = `https://${cosHost}${cosPath}${cosQuery}`;
 
-    // ===== 只允许 /data 路径 =====
-    if (!path.startsWith('/data')) {
-      return jsonError(404, '路径不存在', allowedOrigin);
+    // 构造签名（仅写操作需要，读操作 COS 是公有读）
+    let authHeader = '';
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      if (!secretId || !secretKey) {
+        return new Response(JSON.stringify({ error: '缺少 COS 密钥配置' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders() }
+        });
+      }
+      authHeader = await makeAuth(request.method, cosPath, cosQuery, cosHost, secretId, secretKey);
     }
 
-    const BIN_ID    = env.JSONBIN_BIN_ID;
-    const MASTER_KEY = env.JSONBIN_MASTER_KEY;
-
-    if (!BIN_ID || !MASTER_KEY) {
-      return jsonError(500, '服务器配置错误：缺少环境变量', allowedOrigin);
+    // 转发请求到 COS
+    const cosHeaders = new Headers();
+    cosHeaders.set('Host', cosHost);
+    if (authHeader) {
+      cosHeaders.set('Authorization', authHeader);
     }
 
-    // ===== 来源校验（可选但推荐）=====
-    const origin = request.headers.get('Origin') || '';
-    if (allowedOrigin !== '*' && origin && !origin.startsWith(allowedOrigin)) {
-      return jsonError(403, '来源不被允许', allowedOrigin);
+    // 透传 Content-Type（PUT 上传时需要）
+    const ct = request.headers.get('Content-Type');
+    if (ct) cosHeaders.set('Content-Type', ct);
+
+    let body = null;
+    if (request.method === 'PUT' || request.method === 'POST') {
+      body = await request.arrayBuffer();
     }
 
-    // ===== 路由分发 =====
-    // GET /data/latest  → 读最新数据
-    if (request.method === 'GET' && path === '/data/latest') {
-      return await proxyGet(BIN_ID, MASTER_KEY, allowedOrigin);
+    let cosResp;
+    try {
+      cosResp = await fetch(cosUrl, {
+        method: request.method,
+        headers: cosHeaders,
+        body: body,
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: `代理请求失败: ${e.message}` }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders() }
+      });
     }
 
-    // PUT /data  → 写数据
-    if (request.method === 'PUT' && path === '/data') {
-      return await proxyPut(request, BIN_ID, MASTER_KEY, allowedOrigin);
+    // 构造响应头，删掉强制下载
+    const respHeaders = new Headers();
+    for (const [k, v] of cosResp.headers.entries()) {
+      const lower = k.toLowerCase();
+      // 跳过这两个头，不透传
+      if (lower === 'content-disposition') continue;
+      if (lower === 'x-cos-force-download') continue;
+      respHeaders.set(k, v);
     }
 
-    return jsonError(405, '不支持的请求方式', allowedOrigin);
+    // 根据文件扩展名设置正确的 Content-Type
+    const ext = cosPath.split('.').pop().toLowerCase();
+    const mimeMap = {
+      'html': 'text/html; charset=utf-8',
+      'htm':  'text/html; charset=utf-8',
+      'js':   'application/javascript; charset=utf-8',
+      'css':  'text/css; charset=utf-8',
+      'json': 'application/json; charset=utf-8',
+      'png':  'image/png',
+      'jpg':  'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'gif':  'image/gif',
+      'svg':  'image/svg+xml',
+      'ico':  'image/x-icon',
+      'woff': 'font/woff',
+      'woff2':'font/woff2',
+    };
+    if (mimeMap[ext]) {
+      respHeaders.set('Content-Type', mimeMap[ext]);
+    }
+
+    // 添加 CORS 头（数据接口需要）
+    const corsH = corsHeaders();
+    for (const [k, v] of Object.entries(corsH)) {
+      respHeaders.set(k, v);
+    }
+
+    return new Response(cosResp.body, {
+      status: cosResp.status,
+      statusText: cosResp.statusText,
+      headers: respHeaders,
+    });
   }
 };
 
-// ===== 读取数据 =====
-async function proxyGet(binId, masterKey, allowedOrigin) {
-  const upstream = `https://api.jsonbin.io/v3/b/${binId}/latest`;
-  const res = await fetch(upstream, {
-    headers: { 'X-Master-Key': masterKey }
-  });
-
-  const body = await res.text();
-
-  return new Response(body, {
-    status: res.status,
-    headers: {
-      'Content-Type': 'application/json',
-      ...corsHeaders(allowedOrigin),
-    }
-  });
-}
-
-// ===== 写入数据 =====
-async function proxyPut(request, binId, masterKey, allowedOrigin) {
-  let body;
-  try {
-    body = await request.text();
-  } catch {
-    return jsonError(400, '请求体无效', allowedOrigin);
-  }
-
-  // 将客户端传来的版本号转发
-  const clientVersion = request.headers.get('X-Bin-Version');
-  const upstreamHeaders = {
-    'Content-Type': 'application/json',
-    'X-Master-Key': masterKey,
-  };
-  if (clientVersion) {
-    upstreamHeaders['X-Bin-Version'] = clientVersion;
-  }
-
-  const upstream = `https://api.jsonbin.io/v3/b/${binId}`;
-  const res = await fetch(upstream, {
-    method: 'PUT',
-    headers: upstreamHeaders,
-    body: body,
-  });
-
-  const resBody = await res.text();
-
-  return new Response(resBody, {
-    status: res.status,
-    headers: {
-      'Content-Type': 'application/json',
-      ...corsHeaders(allowedOrigin),
-    }
-  });
-}
-
-// ===== 工具函数 =====
-function corsHeaders(origin) {
+// ===== CORS 头 =====
+function corsHeaders() {
   return {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Bin-Version',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, HEAD, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Expose-Headers': 'ETag, x-cos-request-id',
   };
 }
 
-function jsonError(status, message, origin) {
-  return new Response(JSON.stringify({ error: message }), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      ...corsHeaders(origin),
-    }
-  });
+// ===== 生成腾讯云 COS 签名 =====
+async function makeAuth(method, path, queryString, host, secretId, secretKey) {
+  const now = Math.floor(Date.now() / 1000);
+  const signTime = `${now};${now + 3600}`;
+
+  // 规范化 header
+  const headersToSign = { host };
+  const headerKeys = Object.keys(headersToSign).map(k => k.toLowerCase()).sort();
+  const headerList = headerKeys.join(';');
+  const headersStr = headerKeys.map(k => `${k}=${encodeURIComponent(headersToSign[k])}`).join('&');
+
+  // 规范化 query
+  const qStr = queryString.replace(/^\?/, '');
+  const queryList = qStr ? qStr.split('&').map(p => {
+    const [k, v=''] = p.split('=');
+    return `${k.toLowerCase()}=${v}`;
+  }).sort().join('&') : '';
+  const paramList = qStr ? qStr.split('&').map(p => p.split('=')[0].toLowerCase()).sort().join(';') : '';
+
+  // HTTP 字符串
+  const httpString = [
+    method.toLowerCase(),
+    path,
+    queryList,
+    headersStr,
+    '',
+  ].join('\n');
+
+  // 签名字符串
+  const httpStringHash = await sha1Hex(httpString);
+  const stringToSign = `sha1\n${signTime}\n${httpStringHash}\n`;
+
+  // 密钥
+  const signKey = await hmacSha1Hex(secretKey, signTime);
+  const signature = await hmacSha1Hex(signKey, stringToSign);
+
+  return [
+    'q-sign-algorithm=sha1',
+    `q-ak=${secretId}`,
+    `q-sign-time=${signTime}`,
+    `q-key-time=${signTime}`,
+    `q-header-list=${headerList}`,
+    `q-url-param-list=${paramList}`,
+    `q-signature=${signature}`,
+  ].join('&');
+}
+
+async function sha1Hex(message) {
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-1', enc.encode(message));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hmacSha1Hex(key, message) {
+  const enc = new TextEncoder();
+  const keyBuf = typeof key === 'string' ? enc.encode(key) : key;
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyBuf, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
 }

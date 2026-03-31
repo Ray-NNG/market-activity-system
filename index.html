@@ -3088,6 +3088,160 @@ function renderCityAnalysis() {
   `;
 }
 
+// 负责人分析
+function renderOwnerAnalysis() {
+  // 按负责人汇总数据
+  const ownerMap = {};
+  activities.forEach(a => {
+    const owner = a.owner || '未指定负责人';
+    if (!ownerMap[owner]) {
+      ownerMap[owner] = {
+        count: 0,
+        totalBudget: 0,
+        hqBudget: 0,
+        subBudget: 0,
+        totalSpent: 0,
+        hqSpent: 0,
+        subSpent: 0,
+        activities: []
+      };
+    }
+    ownerMap[owner].count++;
+    ownerMap[owner].totalBudget += Number(a.budget) || 0;
+    ownerMap[owner].totalSpent += Number(a.spent) || 0;
+    ownerMap[owner].activities.push(a);
+
+    // 统计总部和子公司费用（预算）
+    const budgetItems = a.budgetItems || [];
+    budgetItems.forEach(item => {
+      const amount = Number(item.amount) || 0;
+      if (item.source === 'hq') {
+        ownerMap[owner].hqBudget += amount;
+      } else if (item.source === 'subsidiary') {
+        ownerMap[owner].subBudget += amount;
+      }
+    });
+
+    // 统计总部和子公司费用（实际支出）
+    const actualCosts = a.actualCosts || [];
+    actualCosts.forEach(item => {
+      const amount = Number(item.amount) || 0;
+      if (item.source === 'hq') {
+        ownerMap[owner].hqSpent += amount;
+      } else if (item.source === 'subsidiary') {
+        ownerMap[owner].subSpent += amount;
+      }
+    });
+  });
+
+  const owners = Object.entries(ownerMap).sort((a, b) => b[1].count - a[1].count);
+
+  // 更新负责人数量
+  document.getElementById('owner-count').textContent = owners.length;
+
+  // 渲染统计卡片
+  const statsContainer = document.getElementById('owner-stats-cards');
+  const totalActivities = activities.length;
+  const totalBudget = activities.reduce((sum, a) => sum + (Number(a.budget) || 0), 0);
+  const totalSpent = activities.reduce((sum, a) => sum + (Number(a.spent) || 0), 0);
+  const totalHqBudget = Object.values(ownerMap).reduce((sum, o) => sum + o.hqBudget, 0);
+  const totalSubBudget = Object.values(ownerMap).reduce((sum, o) => sum + o.subBudget, 0);
+  const totalHqSpent = Object.values(ownerMap).reduce((sum, o) => sum + o.hqSpent, 0);
+  const totalSubSpent = Object.values(ownerMap).reduce((sum, o) => sum + o.subSpent, 0);
+
+  statsContainer.innerHTML = `
+    <div class="stat-card">
+      <div class="label">📋 活动总数</div>
+      <div class="value color-primary">${totalActivities}</div>
+      <div class="change text-muted">累计创建活动</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🏢 总部预算</div>
+      <div class="value color-info">¥${totalHqBudget.toLocaleString()}</div>
+      <div class="change text-muted">总部承担费用</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">🏭 子公司预算</div>
+      <div class="value color-warning">¥${totalSubBudget.toLocaleString()}</div>
+      <div class="change text-muted">子公司承担费用</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">💸 实际支出</div>
+      <div class="value color-success">¥${totalSpent.toLocaleString()}</div>
+      <div class="change text-muted">总部¥${totalHqSpent.toLocaleString()} | 子公司¥${totalSubSpent.toLocaleString()}</div>
+    </div>
+  `;
+
+  // 渲染负责人详情列表
+  const listContainer = document.getElementById('owner-list');
+  if (owners.length === 0) {
+    listContainer.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">暂无负责人数据</div>';
+    return;
+  }
+
+  listContainer.innerHTML = owners.map(([owner, stats]) => `
+    <div class="card owner-activity-card">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px">
+            ${owner.charAt(0)}
+          </div>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:var(--text)">${owner}</div>
+            <div style="font-size:12px;color:var(--text-muted)">负责 ${stats.count} 个活动</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:16px">
+        <!-- 预算统计 -->
+        <div style="background:#f0f9ff;border-radius:10px;padding:14px;border:1px solid #bae6fd">
+          <div style="font-size:12px;color:#0369a1;font-weight:600;margin-bottom:8px">📋 预算总额</div>
+          <div style="font-size:20px;font-weight:700;color:#0284c7">¥${stats.totalBudget.toLocaleString()}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:6px;display:flex;flex-direction:column;gap:4px">
+            <div>🏢 总部：¥${stats.hqBudget.toLocaleString()}</div>
+            <div>🏭 子公司：¥${stats.subBudget.toLocaleString()}</div>
+          </div>
+        </div>
+        <!-- 实际支出统计 -->
+        <div style="background:#fef3c7;border-radius:10px;padding:14px;border:1px solid #fde68a">
+          <div style="font-size:12px;color:#b45309;font-weight:600;margin-bottom:8px">💸 实际支出</div>
+          <div style="font-size:20px;font-weight:700;color:#d97706">¥${stats.totalSpent.toLocaleString()}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:6px;display:flex;flex-direction:column;gap:4px">
+            <div>🏢 总部：¥${stats.hqSpent.toLocaleString()}</div>
+            <div>🏭 子公司：¥${stats.subSpent.toLocaleString()}</div>
+          </div>
+        </div>
+        <!-- 执行率 -->
+        <div style="background:#f0fdf4;border-radius:10px;padding:14px;border:1px solid #bbf7d0">
+          <div style="font-size:12px;color:#15803d;font-weight:600;margin-bottom:8px">📊 执行率</div>
+          <div style="font-size:20px;font-weight:700;color:#16a34a">${stats.totalBudget > 0 ? ((stats.totalSpent / stats.totalBudget) * 100).toFixed(1) : 0}%</div>
+          <div style="font-size:11px;color:#64748b;margin-top:6px">
+            已用 ¥${stats.totalSpent.toLocaleString()} / 预算 ¥${stats.totalBudget.toLocaleString()}
+          </div>
+        </div>
+      </div>
+      <!-- 活动列表 -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:10px">负责的活动</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${stats.activities.map(a => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fafc;border-radius:6px;font-size:13px">
+              <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
+                <div style="flex-shrink:0">${statusBadge(a.status)}</div>
+                <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;color:var(--text-muted);font-size:12px">
+                <span>¥${Number(a.budget||0).toLocaleString()}</span>
+                <span style="color:${a.spent>0?'var(--danger)':'inherit'}">¥${Number(a.spent||0).toLocaleString()}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
 // ===== 档案页 =====
 function renderActivities(filter='all') {
   const list = filter==='all' ? activities : activities.filter(a=>a.status===filter);
@@ -5215,6 +5369,31 @@ function renderOwnerAnalysis() {
     </div>
   `).join('');
 
+  // 统计总部和子公司费用（预算）
+  let hqBudget = 0, subBudget = 0, hqSpent = 0, subSpent = 0;
+  filtered.forEach(a => {
+    const budgetItems = a.budgetItems || [];
+    budgetItems.forEach(item => {
+      const amount = Number(item.amount) || 0;
+      if (item.source === 'hq') {
+        hqBudget += amount;
+      } else if (item.source === 'subsidiary') {
+        subBudget += amount;
+      }
+    });
+
+    // 统计总部和子公司费用（实际支出）
+    const actualCosts = a.actualCosts || [];
+    actualCosts.forEach(item => {
+      const amount = Number(item.amount) || 0;
+      if (item.source === 'hq') {
+        hqSpent += amount;
+      } else if (item.source === 'subsidiary') {
+        subSpent += amount;
+      }
+    });
+  });
+
   content.innerHTML = `
     <!-- 汇总指标 -->
     <div class="grid-4 section-gap">
@@ -5224,19 +5403,19 @@ function renderOwnerAnalysis() {
         <div class="change">已完成 ${done.length} 个</div>
       </div>
       <div class="stat-card">
-        <div class="label">💰 总预算</div>
-        <div class="value color-warning" style="font-size:20px">¥${(totalBudget/10000).toFixed(1)}万</div>
-        <div class="change">已支出 ¥${(totalSpent/10000).toFixed(1)}万</div>
+        <div class="label">🏢 总部预算</div>
+        <div class="value color-info" style="font-size:20px">¥${(hqBudget/10000).toFixed(1)}万</div>
+        <div class="change">总部已支 ¥${(hqSpent/10000).toFixed(1)}万</div>
       </div>
       <div class="stat-card">
-        <div class="label">💸 平均 ROI</div>
-        <div class="value color-success">${avgRoi}${avgRoi!=='-'?'x':''}</div>
-        <div class="change">基于 ${done.length} 个已完成活动</div>
+        <div class="label">🏭 子公司预算</div>
+        <div class="value color-warning" style="font-size:20px">¥${(subBudget/10000).toFixed(1)}万</div>
+        <div class="change">子公司已支 ¥${(subSpent/10000).toFixed(1)}万</div>
       </div>
       <div class="stat-card">
         <div class="label">💸 实际支出</div>
         <div class="value color-danger" style="font-size:20px">¥${(totalSpent/10000).toFixed(1)}万</div>
-        <div class="change">预算利用率 ${totalBudget>0?Math.round(totalSpent/totalBudget*100)+'%':'--'}</div>
+        <div class="change">总部¥${(hqSpent/10000).toFixed(1)}万 | 子公司¥${(subSpent/10000).toFixed(1)}万</div>
       </div>
     </div>
 
