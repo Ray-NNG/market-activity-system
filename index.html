@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-18</title>
+<title>市场活动全流程管理系统 v2026.03.31-19</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1984,7 +1984,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-18';
+const APP_VERSION = 'v2026.03.31-19';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5975,10 +5975,14 @@ function addFollowupChannel(activityId) {
           </div>
           <div style="display:flex;gap:12px">
             <div class="form-group" style="flex:1">
-              <label>销售筛选</label>
-              <select class="form-control" id="followup-sales-filter" onchange="filterFollowupChannels()" style="width:100%;padding:8px">
-                ${salesOptions}
-              </select>
+              <label>负责销售</label>
+              <input type="text" class="form-control" id="followup-sales-filter" list="sales-filter-options"
+                placeholder="请选择或输入销售姓名" style="width:100%"
+                oninput="filterFollowupChannels()">
+              <datalist id="sales-filter-options">
+                ${salesList.map(s => `<option value="${s}">`).join('')}
+              </datalist>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">可从列表选择，也可手动输入</div>
             </div>
             <div class="form-group" style="flex:1">
               <label>渠道分层</label>
@@ -6100,6 +6104,11 @@ function autoFillFollowupChannel(channelId) {
   if (tierSelect && !tierSelect.value && channel.tier) {
     tierSelect.value = channel.tier;
   }
+  // 填充负责销售（仅在未填写时自动填充）
+  const salesInput = document.getElementById('followup-sales-filter');
+  if (salesInput && !salesInput.value && channel.sales) {
+    salesInput.value = channel.sales;
+  }
 }
 
 function confirmAddFollowupChannel(activityId) {
@@ -6126,8 +6135,9 @@ function confirmAddFollowupChannel(activityId) {
   const channelId = matchedChannel?.id || '';
   // 渠道名称：若精确匹配到或用户主动选中，使用名单中的名称；否则以用户输入为准
   const channelName = matchedChannel?.name || channelNameInput;
-  // 负责销售：优先用活动的负责销售（a.owner），因为是该销售去跟进此渠道
-  const sales = a.owner || matchedChannel?.sales || '';
+  // 负责销售：优先用用户手动填写的值，其次用活动负责人，最后用匹配渠道的销售
+  const salesInput = (document.getElementById('followup-sales-filter')?.value || '').trim();
+  const sales = salesInput || a.owner || matchedChannel?.sales || '';
 
   // 读取用户手动填写的字段（优先用手动填写，否则用匹配结果）
   const contactInput = document.getElementById('followup-contact-name').value.trim();
