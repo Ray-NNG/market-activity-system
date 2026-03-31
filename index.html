@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-25</title>
+<title>市场活动全流程管理系统 v2026.03.31-26</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1417,6 +1417,33 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
           <button class="btn btn-outline" onclick="testKimiConnection()">🔌 测试连接</button>
         </div>
         <div id="kimi-test-result" style="margin-top:12px;display:none;padding:10px 14px;border-radius:8px;font-size:13px"></div>
+      </div>
+
+      <!-- 数据修复工具（管理员专用） -->
+      <div class="card" style="max-width:680px;margin-top:16px">
+        <div class="card-header"><div class="card-title">🔧 数据修复工具</div></div>
+        <div style="padding:4px 0 12px;font-size:13px;color:var(--text-muted)">
+          如果活动状态被误操作修改，可在此处手动回退。仅超级管理员可见并使用。
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:180px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted)">选择活动</label>
+            <select id="repair-activity-select" class="form-control" onchange="renderRepairStatus()">
+              <option value="">-- 请选择活动 --</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted)">目标状态</label>
+            <select id="repair-status-select" class="form-control">
+              <option value="策划中">策划中</option>
+              <option value="执行中" selected>执行中</option>
+              <option value="复盘中">复盘中</option>
+              <option value="已完成">已完成</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="doRepairStatus()" style="height:38px">修复状态</button>
+        </div>
+        <div id="repair-current-status" style="margin-top:10px;font-size:13px;color:var(--text-muted)"></div>
       </div>
 
       <!-- 销售账号管理（仅超级管理员可见） -->
@@ -3427,7 +3454,7 @@ function activityDetailCard(a) {
         <div style="display:flex;gap:8px">
           <button class="btn btn-outline btn-sm" onclick="openDetail('${a.id}')">查看详情</button>
           ${a.status==='策划中'?`<button class="btn btn-success btn-sm" onclick="advanceActivity('${a.id}')">转为执行中</button>`:''}
-          ${a.status==='执行中'?`<button class="btn btn-primary btn-sm" onclick="advanceActivity('${a.id}')">进入复盘</button>`:''}
+          ${a.status==='执行中'?`<button class="btn btn-primary btn-sm" onclick="confirmEnterReview('${a.id}')">进入复盘</button>`:''}
         </div>
       </div>
       <div class="grid-3" style="gap:16px">
@@ -3539,7 +3566,7 @@ function openDetail(id) {
   const btn = document.getElementById('detail-action-btn');
   btn.disabled = false;
   if(a.status==='策划中') { btn.textContent='转为执行中'; btn.className='btn btn-success'; btn.onclick = () => { advanceActivity(id); closeModal('modal-detail'); }; }
-  else if(a.status==='执行中') { btn.textContent='进入复盘阶段'; btn.className='btn btn-primary'; btn.onclick = () => { advanceActivity(id); closeModal('modal-detail'); }; }
+  else if(a.status==='执行中') { btn.textContent='进入复盘阶段'; btn.className='btn btn-primary'; btn.onclick = () => { confirmEnterReview(id); }; }
   else if(a.status==='复盘中') {
     btn.textContent='活动完结';
     btn.className='btn btn-outline';
@@ -4226,6 +4253,43 @@ async function doDeleteActivity(id) {
   alert('✅ 活动已删除');
 }
 
+// ===== 进入复盘确认弹窗 =====
+function confirmEnterReview(id) {
+  const a = activities.find(x => String(x.id) === String(id));
+  if (!a) return;
+  // 移除已有弹窗
+  const old = document.getElementById('modal-confirm-review');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-confirm-review';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:32px 28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center">
+      <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+      <div style="font-size:18px;font-weight:700;color:#1e293b;margin-bottom:10px">确认进入复盘阶段？</div>
+      <div style="font-size:14px;color:#64748b;line-height:1.7;margin-bottom:8px">
+        活动：<strong style="color:#1e293b">${a.name}</strong>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;margin:16px 0;font-size:13px;color:#dc2626;line-height:1.7">
+        ⛔ 进入复盘后<strong>无法退回执行中</strong>，请确认活动已执行完毕！
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:20px">
+        <button onclick="document.getElementById('modal-confirm-review').remove()" 
+          style="padding:10px 28px;border-radius:8px;border:1.5px solid #cbd5e1;background:#fff;color:#475569;font-size:14px;font-weight:600;cursor:pointer">
+          取消
+        </button>
+        <button onclick="document.getElementById('modal-confirm-review').remove();advanceActivity('${id}');closeModal('modal-detail')"
+          style="padding:10px 28px;border-radius:8px;border:none;background:#4f46e5;color:#fff;font-size:14px;font-weight:600;cursor:pointer">
+          确认进入复盘
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  // 点背景关闭
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
 // ===== 推进阶段 =====
 async function advanceActivity(id) {
   const index = activities.findIndex(x=>String(x.id)===String(id));
@@ -4240,6 +4304,19 @@ async function advanceActivity(id) {
   }
   await syncData();
   renderPage(getCurrentPage());
+}
+
+// ===== 管理员：回退活动状态（纠错专用）=====
+async function adminRevertStatus(id, targetStatus) {
+  const a = activities.find(x => String(x.id) === String(id));
+  if (!a) { alert('未找到活动'); return; }
+  const validStatus = ['策划中', '执行中', '复盘中', '已完成'];
+  if (!validStatus.includes(targetStatus)) { alert('无效状态'); return; }
+  a.status = targetStatus;
+  if (targetStatus === '执行中') a.progress = Math.min(a.progress, 84);
+  await syncData();
+  renderPage(getCurrentPage());
+  alert(`✅ 已将「${a.name}」状态改为「${targetStatus}」`);
 }
 
 // ===== 新建活动 =====
@@ -4987,6 +5064,40 @@ function renderSettings() {
 
   // 渲染销售账号列表
   renderSalesList();
+
+  // 初始化数据修复下拉
+  const repairSel = document.getElementById('repair-activity-select');
+  if (repairSel) {
+    const cur = repairSel.value;
+    repairSel.innerHTML = '<option value="">-- 请选择活动 --</option>' +
+      [...activities].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        .map(a => `<option value="${a.id}" ${String(a.id) === String(cur) ? 'selected' : ''}>[${a.status}] ${a.name}</option>`)
+        .join('');
+    renderRepairStatus();
+  }
+}
+
+function renderRepairStatus() {
+  const sel = document.getElementById('repair-activity-select');
+  const info = document.getElementById('repair-current-status');
+  if (!sel || !info) return;
+  const id = sel.value;
+  if (!id) { info.textContent = ''; return; }
+  const a = activities.find(x => String(x.id) === String(id));
+  if (a) info.innerHTML = `当前状态：<strong style="color:#4f46e5">${a.status}</strong>　进度：<strong>${a.progress}%</strong>`;
+}
+
+async function doRepairStatus() {
+  const id = document.getElementById('repair-activity-select')?.value;
+  const targetStatus = document.getElementById('repair-status-select')?.value;
+  if (!id) { alert('请先选择活动'); return; }
+  if (!targetStatus) { alert('请选择目标状态'); return; }
+  const a = activities.find(x => String(x.id) === String(id));
+  if (!a) { alert('未找到该活动'); return; }
+  if (a.status === targetStatus) { alert(`当前状态已经是「${targetStatus}」，无需修改`); return; }
+  if (!confirm(`确认将「${a.name}」的状态从「${a.status}」改为「${targetStatus}」？`)) return;
+  await adminRevertStatus(id, targetStatus);
+  renderSettings(); // 刷新下拉
 }
 
 function updateCosStatusBar() {
