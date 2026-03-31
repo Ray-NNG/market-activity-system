@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-09</title>
+<title>市场活动全流程管理系统 v2026.03.31-10</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -390,6 +390,9 @@
   .cal-event-dot.type-start { background: #dbeafe; color: #1d4ed8; }
   .cal-event-dot.type-end   { background: #fce7f3; color: #be185d; }
   .cal-event-dot.type-mile  { background: #fef9c3; color: #92400e; }
+  .cal-event-dot.type-range { background: #d1fae5; color: #065f46; }
+  /* 活动周期内的日期格子整体背景 */
+  .cal-day.in-range { background: #f0fdf4; }
   .cal-legend { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; }
   .cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
   .cal-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
@@ -1976,7 +1979,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-09';
+const APP_VERSION = 'v2026.03.31-10';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5242,12 +5245,35 @@ function getCalendarEvents() {
   const add = (date, title, type, actId) => {
     if(!date || date === '待定') return;
     if(!events[date]) events[date] = [];
-    events[date].push({title, type, actId});
+    // 避免同一活动同一天重复添加
+    if(!events[date].some(e => e.actId === actId && e.type === type)) {
+      events[date].push({title, type, actId});
+    }
   };
-  // 只显示真实活动的日期节点，不添加硬编码的里程碑
+
   activities.forEach(a => {
-    add(a.start, a.name + ' 开始', 'start', a.id);
-    add(a.end,   a.name + ' 结束', 'end', a.id);
+    if(!a.start || a.start === '待定') return;
+
+    // 开始日
+    add(a.start, a.name, 'start', a.id);
+
+    // 结束日（且与开始日不同）
+    if(a.end && a.end !== '待定' && a.end !== a.start) {
+      add(a.end, a.name, 'end', a.id);
+    }
+
+    // 活动期间的中间日期标记为 range（不含首尾）
+    if(a.end && a.end !== '待定' && a.end > a.start) {
+      const s = new Date(a.start);
+      const e = new Date(a.end);
+      const cur = new Date(s);
+      cur.setDate(cur.getDate() + 1); // 从第二天开始
+      while(cur < e) {
+        const dateStr = cur.toISOString().slice(0, 10);
+        add(dateStr, a.name, 'range', a.id);
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
   });
   return events;
 }
@@ -5292,13 +5318,19 @@ function renderCalendar(offsetMonth = 0) {
     const evs = events[dateStr] || [];
     const isToday = dateStr === todayStr;
     const hasEv = evs.length > 0;
+    // 判断是否为某活动周期中间日期（只有range且无start/end）
+    const isRangeOnly = hasEv && evs.every(e => e.type === 'range');
     // 把事件存入全局Map，onclick 只传 dateStr，避免 JSON 嵌入 HTML 属性时特殊字符出错
     if (hasEv) _calEventsMap[dateStr] = evs;
     const clickAttr = hasEv ? `onclick="calDayClick('${dateStr}')"` : '';
-    html += `<div class="cal-day ${isToday?'today':''} ${hasEv?'has-event':''}" ${clickAttr}>
+    // range-only 日期：只渲染色条，不重复显示名称
+    const evDots = isRangeOnly
+      ? evs.slice(0,2).map(e=>`<div class="cal-event-dot type-range" style="font-size:9px;opacity:0.7">${e.title.substring(0,4)}</div>`).join('')
+      : evs.slice(0,2).map(e=>`<div class="cal-event-dot type-${e.type}">${e.title.substring(0,6)}</div>`).join('');
+    html += `<div class="cal-day ${isToday?'today':''} ${hasEv?'has-event':''} ${isRangeOnly?'in-range':''}" ${clickAttr}>
       <div class="cal-day-num">${d}</div>
       <div class="cal-events">
-        ${evs.slice(0,2).map(e=>`<div class="cal-event-dot type-${e.type}">${e.title.substring(0,6)}</div>`).join('')}
+        ${evDots}
         ${evs.length > 2 ? `<div class="cal-event-dot" style="background:#f1f5f9;color:#64748b">+${evs.length-2}个</div>` : ''}
       </div>
     </div>`;
@@ -5314,6 +5346,7 @@ function renderCalendar(offsetMonth = 0) {
     <div class="cal-legend">
       <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#dbeafe"></div>活动开始</div>
       <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fce7f3"></div>活动结束</div>
+      <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#d1fae5"></div>活动进行中</div>
       <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fef9c3"></div>关键节点</div>
     </div>`;
   el.innerHTML = html;
