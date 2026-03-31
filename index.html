@@ -1939,7 +1939,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.30-21';
+const APP_VERSION = 'v2026.03.31-01';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5369,20 +5369,9 @@ function renderOwnerAnalysis() {
     </div>
   `).join('');
 
-  // 统计总部和子公司费用（预算）
-  let hqBudget = 0, subBudget = 0, hqSpent = 0, subSpent = 0;
+  // 统计总部和子公司费用（实际支出）
+  let hqSpent = 0, subSpent = 0;
   filtered.forEach(a => {
-    const budgetItems = a.budgetItems || [];
-    budgetItems.forEach(item => {
-      const amount = Number(item.amount) || 0;
-      if (item.source === 'hq') {
-        hqBudget += amount;
-      } else if (item.source === 'subsidiary') {
-        subBudget += amount;
-      }
-    });
-
-    // 统计总部和子公司费用（实际支出）
     const actualCosts = a.actualCosts || [];
     actualCosts.forEach(item => {
       const amount = Number(item.amount) || 0;
@@ -5396,26 +5385,21 @@ function renderOwnerAnalysis() {
 
   content.innerHTML = `
     <!-- 汇总指标 -->
-    <div class="grid-4 section-gap">
+    <div class="grid-3 section-gap">
       <div class="stat-card">
         <div class="label">📁 活动总数</div>
         <div class="value color-primary">${filtered.length}</div>
         <div class="change">已完成 ${done.length} 个</div>
       </div>
       <div class="stat-card">
-        <div class="label">🏢 总部预算</div>
-        <div class="value color-info" style="font-size:20px">¥${(hqBudget/10000).toFixed(1)}万</div>
-        <div class="change">总部已支 ¥${(hqSpent/10000).toFixed(1)}万</div>
+        <div class="label">🏢 总部已支出</div>
+        <div class="value color-info" style="font-size:20px">¥${(hqSpent/10000).toFixed(1)}万</div>
+        <div class="change">总部承担的费用</div>
       </div>
       <div class="stat-card">
-        <div class="label">🏭 子公司预算</div>
-        <div class="value color-warning" style="font-size:20px">¥${(subBudget/10000).toFixed(1)}万</div>
-        <div class="change">子公司已支 ¥${(subSpent/10000).toFixed(1)}万</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">💸 实际支出</div>
-        <div class="value color-danger" style="font-size:20px">¥${(totalSpent/10000).toFixed(1)}万</div>
-        <div class="change">总部¥${(hqSpent/10000).toFixed(1)}万 | 子公司¥${(subSpent/10000).toFixed(1)}万</div>
+        <div class="label">🏭 子公司已支出</div>
+        <div class="value color-warning" style="font-size:20px">¥${(subSpent/10000).toFixed(1)}万</div>
+        <div class="change">子公司承担的费用</div>
       </div>
     </div>
 
