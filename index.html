@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-12</title>
+<title>市场活动全流程管理系统 v2026.03.31-13</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -5837,6 +5837,20 @@ function renderChannelFollowupTable(activityId) {
   if (!a) return '<div style="color:var(--text-muted);padding:20px">活动不存在</div>';
   const followupData = a.channelFollowup || [];
   loadChannels();
+
+  // 自动修正：渠道名单中对应记录的地市和销售，以活动数据为准（防止历史错误数据）
+  let channelDirty = false;
+  followupData.forEach(item => {
+    if (!item.channelId) return;
+    const idx = channels.findIndex(c => c.id === item.channelId);
+    if (idx === -1) return;
+    let changed = false;
+    if (a.city && channels[idx].city !== a.city) { channels[idx].city = a.city; changed = true; }
+    if (a.district && channels[idx].district !== a.district) { channels[idx].district = a.district; changed = true; }
+    if (item.sales && channels[idx].sales !== item.sales) { channels[idx].sales = item.sales; changed = true; }
+    if (changed) { channels[idx].updatedAt = new Date().toISOString(); channelDirty = true; }
+  });
+  if (channelDirty) saveChannels(); // 有变更则保存
   const salesAccounts = getSalesAccounts();
 
   // 左侧：预约渠道名单，右侧：反馈情况
@@ -6127,9 +6141,14 @@ function confirmAddFollowupChannel(activityId) {
     finalChannelId = newChannel.id;
     matchedChannel = newChannel; // 标记为已匹配
   } else {
-    // 已匹配到渠道：如果用户填写了联系人或背景，覆盖更新渠道名单中的信息（不论原来是否有值）
+    // 已匹配到渠道：同步更新渠道名单中的信息
     const idx = channels.findIndex(c => c.id === matchedChannel.id);
     if (idx !== -1) {
+      // 用活动的地市和负责销售修正渠道名单（渠道名单数据以实际活动为准）
+      if (a.city) channels[idx].city = a.city;
+      if (a.district) channels[idx].district = a.district;
+      if (sales) channels[idx].sales = sales;   // 以活动负责销售为准
+      // 用户有填写则覆盖联系人/背景
       if (channelContact) channels[idx].contact = channelContact;
       if (channelBackground) channels[idx].background = channelBackground;
       channels[idx].updatedAt = new Date().toISOString();
