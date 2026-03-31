@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-17</title>
+<title>市场活动全流程管理系统 v2026.03.31-18</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1416,8 +1416,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <div id="kimi-test-result" style="margin-top:12px;display:none;padding:10px 14px;border-radius:8px;font-size:13px"></div>
       </div>
 
-      <!-- 销售账号管理 -->
-      <div class="card" style="max-width:680px;margin-top:16px">
+      <!-- 销售账号管理（仅超级管理员可见） -->
+      <div id="sales-account-card" class="card" style="max-width:680px;margin-top:16px;display:none">
         <div class="card-header"><div class="card-title">👥 销售账号管理</div></div>
         <div style="padding:4px 0 12px;font-size:13px;color:var(--text-muted)">
           管理销售人员的登录账号，销售登录后可在首页看到专属渠道提醒。数据仅保存在本地浏览器。
@@ -1984,7 +1984,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-17';
+const APP_VERSION = 'v2026.03.31-18';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -4646,6 +4646,12 @@ function updateRoleDisplay() {
     if (adminSection) adminSection.style.display = '';
     if (usermgmtNav)  usermgmtNav.style.display  = 'flex';
     if (settingsNav)  settingsNav.style.display   = 'flex';
+  }
+
+  // 销售账号管理卡片：仅超级管理员可见
+  const salesAccountCard = document.getElementById('sales-account-card');
+  if (salesAccountCard) {
+    salesAccountCard.style.display = (role === 'superadmin') ? '' : 'none';
   }
 }
 
@@ -8133,6 +8139,7 @@ function renderSalesList() {
 
 // 添加销售账号
 function addSalesAccount() {
+  if (_currentRole !== 'superadmin') { alert('仅超级管理员可添加销售账号'); return; }
   const nameEl = document.getElementById('sales-name');
   const accountEl = document.getElementById('sales-account');
   const name = nameEl?.value?.trim();
@@ -8162,6 +8169,7 @@ function addSalesAccount() {
 
 // 删除销售账号
 function deleteSalesAccount(index) {
+  if (_currentRole !== 'superadmin') { alert('仅超级管理员可删除销售账号'); return; }
   if (!confirm('确定删除该销售账号吗？')) return;
   salesAccounts.splice(index, 1);
   saveSalesAccounts();
