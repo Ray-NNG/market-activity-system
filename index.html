@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-21</title>
+<title>市场活动全流程管理系统 v2026.03.31-22</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1984,7 +1984,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-21';
+const APP_VERSION = 'v2026.03.31-22';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5864,123 +5864,74 @@ function renderChannelFollowupTable(activityId) {
   if (channelDirty) saveChannels(); // 有变更则保存
   const salesAccounts = getSalesAccounts();
 
-  // 左侧：预约渠道名单，右侧：反馈情况
+  // 按日期分组（每条渠道记录有 followupDate 字段，表示该条记录归属的跟进日期）
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const dateGroups = {}; // { '2026-04-01': [idx, ...], '': [idx, ...] }
+  followupData.forEach((item, idx) => {
+    const d = item.followupDate || '';
+    if (!dateGroups[d]) dateGroups[d] = [];
+    dateGroups[d].push(idx);
+  });
+  // 日期排序：有日期升序，无日期排最后
+  const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+    if (!a) return 1; if (!b) return -1;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+
+  // 主视图：日期卡片列表
   const followupHtml = `
-    <div style="display:flex;gap:16px">
-      <!-- 左侧：预约渠道名单 -->
-      <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-weight:700;font-size:15px;color:#4f46e5">📋 预约渠道名单</div>
-          <button type="button" class="btn btn-primary btn-sm" onclick="addFollowupChannel('${activityId}')" style="font-size:12px;padding:4px 10px">+ 添加渠道</button>
+    <div>
+      <!-- 顶部工具栏 -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-weight:700;font-size:15px;color:#4f46e5">📋 渠道跟进日程</div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="addFollowupChannel('${activityId}')" style="font-size:12px;padding:4px 12px">+ 新增渠道跟进</button>
+      </div>
+
+      ${sortedDates.length === 0 ? `
+        <div style="color:var(--text-muted);font-size:13px;padding:40px;text-align:center;border:2px dashed var(--border);border-radius:12px">
+          <div style="font-size:40px;margin-bottom:12px">📅</div>
+          <div>暂无跟进记录，点击右上角按钮新增渠道跟进</div>
         </div>
-        ${followupData.length === 0 ? '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px">暂无预约渠道，点击右上角按钮添加</div>' : `
-          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:360px;overflow-y:auto">
-            ${followupData.map((item, idx) => {
-              const channel = channels.find(c => c.id === item.channelId);
-              const channelName = channel?.name || item.channelName || '未知渠道';
-              const channelBackground = item.channelBackground || channel?.background || '';
-              const channelContact = item.channelContact || channel?.contact || '';
-              // 负责销售：优先取保存时记录的活动负责销售（item.sales），再备选渠道名单的 sales
-              const matchedSales = item.sales || channel?.sales || '';
-              const isMatched = item.matched !== false; // 默认视为已匹配
-              // 渠道背景摘要：最多显示30字
-              const bgSummary = channelBackground ? (channelBackground.length > 30 ? channelBackground.slice(0, 30) + '…' : channelBackground) : '';
-              const bgEscaped = channelBackground.replace(/'/g, "\\'").replace(/\n/g, '\\n');
-              const nameEscaped = channelName.replace(/'/g, "\\'");
-              return `
-                <div class="followup-row" style="display:flex;flex-direction:column;padding:12px;border-bottom:1px solid var(--border);${idx === followupData.length - 1 ? 'border-bottom:none' : ''}">
-                  <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:4px">
-                    <div style="flex:1;min-width:0">
-                      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                        <span style="font-weight:600;font-size:14px;color:var(--text)">${channelName}</span>
-                        ${!isMatched ? '<span style="font-size:11px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px">未匹配</span>' : ''}
-                      </div>
-                      ${matchedSales ? `<div style="font-size:12px;color:var(--text-muted)">👤 负责销售：${matchedSales}</div>` : ''}
-                      ${channelContact ? `<div style="font-size:12px;color:var(--text-muted)">📞 主要联系人：${channelContact}</div>` : ''}
-                      ${channelBackground ? `
-                      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;display:flex;align-items:center;gap:6px">
-                        <span style="color:#94a3b8">📄 背景：</span>
-                        <span style="color:#64748b">${bgSummary}</span>
-                        <button type="button" onclick="showChannelBgDetail('${nameEscaped}','${bgEscaped}')"
-                          style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--primary);font-size:11px;padding:1px 6px;cursor:pointer;white-space:nowrap">查看详情</button>
-                      </div>` : ''}
-                    </div>
-                    <button type="button" onclick="removeFollowupChannel('${activityId}',${idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px">×</button>
+      ` : `
+        <div style="display:flex;flex-direction:column;gap:10px;max-height:480px;overflow-y:auto">
+          ${sortedDates.map(dateKey => {
+            const idxList = dateGroups[dateKey];
+            const isPast   = dateKey && dateKey < todayStr;
+            const isToday  = dateKey === todayStr;
+            const dateLabel = dateKey
+              ? (isToday ? `📅 ${dateKey}（今日）` : isPast ? `📅 ${dateKey}（已过期）` : `📅 ${dateKey}`)
+              : '📅 未设定跟进日期';
+            const cardBg     = isToday ? 'linear-gradient(135deg,#ecfdf5,#d1fae5)' : isPast ? 'linear-gradient(135deg,#f8fafc,#f1f5f9)' : 'linear-gradient(135deg,#eff6ff,#dbeafe)';
+            const borderColor= isToday ? '#10b981' : isPast ? '#cbd5e1' : '#3b82f6';
+            const textColor  = isToday ? '#065f46' : isPast ? '#64748b' : '#1e40af';
+            const tagText    = isToday ? '今日' : isPast ? '已过期' : '即将';
+            const tagBg2     = isToday ? '#10b981' : isPast ? '#94a3b8' : '#3b82f6';
+            return `
+              <div onclick="openFollowupDateDetail('${activityId}','${dateKey}')"
+                style="border:1.5px solid ${borderColor};border-radius:12px;padding:14px 18px;background:${cardBg};cursor:pointer;transition:box-shadow .2s;user-select:none"
+                onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='none'">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-size:14px;font-weight:700;color:${textColor}">${dateLabel}</span>
+                    <span style="font-size:11px;background:${tagBg2};color:#fff;padding:2px 8px;border-radius:20px">${tagText}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-size:12px;color:${textColor}">共 ${idxList.length} 家渠道</span>
+                    <span style="font-size:14px;color:${textColor}">›</span>
                   </div>
                 </div>
-              `;
-            }).join('')}
-          </div>
-        `}
-      </div>
-      <!-- 右侧：反馈情况 -->
-      <div style="flex:1">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-weight:700;font-size:15px;color:#10b981">📝 反馈情况</div>
-          ${followupData.length > 0 ? `<button type="button" class="btn btn-primary btn-sm" onclick="saveFollowupFeedbacks('${activityId}')" style="font-size:12px;padding:4px 14px;background:#10b981;border-color:#10b981">💾 保存反馈</button>` : ''}
+                <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">
+                  ${idxList.slice(0, 5).map(i => {
+                    const chName = channels.find(c => c.id === followupData[i].channelId)?.name || followupData[i].channelName || '未知';
+                    return `<span style="font-size:11px;background:rgba(255,255,255,.7);border:1px solid ${borderColor}33;border-radius:4px;padding:1px 6px;color:${textColor}">${chName}</span>`;
+                  }).join('')}
+                  ${idxList.length > 5 ? `<span style="font-size:11px;color:${textColor}">+${idxList.length - 5} 家...</span>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
-        ${followupData.length === 0 ? '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px">请先在左侧添加预约渠道</div>' : (() => {
-          const todayStr = new Date().toISOString().slice(0, 10);
-          // 按日期分组，未设置日期归入 "无日期" 组
-          const dateGroups = {};
-          followupData.forEach((item, idx) => {
-            const d = item.feedbackDate || '';
-            if (!dateGroups[d]) dateGroups[d] = [];
-            dateGroups[d].push({ item, idx });
-          });
-          // 日期排序：有日期的升序，无日期排最后
-          const sortedDates = Object.keys(dateGroups).sort((a, b) => {
-            if (!a) return 1; if (!b) return -1;
-            return a < b ? -1 : a > b ? 1 : 0;
-          });
-          return `
-            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:420px;overflow-y:auto" id="feedback-list-${activityId}">
-              ${sortedDates.map(dateKey => {
-                const isPast = dateKey && dateKey < todayStr;
-                const isToday = dateKey === todayStr;
-                const isFuture = dateKey && dateKey > todayStr;
-                const collapsed = isPast; // 过去日期默认折叠
-                const groupId = 'fbg-' + activityId + '-' + (dateKey || 'nodate');
-                const dateLabel = dateKey
-                  ? (isToday ? `📅 ${dateKey}（今日）` : isPast ? `📅 ${dateKey}（已过期）` : `📅 ${dateKey}`)
-                  : '📅 未设定日期';
-                const tagColor = isToday ? '#10b981' : isPast ? '#94a3b8' : '#3b82f6';
-                const tagBg   = isToday ? '#ecfdf5' : isPast ? '#f1f5f9' : '#eff6ff';
-                return `
-                  <div style="border-bottom:1px solid var(--border)">
-                    <div onclick="toggleFeedbackGroup('${groupId}')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:${tagBg};cursor:pointer;user-select:none">
-                      <span style="font-size:12px;font-weight:600;color:${tagColor}">${dateLabel}</span>
-                      <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-size:11px;color:${tagColor}">${dateGroups[dateKey].length} 家渠道</span>
-                        <span id="${groupId}-icon" style="font-size:12px;color:${tagColor};transition:transform .2s;display:inline-block;transform:rotate(${collapsed ? '-90deg' : '0deg'})">${isPast ? '▼' : '▼'}</span>
-                      </div>
-                    </div>
-                    <div id="${groupId}" style="display:${collapsed ? 'none' : 'block'}">
-                      ${dateGroups[dateKey].map(({ item, idx }, gIdx) => {
-                        const feedback = item.feedback || '';
-                        const chName = channels.find(c => c.id === item.channelId)?.name || item.channelName || '未知渠道';
-                        const isLast = gIdx === dateGroups[dateKey].length - 1;
-                        return `
-                          <div style="padding:10px 12px;${!isLast ? 'border-bottom:1px solid var(--border)' : ''}">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-                              <span style="font-size:12px;font-weight:600;color:var(--text)">${chName}</span>
-                              <input type="date" class="form-control" style="font-size:11px;padding:2px 6px;width:auto;border-radius:6px;color:#64748b"
-                                value="${item.feedbackDate || ''}"
-                                data-feedback-date-idx="${idx}" data-feedback-date-aid="${activityId}"
-                                onchange="updateFollowupFeedbackDate('${activityId}',${idx},this.value)">
-                            </div>
-                            <textarea class="form-control" style="min-height:70px;font-size:13px;padding:8px;resize:vertical" placeholder="记录该渠道的来访反馈情况..." data-feedback-idx="${idx}" data-feedback-aid="${activityId}" onchange="updateFollowupFeedback('${activityId}',${idx},this.value)">${feedback}</textarea>
-                          </div>
-                        `;
-                      }).join('')}
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          `;
-        })()}
-      </div>
+      `}
     </div>
   `;
   return followupHtml;
@@ -5991,6 +5942,8 @@ function addFollowupChannel(activityId) {
   const a = activities.find(x => String(x.id) === String(activityId));
   if (!a) return;
   if (!a.channelFollowup) a.channelFollowup = [];
+
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   // 获取所有销售，用于筛选
   const salesList = [...new Set(channels.map(c => c.sales).filter(s => s))].sort();
@@ -6049,6 +6002,11 @@ function addFollowupChannel(activityId) {
               </datalist>
               <div style="font-size:12px;color:var(--text-muted);margin-top:4px">选中渠道后自动填充，支持自定义输入</div>
             </div>
+          </div>
+          <div class="form-group">
+            <label>跟进日期 <span style="color:#ef4444">*</span></label>
+            <input type="date" class="form-control" id="followup-date-input" style="width:100%" value="${todayStr}">
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">该渠道将归属到此跟进日期，可在日期详情中统一查看和反馈</div>
           </div>
           <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:250px;overflow-y:auto" id="followup-channel-list">
             <!-- 渠道列表将通过 JS 动态生成 -->
@@ -6250,12 +6208,16 @@ function confirmAddFollowupChannel(activityId) {
     }
   }
 
+  // 读取跟进日期
+  const followupDate = (document.getElementById('followup-date-input')?.value || '').trim();
+
   a.channelFollowup.push({
     channelId: finalChannelId,
     channelName,
     channelContact,
     channelBackground,
     sales,
+    followupDate,
     feedback: '',
     matched: true // 无论是原有渠道还是新建渠道，都视为已匹配
   });
@@ -6311,6 +6273,150 @@ function removeFollowupChannel(activityId, idx) {
     const panel = document.getElementById('dtab-4');
     if (panel) {
       panel.innerHTML = renderChannelFollowupTable(activityId);
+    }
+  })();
+}
+
+// ===== 跟进日期详情弹窗（左：预约名单 + 右：反馈情况）=====
+function openFollowupDateDetail(activityId, dateKey) {
+  loadChannels();
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a) return;
+  const followupData = a.channelFollowup || [];
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // 该日期的所有渠道记录（及其原始 index）
+  const dateItems = followupData
+    .map((item, idx) => ({ item, idx }))
+    .filter(({ item }) => (item.followupDate || '') === dateKey);
+
+  const isPast  = dateKey && dateKey < todayStr;
+  const isToday = dateKey === todayStr;
+  const dateLabel = dateKey
+    ? (isToday ? `${dateKey}（今日）` : isPast ? `${dateKey}（已过期）` : dateKey)
+    : '未设定跟进日期';
+  const headerColor = isToday ? '#10b981' : isPast ? '#64748b' : '#3b82f6';
+  const headerBg    = isToday ? 'linear-gradient(135deg,#ecfdf5,#d1fae5)' : isPast ? 'linear-gradient(135deg,#f8fafc,#f1f5f9)' : 'linear-gradient(135deg,#eff6ff,#dbeafe)';
+
+  // 左侧：预约渠道名单 HTML
+  const channelListHtml = dateItems.map(({ item, idx }) => {
+    const channel = channels.find(c => c.id === item.channelId);
+    const channelName = channel?.name || item.channelName || '未知渠道';
+    const channelBackground = item.channelBackground || channel?.background || '';
+    const channelContact = item.channelContact || channel?.contact || '';
+    const matchedSales = item.sales || channel?.sales || '';
+    const bgSummary = channelBackground ? (channelBackground.length > 30 ? channelBackground.slice(0, 30) + '…' : channelBackground) : '';
+    const bgEscaped = channelBackground.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+    const nameEscaped = channelName.replace(/'/g, "\\'");
+    return `
+      <div style="padding:12px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:start">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:4px">${channelName}</div>
+            ${matchedSales ? `<div style="font-size:12px;color:var(--text-muted)">👤 负责销售：${matchedSales}</div>` : ''}
+            ${channelContact ? `<div style="font-size:12px;color:var(--text-muted)">📞 联系人：${channelContact}</div>` : ''}
+            ${channelBackground ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;display:flex;align-items:center;gap:6px">
+              <span style="color:#94a3b8">📄 背景：</span>
+              <span style="color:#64748b">${bgSummary}</span>
+              <button onclick="showChannelBgDetail('${nameEscaped}','${bgEscaped}')" style="background:none;border:1px solid var(--border);border-radius:4px;color:var(--primary);font-size:11px;padding:1px 6px;cursor:pointer;white-space:nowrap">查看详情</button>
+            </div>` : ''}
+          </div>
+          <button onclick="removeFollowupChannelInDetail('${activityId}',${idx},'${dateKey}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px;flex-shrink:0">×</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 右侧：反馈情况 HTML
+  const feedbackHtml = dateItems.map(({ item, idx }) => {
+    const channel = channels.find(c => c.id === item.channelId);
+    const chName = channel?.name || item.channelName || '未知渠道';
+    const feedback = item.feedback || '';
+    return `
+      <div style="padding:12px;border-bottom:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px">${chName}</div>
+        <textarea class="form-control" style="min-height:80px;font-size:13px;padding:8px;resize:vertical"
+          placeholder="记录该渠道的来访反馈情况..."
+          data-feedback-idx="${idx}" data-feedback-aid="${activityId}"
+          onchange="updateFollowupFeedback('${activityId}',${idx},this.value)">${feedback}</textarea>
+      </div>
+    `;
+  }).join('');
+
+  const existing = document.getElementById('modal-followup-date-detail');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'modal-followup-date-detail';
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
+  div.innerHTML = `
+    <div style="background:#fff;border-radius:20px;width:800px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(30,60,180,.18);overflow:hidden">
+      <!-- 弹窗头部 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:${headerBg};border-bottom:1px solid #e2e8f0;flex-shrink:0">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:${headerColor}">📅 ${dateLabel}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">共 ${dateItems.length} 家渠道</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button onclick="saveFollowupFeedbacksInDetail('${activityId}')" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:6px 16px;font-size:12px;cursor:pointer;font-weight:600">💾 保存反馈</button>
+          <button onclick="document.getElementById('modal-followup-date-detail').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#94a3b8;line-height:1;padding:2px 8px;border-radius:50%;transition:all .2s" onmouseover="this.style.background='#e0eeff'" onmouseout="this.style.background='none'">×</button>
+        </div>
+      </div>
+      <!-- 弹窗内容：左右两栏 -->
+      <div style="display:flex;flex:1;overflow:hidden;min-height:0">
+        <!-- 左侧：预约渠道名单 -->
+        <div style="flex:1;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:12px 16px;font-weight:700;font-size:14px;color:#4f46e5;background:#fafaf9;border-bottom:1px solid #e2e8f0;flex-shrink:0">📋 预约渠道名单</div>
+          <div id="date-detail-channel-list" style="flex:1;overflow-y:auto">
+            ${dateItems.length === 0 ? '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px">暂无预约渠道</div>' : channelListHtml}
+          </div>
+        </div>
+        <!-- 右侧：反馈情况 -->
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+          <div style="padding:12px 16px;font-weight:700;font-size:14px;color:#10b981;background:#fafaf9;border-bottom:1px solid #e2e8f0;flex-shrink:0">📝 反馈情况</div>
+          <div id="date-detail-feedback-list" style="flex:1;overflow-y:auto">
+            ${dateItems.length === 0 ? '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px">请先在左侧确认渠道</div>' : feedbackHtml}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  div.addEventListener('click', e => { if (e.target === div) div.remove(); });
+  document.body.appendChild(div);
+}
+
+// 在日期详情弹窗内删除渠道
+function removeFollowupChannelInDetail(activityId, idx, dateKey) {
+  if (!confirm('确定从该日期跟进列表中删除此渠道？')) return;
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a || !a.channelFollowup) return;
+  a.channelFollowup.splice(idx, 1);
+  (async () => {
+    await syncData();
+    // 刷新主面板
+    const panel = document.getElementById('dtab-4');
+    if (panel) panel.innerHTML = renderChannelFollowupTable(activityId);
+    // 刷新详情弹窗
+    openFollowupDateDetail(activityId, dateKey);
+  })();
+}
+
+// 在日期详情弹窗内保存反馈
+function saveFollowupFeedbacksInDetail(activityId) {
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a || !a.channelFollowup) return;
+  a.channelFollowup.forEach((item, idx) => {
+    const textarea = document.querySelector(`textarea[data-feedback-idx="${idx}"][data-feedback-aid="${activityId}"]`);
+    if (textarea) item.feedback = textarea.value;
+  });
+  (async () => {
+    await syncData();
+    const btn = document.querySelector(`button[onclick="saveFollowupFeedbacksInDetail('${activityId}')"]`);
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✅ 已保存';
+      btn.disabled = true;
+      setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 1500);
     }
   })();
 }
