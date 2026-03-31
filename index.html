@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-06</title>
+<title>市场活动全流程管理系统 v2026.03.31-07</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1976,7 +1976,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-06';
+const APP_VERSION = 'v2026.03.31-07';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5839,7 +5839,10 @@ function renderChannelFollowupTable(activityId) {
       </div>
       <!-- 右侧：反馈情况 -->
       <div style="flex:1">
-        <div style="font-weight:700;font-size:15px;color:#10b981;margin-bottom:12px">📝 反馈情况</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-weight:700;font-size:15px;color:#10b981">📝 反馈情况</div>
+          ${followupData.length > 0 ? `<button type="button" class="btn btn-primary btn-sm" onclick="saveFollowupFeedbacks('${activityId}')" style="font-size:12px;padding:4px 14px;background:#10b981;border-color:#10b981">💾 保存反馈</button>` : ''}
+        </div>
         ${followupData.length === 0 ? '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px">请先在左侧添加预约渠道</div>' : `
           <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
             ${followupData.map((item, idx) => {
@@ -5849,7 +5852,7 @@ function renderChannelFollowupTable(activityId) {
                   <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
                     <strong>${channels.find(c => c.id === item.channelId)?.name || item.channelName || '未知渠道'}</strong> 反馈
                   </div>
-                  <textarea class="form-control" style="min-height:80px;font-size:13px;padding:8px" placeholder="记录该渠道的来访反馈情况..." onchange="updateFollowupFeedback('${activityId}',${idx},this.value)">${feedback}</textarea>
+                  <textarea class="form-control" style="min-height:80px;font-size:13px;padding:8px" placeholder="记录该渠道的来访反馈情况..." data-feedback-idx="${idx}" data-feedback-aid="${activityId}" onchange="updateFollowupFeedback('${activityId}',${idx},this.value)">${feedback}</textarea>
                 </div>
               `;
             }).join('')}
@@ -6044,7 +6047,8 @@ function confirmAddFollowupChannel(activityId) {
 
   const channelId = matchedChannel?.id || '';
   const channelName = matchedChannel?.name || channelNameInput;
-  const sales = matchedChannel?.sales || '';
+  // 负责销售：优先用活动的负责销售（a.owner），因为是该销售去跟进此渠道
+  const sales = a.owner || matchedChannel?.sales || '';
 
   // 读取用户手动填写的字段（优先用手动填写，否则用匹配结果）
   const contactInput = document.getElementById('followup-contact-name').value.trim();
@@ -6106,8 +6110,32 @@ function updateFollowupFeedback(activityId, idx, feedback) {
   const a = activities.find(x => String(x.id) === String(activityId));
   if (!a || !a.channelFollowup || !a.channelFollowup[idx]) return;
   a.channelFollowup[idx].feedback = feedback;
-  // 实时保存
-  syncData();
+  // 仅更新内存，不自动sync（由保存按钮触发）
+}
+
+function saveFollowupFeedbacks(activityId) {
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a || !a.channelFollowup) return;
+
+  // 读取所有反馈 textarea 的最新值并更新内存
+  a.channelFollowup.forEach((item, idx) => {
+    const textarea = document.querySelector(`textarea[data-feedback-idx="${idx}"][data-feedback-aid="${activityId}"]`);
+    if (textarea) {
+      item.feedback = textarea.value;
+    }
+  });
+
+  (async () => {
+    await syncData();
+    // 按钮给出短暂的成功提示
+    const btn = document.querySelector(`button[onclick="saveFollowupFeedbacks('${activityId}')"]`);
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✅ 已保存';
+      btn.disabled = true;
+      setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 1500);
+    }
+  })();
 }
 
 function getSalesAccounts() {
