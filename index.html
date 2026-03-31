@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-20</title>
+<title>市场活动全流程管理系统 v2026.03.31-21</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1984,7 +1984,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-20';
+const APP_VERSION = 'v2026.03.31-21';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5919,21 +5919,67 @@ function renderChannelFollowupTable(activityId) {
           <div style="font-weight:700;font-size:15px;color:#10b981">📝 反馈情况</div>
           ${followupData.length > 0 ? `<button type="button" class="btn btn-primary btn-sm" onclick="saveFollowupFeedbacks('${activityId}')" style="font-size:12px;padding:4px 14px;background:#10b981;border-color:#10b981">💾 保存反馈</button>` : ''}
         </div>
-        ${followupData.length === 0 ? '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px">请先在左侧添加预约渠道</div>' : `
-          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
-            ${followupData.map((item, idx) => {
-              const feedback = item.feedback || '';
-              return `
-                <div style="padding:12px;border-bottom:1px solid var(--border);${idx === followupData.length - 1 ? 'border-bottom:none' : ''}">
-                  <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
-                    <strong>${channels.find(c => c.id === item.channelId)?.name || item.channelName || '未知渠道'}</strong> 反馈
+        ${followupData.length === 0 ? '<div style="color:var(--text-muted);font-size:13px;padding:20px;text-align:center;border:1px dashed var(--border);border-radius:8px">请先在左侧添加预约渠道</div>' : (() => {
+          const todayStr = new Date().toISOString().slice(0, 10);
+          // 按日期分组，未设置日期归入 "无日期" 组
+          const dateGroups = {};
+          followupData.forEach((item, idx) => {
+            const d = item.feedbackDate || '';
+            if (!dateGroups[d]) dateGroups[d] = [];
+            dateGroups[d].push({ item, idx });
+          });
+          // 日期排序：有日期的升序，无日期排最后
+          const sortedDates = Object.keys(dateGroups).sort((a, b) => {
+            if (!a) return 1; if (!b) return -1;
+            return a < b ? -1 : a > b ? 1 : 0;
+          });
+          return `
+            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:420px;overflow-y:auto" id="feedback-list-${activityId}">
+              ${sortedDates.map(dateKey => {
+                const isPast = dateKey && dateKey < todayStr;
+                const isToday = dateKey === todayStr;
+                const isFuture = dateKey && dateKey > todayStr;
+                const collapsed = isPast; // 过去日期默认折叠
+                const groupId = 'fbg-' + activityId + '-' + (dateKey || 'nodate');
+                const dateLabel = dateKey
+                  ? (isToday ? `📅 ${dateKey}（今日）` : isPast ? `📅 ${dateKey}（已过期）` : `📅 ${dateKey}`)
+                  : '📅 未设定日期';
+                const tagColor = isToday ? '#10b981' : isPast ? '#94a3b8' : '#3b82f6';
+                const tagBg   = isToday ? '#ecfdf5' : isPast ? '#f1f5f9' : '#eff6ff';
+                return `
+                  <div style="border-bottom:1px solid var(--border)">
+                    <div onclick="toggleFeedbackGroup('${groupId}')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:${tagBg};cursor:pointer;user-select:none">
+                      <span style="font-size:12px;font-weight:600;color:${tagColor}">${dateLabel}</span>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:11px;color:${tagColor}">${dateGroups[dateKey].length} 家渠道</span>
+                        <span id="${groupId}-icon" style="font-size:12px;color:${tagColor};transition:transform .2s;display:inline-block;transform:rotate(${collapsed ? '-90deg' : '0deg'})">${isPast ? '▼' : '▼'}</span>
+                      </div>
+                    </div>
+                    <div id="${groupId}" style="display:${collapsed ? 'none' : 'block'}">
+                      ${dateGroups[dateKey].map(({ item, idx }, gIdx) => {
+                        const feedback = item.feedback || '';
+                        const chName = channels.find(c => c.id === item.channelId)?.name || item.channelName || '未知渠道';
+                        const isLast = gIdx === dateGroups[dateKey].length - 1;
+                        return `
+                          <div style="padding:10px 12px;${!isLast ? 'border-bottom:1px solid var(--border)' : ''}">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+                              <span style="font-size:12px;font-weight:600;color:var(--text)">${chName}</span>
+                              <input type="date" class="form-control" style="font-size:11px;padding:2px 6px;width:auto;border-radius:6px;color:#64748b"
+                                value="${item.feedbackDate || ''}"
+                                data-feedback-date-idx="${idx}" data-feedback-date-aid="${activityId}"
+                                onchange="updateFollowupFeedbackDate('${activityId}',${idx},this.value)">
+                            </div>
+                            <textarea class="form-control" style="min-height:70px;font-size:13px;padding:8px;resize:vertical" placeholder="记录该渠道的来访反馈情况..." data-feedback-idx="${idx}" data-feedback-aid="${activityId}" onchange="updateFollowupFeedback('${activityId}',${idx},this.value)">${feedback}</textarea>
+                          </div>
+                        `;
+                      }).join('')}
+                    </div>
                   </div>
-                  <textarea class="form-control" style="min-height:80px;font-size:13px;padding:8px" placeholder="记录该渠道的来访反馈情况..." data-feedback-idx="${idx}" data-feedback-aid="${activityId}" onchange="updateFollowupFeedback('${activityId}',${idx},this.value)">${feedback}</textarea>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `}
+                `;
+              }).join('')}
+            </div>
+          `;
+        })()}
       </div>
     </div>
   `;
@@ -6269,6 +6315,28 @@ function removeFollowupChannel(activityId, idx) {
   })();
 }
 
+// 折叠/展开反馈日期分组
+function toggleFeedbackGroup(groupId) {
+  const el = document.getElementById(groupId);
+  const icon = document.getElementById(groupId + '-icon');
+  if (!el) return;
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? 'block' : 'none';
+  if (icon) icon.style.transform = hidden ? 'rotate(0deg)' : 'rotate(-90deg)';
+}
+
+// 更新单条反馈的日期（内存）
+function updateFollowupFeedbackDate(activityId, idx, dateVal) {
+  const a = activities.find(x => String(x.id) === String(activityId));
+  if (!a || !a.channelFollowup || !a.channelFollowup[idx]) return;
+  a.channelFollowup[idx].feedbackDate = dateVal;
+  // 日期改变后重新渲染（让分组即时更新）
+  const panel = document.getElementById('dtab-4');
+  if (panel) {
+    panel.innerHTML = renderChannelFollowupTable(activityId);
+  }
+}
+
 function updateFollowupFeedback(activityId, idx, feedback) {
   const a = activities.find(x => String(x.id) === String(activityId));
   if (!a || !a.channelFollowup || !a.channelFollowup[idx]) return;
@@ -6280,11 +6348,15 @@ function saveFollowupFeedbacks(activityId) {
   const a = activities.find(x => String(x.id) === String(activityId));
   if (!a || !a.channelFollowup) return;
 
-  // 读取所有反馈 textarea 的最新值并更新内存
+  // 读取所有反馈 textarea 的最新值并更新内存（含日期）
   a.channelFollowup.forEach((item, idx) => {
     const textarea = document.querySelector(`textarea[data-feedback-idx="${idx}"][data-feedback-aid="${activityId}"]`);
     if (textarea) {
       item.feedback = textarea.value;
+    }
+    const dateInput = document.querySelector(`input[data-feedback-date-idx="${idx}"][data-feedback-date-aid="${activityId}"]`);
+    if (dateInput) {
+      item.feedbackDate = dateInput.value;
     }
   });
 
