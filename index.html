@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-03</title>
+<title>市场活动全流程管理系统 v2026.03.31-04</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1975,7 +1975,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-03';
+const APP_VERSION = 'v2026.03.31-04';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5861,34 +5861,38 @@ function addFollowupChannel(activityId) {
   if (!a) return;
   if (!a.channelFollowup) a.channelFollowup = [];
 
-  // 如果没有渠道可选，提示用户
-  if (channels.length === 0) {
-    alert('暂无渠道数据，请先在「渠道名单」页面导入渠道');
-    return;
-  }
+  // 获取所有销售，用于筛选
+  const salesList = [...new Set(channels.map(c => c.sales).filter(s => s))].sort();
 
-  // 弹出渠道选择框
-  const channelOptions = channels.map(c => `
-    <label style="display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--border);cursor:pointer">
-      <input type="radio" name="followup-channel-select" value="${c.id}" style="width:16px;height:16px;accent-color:var(--primary)">
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:14px">${c.name}</div>
-        <div style="font-size:12px;color:var(--text-muted)">
-          ${c.city ? c.city : ''} ${c.tier ? `| ${c.tier}` : ''} ${c.sales ? `| 负责人：${c.sales}` : ''}
-        </div>
-      </div>
-    </label>
-  `).join('');
+  // 生成销售筛选下拉框的选项
+  const salesOptions = '<option value="">全部销售</option>' + 
+    salesList.map(s => `<option value="${s}">${s}</option>`).join('');
+
+  // 默认选中活动负责销售
+  const defaultSales = a.owner || '';
 
   const modalHtml = `
     <div class="modal-overlay show" id="modal-followup-channel" onclick="if(event.target===this)closeFollowupChannelModal()">
       <div class="modal" style="width:500px;max-height:80vh;overflow-y:auto">
         <div class="modal-header">
-          <div class="modal-title">选择要跟进的渠道</div>
+          <div class="modal-title">添加跟进渠道</div>
           <button class="modal-close" onclick="closeFollowupChannelModal()">×</button>
         </div>
-        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto">
-          ${channelOptions}
+        <div style="padding:16px">
+          <div class="form-group">
+            <label>渠道名称</label>
+            <input type="text" class="form-control" id="followup-channel-name" placeholder="请输入渠道名称" style="width:100%;padding:8px;margin-bottom:12px">
+            <div style="font-size:12px;color:var(--text-muted)">输入后系统会自动匹配到渠道名单中</div>
+          </div>
+          <div class="form-group">
+            <label>销售筛选</label>
+            <select class="form-control" id="followup-sales-filter" onchange="filterFollowupChannels()" style="width:100%;padding:8px">
+              ${salesOptions}
+            </select>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:300px;overflow-y:auto" id="followup-channel-list">
+            <!-- 渠道列表将通过 JS 动态生成 -->
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="closeFollowupChannelModal()">取消</button>
@@ -5898,6 +5902,26 @@ function addFollowupChannel(activityId) {
     </div>
   `;
   document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  // 初始化渠道列表
+  filterFollowupChannels();
+
+  // 添加输入框实时搜索监听
+  const inputEl = document.getElementById('followup-channel-name');
+  if (inputEl) {
+    inputEl.addEventListener('input', () => {
+      filterFollowupChannels();
+    });
+  }
+
+  // 如果活动有负责销售，自动筛选
+  if (defaultSales) {
+    const selectEl = document.getElementById('followup-sales-filter');
+    if (selectEl) {
+      selectEl.value = defaultSales;
+      filterFollowupChannels();
+    }
+  }
 }
 
 function closeFollowupChannelModal() {
@@ -5905,31 +5929,104 @@ function closeFollowupChannelModal() {
   if (modal) modal.remove();
 }
 
-function confirmAddFollowupChannel(activityId) {
-  const selected = document.querySelector('input[name="followup-channel-select"]:checked');
-  if (!selected) {
-    alert('请选择一个渠道');
+function filterFollowupChannels() {
+  const salesFilter = document.getElementById('followup-sales-filter').value;
+  const channelNameInput = document.getElementById('followup-channel-name').value.toLowerCase();
+  const listContainer = document.getElementById('followup-channel-list');
+
+  // 筛选渠道
+  let filteredChannels = channels;
+  
+  // 按销售筛选
+  if (salesFilter) {
+    filteredChannels = filteredChannels.filter(c => c.sales === salesFilter);
+  }
+
+  // 如果输入了渠道名称，优先显示匹配的渠道
+  if (channelNameInput) {
+    filteredChannels.sort((a, b) => {
+      const aMatch = a.name.toLowerCase().includes(channelNameInput);
+      const bMatch = b.name.toLowerCase().includes(channelNameInput);
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+      return 0;
+    });
+  }
+
+  // 生成渠道列表 HTML
+  if (filteredChannels.length === 0) {
+    listContainer.innerHTML = `
+      <div style="padding:20px;text-align:center;color:var(--text-muted)">
+        ${channelNameInput ? '未找到匹配的渠道，请确认输入的名称是否正确' : '该销售下暂无渠道'}
+      </div>
+    `;
     return;
   }
 
-  const channelId = selected.value;
+  listContainer.innerHTML = filteredChannels.map(c => `
+    <label style="display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--border);cursor:pointer;${channelNameInput && c.name.toLowerCase().includes(channelNameInput) ? 'background:#e0f2fe' : ''}">
+      <input type="radio" name="followup-channel-select" value="${c.id}" style="width:16px;height:16px;accent-color:var(--primary)" data-channel-name="${c.name}">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${c.name}</div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          ${c.city ? c.city : ''} ${c.tier ? `| ${c.tier}` : ''} ${c.sales ? `| 负责人：${c.sales}` : ''}
+        </div>
+      </div>
+    </label>
+  `).join('');
+}
+
+function confirmAddFollowupChannel(activityId) {
   const a = activities.find(x => String(x.id) === String(activityId));
   if (!a) return;
   if (!a.channelFollowup) a.channelFollowup = [];
 
+  const channelNameInput = document.getElementById('followup-channel-name').value.trim();
+  
+  if (!channelNameInput) {
+    alert('请输入渠道名称');
+    return;
+  }
+
+  // 先尝试从渠道名单中精确匹配
+  let matchedChannel = channels.find(c => c.name === channelNameInput);
+  
+  // 如果没有精确匹配，尝试模糊匹配
+  if (!matchedChannel) {
+    matchedChannel = channels.find(c => c.name.toLowerCase().includes(channelNameInput.toLowerCase()) || 
+                                            channelNameInput.toLowerCase().includes(c.name.toLowerCase()));
+  }
+
+  // 如果从列表中选中了渠道，使用选中的
+  const selectedRadio = document.querySelector('input[name="followup-channel-select"]:checked');
+  if (selectedRadio) {
+    matchedChannel = channels.find(c => c.id === selectedRadio.value);
+  }
+
+  const channelId = matchedChannel?.id || '';
+  const channelName = matchedChannel?.name || channelNameInput;
+  const channelBackground = matchedChannel?.background || '';
+  const sales = matchedChannel?.sales || '';
+
   // 检查是否已经添加过
-  if (a.channelFollowup.some(item => item.channelId === channelId)) {
+  if (channelId && a.channelFollowup.some(item => item.channelId === channelId)) {
     alert('该渠道已在跟进列表中');
     return;
   }
 
-  const channel = channels.find(c => c.id === channelId);
+  // 如果没有匹配到渠道，提示用户
+  if (!matchedChannel) {
+    const confirmUnmatched = confirm(`渠道名单中未找到"${channelNameInput}"，是否仍要添加？添加后系统会标记为"未匹配"`);
+    if (!confirmUnmatched) return;
+  }
+
   a.channelFollowup.push({
     channelId,
-    channelName: channel?.name || '',
-    channelBackground: channel?.background || '',
-    sales: channel?.sales || '',
-    feedback: ''
+    channelName,
+    channelBackground,
+    sales,
+    feedback: '',
+    matched: !!matchedChannel // 标记是否匹配成功
   });
 
   (async () => {
