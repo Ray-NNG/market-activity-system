@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-13</title>
+<title>市场活动全流程管理系统 v2026.03.31-14</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1979,7 +1979,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-13';
+const APP_VERSION = 'v2026.03.31-14';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -5969,6 +5969,17 @@ function addFollowupChannel(activityId) {
                 ${salesOptions}
               </select>
             </div>
+            <div class="form-group" style="flex:1">
+              <label>渠道分层</label>
+              <select class="form-control" id="followup-channel-tier" style="width:100%;padding:8px">
+                <option value="">请选择分层</option>
+                <option value="核心渠道">核心渠道</option>
+                <option value="重点渠道">重点渠道</option>
+                <option value="普通渠道">普通渠道</option>
+                <option value="待开发">待开发</option>
+              </select>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px">选中渠道后自动填充</div>
+            </div>
           </div>
           <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:250px;overflow-y:auto" id="followup-channel-list">
             <!-- 渠道列表将通过 JS 动态生成 -->
@@ -6073,6 +6084,11 @@ function autoFillFollowupChannel(channelId) {
   if (bgInput && !bgInput.value) {
     bgInput.value = channel.background || '';
   }
+  // 填充渠道分层（仅在未选择时自动填充）
+  const tierSelect = document.getElementById('followup-channel-tier');
+  if (tierSelect && !tierSelect.value && channel.tier) {
+    tierSelect.value = channel.tier;
+  }
 }
 
 function confirmAddFollowupChannel(activityId) {
@@ -6105,8 +6121,10 @@ function confirmAddFollowupChannel(activityId) {
   // 读取用户手动填写的字段（优先用手动填写，否则用匹配结果）
   const contactInput = document.getElementById('followup-contact-name').value.trim();
   const bgInput = document.getElementById('followup-channel-background').value.trim();
+  const tierInput = (document.getElementById('followup-channel-tier')?.value || '').trim();
   const channelContact = contactInput || matchedChannel?.contact || '';
   const channelBackground = bgInput || matchedChannel?.background || '';
+  const channelTier = tierInput || matchedChannel?.tier || '';
 
   // 检查是否已经添加过（按渠道ID去重）
   if (channelId && a.channelFollowup.some(item => item.channelId === channelId)) {
@@ -6125,7 +6143,7 @@ function confirmAddFollowupChannel(activityId) {
     const newChannel = {
       id: 'ch_' + Date.now(),
       name: channelName,
-      tier: '',
+      tier: channelTier,
       city: a.city || '',           // 继承活动地市
       district: a.district || '',
       sales: sales,                 // 继承活动负责销售
@@ -6148,9 +6166,10 @@ function confirmAddFollowupChannel(activityId) {
       if (a.city) channels[idx].city = a.city;
       if (a.district) channels[idx].district = a.district;
       if (sales) channels[idx].sales = sales;   // 以活动负责销售为准
-      // 用户有填写则覆盖联系人/背景
+      // 用户有填写则覆盖联系人/背景/分层
       if (channelContact) channels[idx].contact = channelContact;
       if (channelBackground) channels[idx].background = channelBackground;
+      if (channelTier) channels[idx].tier = channelTier;
       channels[idx].updatedAt = new Date().toISOString();
       saveChannels();
     }
