@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-08</title>
+<title>市场活动全流程管理系统 v2026.03.31-09</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -6030,22 +6030,17 @@ function confirmAddFollowupChannel(activityId) {
     return;
   }
 
-  // 先尝试从渠道名单中精确匹配
-  let matchedChannel = channels.find(c => c.name === channelNameInput);
-  
-  // 如果没有精确匹配，尝试模糊匹配
-  if (!matchedChannel) {
-    matchedChannel = channels.find(c => c.name.toLowerCase().includes(channelNameInput.toLowerCase()) || 
-                                            channelNameInput.toLowerCase().includes(c.name.toLowerCase()));
-  }
-
-  // 如果从列表中选中了渠道，使用选中的
+  // 只有用户主动点击选中列表中的渠道，才视为匹配；否则一律视为新渠道（尊重用户手动输入）
   const selectedRadio = document.querySelector('input[name="followup-channel-select"]:checked');
-  if (selectedRadio) {
-    matchedChannel = channels.find(c => c.id === selectedRadio.value);
+  let matchedChannel = selectedRadio ? channels.find(c => c.id === selectedRadio.value) : null;
+
+  // 即使用户未选中，也做一次严格精确匹配（名称完全相同才匹配）
+  if (!matchedChannel) {
+    matchedChannel = channels.find(c => c.name === channelNameInput) || null;
   }
 
   const channelId = matchedChannel?.id || '';
+  // 渠道名称：若精确匹配到或用户主动选中，使用名单中的名称；否则以用户输入为准
   const channelName = matchedChannel?.name || channelNameInput;
   // 负责销售：优先用活动的负责销售（a.owner），因为是该销售去跟进此渠道
   const sales = a.owner || matchedChannel?.sales || '';
