@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-07</title>
+<title>市场活动全流程管理系统 v2026.03.31-08</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1976,7 +1976,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-07';
+const APP_VERSION = 'v2026.03.31-08';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6056,26 +6056,57 @@ function confirmAddFollowupChannel(activityId) {
   const channelContact = contactInput || matchedChannel?.contact || '';
   const channelBackground = bgInput || matchedChannel?.background || '';
 
-  // 检查是否已经添加过
+  // 检查是否已经添加过（按渠道ID去重）
   if (channelId && a.channelFollowup.some(item => item.channelId === channelId)) {
     alert('该渠道已在跟进列表中');
     return;
   }
 
-  // 如果没有匹配到渠道，提示用户
+  // 如果没有匹配到渠道，自动创建新渠道记录到渠道名单
+  let finalChannelId = channelId;
   if (!matchedChannel) {
-    const confirmUnmatched = confirm(`渠道名单中未找到"${channelNameInput}"，是否仍要添加？添加后系统会标记为"未匹配"`);
-    if (!confirmUnmatched) return;
+    // 再次确认（防止名称拼写错误）
+    const confirmCreate = confirm(`渠道名单中未找到"${channelNameInput}"，是否自动创建并添加到渠道名单？`);
+    if (!confirmCreate) return;
+
+    // 自动创建新渠道
+    const newChannel = {
+      id: 'ch_' + Date.now(),
+      name: channelName,
+      tier: '',
+      city: a.city || '',           // 继承活动地市
+      district: a.district || '',
+      sales: sales,                 // 继承活动负责销售
+      contact: channelContact,
+      phone: '',
+      background: channelBackground,
+      history: [],
+      feedback: '',
+      updatedAt: new Date().toISOString()
+    };
+    channels.push(newChannel);
+    saveChannels(); // 立即写入渠道名单
+    finalChannelId = newChannel.id;
+    matchedChannel = newChannel; // 标记为已匹配
+  } else {
+    // 已匹配到渠道：如果用户填写了联系人或背景，更新渠道名单中的信息
+    const idx = channels.findIndex(c => c.id === matchedChannel.id);
+    if (idx !== -1) {
+      if (channelContact && !channels[idx].contact) channels[idx].contact = channelContact;
+      if (channelBackground && !channels[idx].background) channels[idx].background = channelBackground;
+      channels[idx].updatedAt = new Date().toISOString();
+      saveChannels();
+    }
   }
 
   a.channelFollowup.push({
-    channelId,
+    channelId: finalChannelId,
     channelName,
-    channelContact,   // 主要联系人
+    channelContact,
     channelBackground,
     sales,
     feedback: '',
-    matched: !!matchedChannel // 标记是否匹配成功
+    matched: true // 无论是原有渠道还是新建渠道，都视为已匹配
   });
 
   (async () => {
