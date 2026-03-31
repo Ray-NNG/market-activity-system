@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.03.31-15</title>
+<title>市场活动全流程管理系统 v2026.03.31-16</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1979,7 +1979,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.03.31-15';
+const APP_VERSION = 'v2026.03.31-16';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -7361,16 +7361,19 @@ function channelBatchExport() {
 }
 
 function tierBg(tier) {
-  const map = { '核心渠道':'#d1fae5','重点渠道':'#dbeafe','一般渠道':'#f1f5f9','敌对渠道':'#fee2e2','待开发':'#fef9c3' };
+  const map = { '核心渠道':'#d1fae5','重点渠道':'#dbeafe','常规渠道':'#f1f5f9','零散渠道':'#fef9c3','一般渠道':'#f1f5f9','敌对渠道':'#fee2e2','待开发':'#fef9c3' };
   return map[tier] || '#f1f5f9';
 }
 function tierColor(tier) {
-  const map = { '核心渠道':'#059669','重点渠道':'#2563eb','一般渠道':'#64748b','敌对渠道':'#dc2626','待开发':'#d97706' };
+  const map = { '核心渠道':'#059669','重点渠道':'#2563eb','常规渠道':'#64748b','零散渠道':'#d97706','一般渠道':'#64748b','敌对渠道':'#dc2626','待开发':'#d97706' };
   return map[tier] || '#64748b';
 }
 
 function getChannelActivityCount(channelId) {
-  const acts = (activities||[]).filter(a => (a.channelIds||[]).includes(channelId));
+  const acts = (activities||[]).filter(a =>
+    (a.channelIds||[]).includes(channelId) ||
+    (a.channelFollowup||[]).some(f => f.channelId === channelId)
+  );
   if (!acts.length) return '-';
   return `<span style="color:var(--primary);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px" 
     onclick="showChannelActivities('${channelId}')">${acts.length} 个活动</span>`;
@@ -7404,7 +7407,10 @@ function renderChannelHistory(c) {
 function showChannelActivities(channelId) {
   const ch = channels.find(c => c.id === channelId);
   if (!ch) return;
-  const acts = (activities||[]).filter(a => (a.channelIds||[]).includes(channelId));
+  const acts = (activities||[]).filter(a =>
+    (a.channelIds||[]).includes(channelId) ||
+    (a.channelFollowup||[]).some(f => f.channelId === channelId)
+  );
   
   const statusColor = { '规划中':'#3b82f6','进行中':'#f59e0b','已完成':'#10b981','复盘中':'#8b5cf6','已暂停':'#ef4444' };
   
