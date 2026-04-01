@@ -2407,7 +2407,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.01-05';
+const APP_VERSION = 'v2026.04.01-06';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -6382,8 +6382,8 @@ function statusBadge(s) {
   return `<span class="badge ${map[s]||''}">${icons[s]||''} ${s}</span>`;
 }
 
-function showModal(id) { document.getElementById(id).classList.add('show'); }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function showModal(id) { var el = document.getElementById(id); el.style.display = ''; el.classList.add('show'); }
+function closeModal(id) { var el = document.getElementById(id); el.classList.remove('show'); el.style.display = 'none'; }
 
 function switchTab(el, page) {
   const tabs = el.closest('.tabs').querySelectorAll('.tab');
