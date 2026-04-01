@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.01-01</title>
+<title>市场活动全流程管理系统 v2026.04.01-02</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -954,6 +954,36 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <input class="form-control" type="password" id="user-edit-pwd2" placeholder="再次输入密码" autocomplete="new-password">
       </div>
       <div class="form-group">
+        <label>功能模块权限</label>
+        <div id="user-edit-modules" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;padding:12px;background:#f8fafc;border-radius:10px;border:1px solid var(--border)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" value="activity" class="user-module-cb" style="width:16px;height:16px">
+            <span>📋 活动管理</span>
+            <span style="font-size:11px;color:var(--text-muted)">— 前期策划、中期执行、后期复盘、活动档案</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" value="analysis" class="user-module-cb" style="width:16px;height:16px">
+            <span>📈 数据分析</span>
+            <span style="font-size:11px;color:var(--text-muted)">— 效果分析、负责人分析</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" value="channel" class="user-module-cb" style="width:16px;height:16px">
+            <span>🤝 渠道管理</span>
+            <span style="font-size:11px;color:var(--text-muted)">— 渠道名单、信息接收站、渠道反馈汇总</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" value="channelOps" class="user-module-cb" style="width:16px;height:16px">
+            <span>🏢 渠道运营</span>
+            <span style="font-size:11px;color:var(--text-muted)">— 渠道库、商机跟进、日常运维（需单独授权）</span>
+          </label>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+            <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllModules(true)" style="font-size:11px;padding:3px 10px">全选</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllModules(false)" style="font-size:11px;padding:3px 10px">全不选</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px">超级管理员默认拥有全部权限，此设置对其他角色生效</div>
+      </div>
+      <div class="form-group">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
           <input type="checkbox" id="user-edit-active" checked style="width:16px;height:16px">
           <span>账号启用</span>
@@ -1016,8 +1046,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <span class="icon">🏠</span> 仪表盘
       </div>
     </div>
-    <div class="nav-section">
-      <div class="nav-section-title">流程管理</div>
+    <div class="nav-section" id="nav-section-activity">
+      <div class="nav-section-title">活动管理</div>
       <div class="nav-item" onclick="goto('plan')">
         <span class="icon">📋</span> 前期策划
       </div>
@@ -1027,8 +1057,11 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('review')">
         <span class="icon">🔍</span> 后期复盘
       </div>
+      <div class="nav-item" onclick="goto('activities')">
+        <span class="icon">📁</span> 活动档案
+      </div>
     </div>
-    <div class="nav-section">
+    <div class="nav-section" id="nav-section-analysis">
       <div class="nav-section-title">数据分析</div>
       <div class="nav-item" onclick="goto('analysis')">
         <span class="icon">📈</span> 效果分析
@@ -1036,11 +1069,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('owner')">
         <span class="icon">👤</span> 负责人分析
       </div>
-      <div class="nav-item" onclick="goto('activities')">
-        <span class="icon">📁</span> 活动档案
-      </div>
     </div>
-    <div class="nav-section">
+    <div class="nav-section" id="nav-section-channel">
       <div class="nav-section-title">渠道管理</div>
       <div class="nav-item" onclick="goto('channels')">
         <span class="icon">🤝</span> 渠道名单
@@ -1052,9 +1082,15 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('feedback')">
         <span class="icon">💬</span> 渠道反馈汇总
       </div>
-      <div class="nav-item" onclick="goto('ai')">
-        <span class="icon">🤖</span> AI 分析助手
+    </div>
+    <div class="nav-section" id="nav-section-channelOps" style="display:none">
+      <div class="nav-section-title">渠道运营</div>
+      <div class="nav-item" onclick="goto('channelOps')">
+        <span class="icon">🏢</span> 渠道运营中心
       </div>
+    </div>
+    <div class="nav-item" onclick="goto('ai')">
+      <span class="icon">🤖</span> AI 分析助手
     </div>
     <div class="nav-section" id="nav-admin-section">
       <div class="nav-section-title">系统管理</div>
@@ -1751,6 +1787,32 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div id="channel-import-result" style="display:none;margin-bottom:12px;padding:12px 16px;border-radius:10px;font-size:13px"></div>
       <!-- 渠道列表 -->
       <div id="channel-list-container"></div>
+    </div>
+
+    <!-- ===== 渠道运营中心（仅授权用户可见） ===== -->
+    <div id="page-channelOps" class="page">
+      <div class="card" style="text-align:center;padding:60px 20px;max-width:600px;margin:40px auto">
+        <div style="font-size:56px;margin-bottom:16px">🏢</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">渠道运营中心</div>
+        <div style="font-size:14px;color:var(--text-muted);line-height:1.8;margin-bottom:20px">
+          渠道库管理 · 商机挖掘与跟进 · 日常运维<br>
+          <span style="font-size:12px;color:#94a3b8">该功能正在开发中，即将上线</span>
+        </div>
+        <div style="display:inline-flex;gap:24px;font-size:13px;color:var(--text-muted)">
+          <div style="padding:12px 20px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0">
+            <div style="font-size:20px;margin-bottom:4px">📦</div>
+            渠道库 & 分层
+          </div>
+          <div style="padding:12px 20px;background:#fef9c3;border-radius:10px;border:1px solid #fde68a">
+            <div style="font-size:20px;margin-bottom:4px">💡</div>
+            商机跟进
+          </div>
+          <div style="padding:12px 20px;background:#dbeafe;border-radius:10px;border:1px solid #bfdbfe">
+            <div style="font-size:20px;margin-bottom:4px">🔧</div>
+            日常运维
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===== 账户权限管理（仅超级管理员可见） ===== -->
@@ -2805,7 +2867,8 @@ const pageTitles = {
   settings: ['系统设置','数据存储与账户配置'],
   usermgmt: ['账户权限','管理各角色登录密码'],
   ai: ['AI 分析助手','由 Kimi 驱动的智能数据分析'],
-  feedback: ['渠道反馈汇总','所有活动的渠道跟进反馈一览']
+  feedback: ['渠道反馈汇总','所有活动的渠道跟进反馈一览'],
+  channelOps: ['渠道运营中心','渠道库管理、商机跟进、日常运维']
 };
 
 function goto(page) {
@@ -4817,6 +4880,27 @@ function updateRoleDisplay() {
   if (salesAccountCard) {
     salesAccountCard.style.display = (role === 'superadmin') ? '' : 'none';
   }
+
+  // ===== 功能模块权限控制 =====
+  // 超级管理员默认全权限，其他角色按 user.modules 判断
+  const isSuperadmin = (role === 'superadmin');
+  const userModules = user?.modules || [];
+
+  // 活动管理模块
+  const sectActivity = document.getElementById('nav-section-activity');
+  if (sectActivity) sectActivity.style.display = (isSuperadmin || userModules.includes('activity')) ? '' : 'none';
+
+  // 数据分析模块
+  const sectAnalysis = document.getElementById('nav-section-analysis');
+  if (sectAnalysis) sectAnalysis.style.display = (isSuperadmin || userModules.includes('analysis')) ? '' : 'none';
+
+  // 渠道管理模块
+  const sectChannel = document.getElementById('nav-section-channel');
+  if (sectChannel) sectChannel.style.display = (isSuperadmin || userModules.includes('channel')) ? '' : 'none';
+
+  // 渠道运营模块（只有你权限最高时才显示）
+  const sectChannelOps = document.getElementById('nav-section-channelOps');
+  if (sectChannelOps) sectChannelOps.style.display = (isSuperadmin || userModules.includes('channelOps')) ? '' : 'none';
 }
 
 // ===== 页面启动时静默同步 sys_config（自动配置COS和账号，新设备无需任何手动操作）=====
@@ -7287,11 +7371,16 @@ function renderUserMgmt() {
   }
 
   container.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 140px 80px 100px;padding:10px 16px;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:#f8fafc">
-      <span>账号</span><span>姓名</span><span>角色</span><span>状态</span><span style="text-align:right">操作</span>
+    <div style="display:grid;grid-template-columns:1fr 1fr 130px 80px 180px 100px;padding:10px 16px;font-size:12px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);background:#f8fafc">
+      <span>账号</span><span>姓名</span><span>角色</span><span>状态</span><span>功能权限</span><span style="text-align:right">操作</span>
     </div>
-    ${users.map(u => `
-    <div style="display:grid;grid-template-columns:1fr 1fr 140px 80px 100px;padding:12px 16px;align-items:center;border-bottom:1px solid var(--border);font-size:13px" id="user-row-${u.id}">
+    ${users.map(u => {
+    const mods = u.modules || (u.role === 'superadmin' ? ['activity','analysis','channel','channelOps'] : ['activity','analysis','channel']);
+    const modLabels = { activity:'活动管理', analysis:'数据分析', channel:'渠道管理', channelOps:'渠道运营' };
+    const modColors = { activity:'#4f46e5', analysis:'#0ea5e9', channel:'#10b981', channelOps:'#f59e0b' };
+    const modHtml = mods.map(m => `<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:${modColors[m]||'#64748b'}15;color:${modColors[m]||'#64748b'};margin:1px 2px">${modLabels[m]||m}</span>`).join('');
+    return `
+    <div style="display:grid;grid-template-columns:1fr 1fr 130px 80px 180px 100px;padding:12px 16px;align-items:center;border-bottom:1px solid var(--border);font-size:13px" id="user-row-${u.id}">
       <span style="font-family:monospace;font-weight:600;color:#334155">${u.username}</span>
       <span>${u.name || '—'}</span>
       <span>
@@ -7304,11 +7393,13 @@ function renderUserMgmt() {
           ${u.active!==false ? '启用' : '停用'}
         </span>
       </span>
+      <span style="line-height:1.6">${u.role === 'superadmin' ? '<span style="font-size:11px;color:var(--text-muted)">全部权限</span>' : modHtml}</span>
       <span style="text-align:right;display:flex;gap:6px;justify-content:flex-end">
         <button class="btn btn-outline btn-sm" onclick="openEditUserModal('${u.id}')" style="font-size:12px;padding:4px 10px">编辑</button>
         ${u.username !== 'superadmin' ? `<button class="btn btn-sm" onclick="deleteUser('${u.id}')" style="font-size:12px;padding:4px 10px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5">删除</button>` : ''}
       </span>
-    </div>`).join('')}
+    </div>`;
+    }).join('')}
   `;
 }
 
@@ -7327,6 +7418,8 @@ function openAddUserModal() {
   highlightRoleOpt();
   const msgEl = document.getElementById('user-edit-msg');
   if (msgEl) msgEl.style.display = 'none';
+  // 默认全选所有模块权限
+  toggleAllModules(true);
   showModal('modal-user-edit');
   setTimeout(() => document.getElementById('user-edit-username').focus(), 100);
 }
@@ -7349,10 +7442,20 @@ function openEditUserModal(id) {
   // 选中角色
   const roleRadio = document.querySelector(`input[name="user-edit-role"][value="${u.role}"]`);
   if (roleRadio) roleRadio.checked = true;
+  // 回显模块权限
+  const modules = u.modules || ['activity','analysis','channel']; // 默认：无渠道运营
+  document.querySelectorAll('.user-module-cb').forEach(cb => {
+    cb.checked = modules.includes(cb.value);
+  });
   highlightRoleOpt();
   const msgEl = document.getElementById('user-edit-msg');
   if (msgEl) msgEl.style.display = 'none';
   showModal('modal-user-edit');
+}
+
+// 全选/全不选模块权限
+function toggleAllModules(checked) {
+  document.querySelectorAll('.user-module-cb').forEach(cb => { cb.checked = checked; });
 }
 
 // 角色选项高亮
@@ -7420,6 +7523,10 @@ function saveUserEdit() {
     users[idx].name = name;
     users[idx].role = role;
     users[idx].active = active;
+    // 收集模块权限
+    const modules = [];
+    document.querySelectorAll('.user-module-cb:checked').forEach(cb => modules.push(cb.value));
+    users[idx].modules = modules;
     if (pwd) {
       if (pwd.length < 4) { showMsg('密码不能少于4位', false); return; }
       if (pwd !== pwd2)   { showMsg('两次密码不一致', false); return; }
@@ -7429,7 +7536,10 @@ function saveUserEdit() {
     if (!pwd)           { showMsg('请设置初始密码', false); return; }
     if (pwd.length < 4) { showMsg('密码不能少于4位', false); return; }
     if (pwd !== pwd2)   { showMsg('两次密码不一致', false); return; }
-    users.push({ id: 'u_' + Date.now(), username, name, role, password: pwd, active });
+    // 收集模块权限
+    const mods = [];
+    document.querySelectorAll('.user-module-cb:checked').forEach(cb => mods.push(cb.value));
+    users.push({ id: 'u_' + Date.now(), username, name, role, password: pwd, active, modules: mods });
   }
 
   setUsers(users);
