@@ -24,3 +24,10 @@ configure-cos*.html
 
 # 日志文件
 *.logclean-deploy/
+clean-deploy/
+.workbuddy/
+debug-compare.py
+compare-sig.py
+test-js-sig.js
+verify-cos-key.py
+verify-cos-put.py
