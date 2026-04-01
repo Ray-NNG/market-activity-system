@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.01-03</title>
+<title>市场活动全流程管理系统 v2026.04.01-04</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1791,26 +1791,224 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
     <!-- ===== 渠道运营中心（仅授权用户可见） ===== -->
     <div id="page-channelOps" class="page">
-      <div class="card" style="text-align:center;padding:60px 20px;max-width:600px;margin:40px auto">
-        <div style="font-size:56px;margin-bottom:16px">🏢</div>
-        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px">渠道运营中心</div>
-        <div style="font-size:14px;color:var(--text-muted);line-height:1.8;margin-bottom:20px">
-          渠道库管理 · 商机挖掘与跟进 · 日常运维<br>
-          <span style="font-size:12px;color:#94a3b8">该功能正在开发中，即将上线</span>
+      <!-- 顶部统计概览 -->
+      <div id="ops-stats-bar" class="card" style="padding:16px 20px;margin-bottom:16px"></div>
+      <!-- Tab 导航 -->
+      <div style="display:flex;gap:4px;margin-bottom:16px;background:#f1f5f9;padding:4px;border-radius:12px;overflow-x:auto">
+        <button id="ops-tab-lib" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('lib')">📦 渠道库管理</button>
+        <button id="ops-tab-biz" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('biz')">💡 商机跟进</button>
+        <button id="ops-tab-tier" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('tier')">🏷️ 渠道分层</button>
+        <button id="ops-tab-daily" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('daily')">🔧 日常运维</button>
+      </div>
+
+      <!-- Tab1: 渠道库管理 -->
+      <div id="ops-panel-lib">
+        <div class="card" style="padding:12px 20px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <input class="form-control" id="ops-lib-search" placeholder="🔍 搜索渠道名称、联系人、销售…" style="width:280px" oninput="renderOpsLibTable()">
+            <select class="form-control" id="ops-lib-filter-tier" onchange="renderOpsLibTable()" style="width:140px"><option value="">全部分层</option></select>
+            <select class="form-control" id="ops-lib-filter-city" onchange="renderOpsLibTable()" style="width:140px"><option value="">全部地市</option></select>
+            <select class="form-control" id="ops-lib-filter-sales" onchange="renderOpsLibTable()" style="width:140px"><option value="">全部销售</option></select>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button class="btn btn-outline btn-sm" onclick="exportOpsLibCsv()">📤 导出</button>
+              <button class="btn btn-primary btn-sm" onclick="openOpsAddChannelModal()">＋ 添加渠道</button>
+            </div>
+          </div>
         </div>
-        <div style="display:inline-flex;gap:24px;font-size:13px;color:var(--text-muted)">
-          <div style="padding:12px 20px;background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0">
-            <div style="font-size:20px;margin-bottom:4px">📦</div>
-            渠道库 & 分层
+        <div id="ops-lib-container" class="card" style="padding:0;overflow:hidden"></div>
+      </div>
+
+      <!-- Tab2: 商机跟进 -->
+      <div id="ops-panel-biz" style="display:none">
+        <div class="card" style="padding:12px 20px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <input class="form-control" id="ops-biz-search" placeholder="🔍 搜索渠道名、商机内容…" style="width:260px" oninput="renderOpsBizTable()">
+            <select class="form-control" id="ops-biz-filter-status" onchange="renderOpsBizTable()" style="width:140px">
+              <option value="">全部状态</option>
+              <option value="线索">🔵 线索</option>
+              <option value="跟进中">🟡 跟进中</option>
+              <option value="方案中">🟠 方案中</option>
+              <option value="已中标">🟢 已中标</option>
+              <option value="已丢单">🔴 已丢单</option>
+            </select>
+            <select class="form-control" id="ops-biz-filter-sales" onchange="renderOpsBizTable()" style="width:140px"><option value="">全部销售</option></select>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button class="btn btn-primary btn-sm" onclick="openOpsBizModal()">＋ 新增商机</button>
+            </div>
           </div>
-          <div style="padding:12px 20px;background:#fef9c3;border-radius:10px;border:1px solid #fde68a">
-            <div style="font-size:20px;margin-bottom:4px">💡</div>
-            商机跟进
+        </div>
+        <div id="ops-biz-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px"></div>
+        <div id="ops-biz-container" class="card" style="padding:0;overflow:hidden"></div>
+      </div>
+
+      <!-- Tab3: 渠道分层 -->
+      <div id="ops-panel-tier" style="display:none">
+        <div class="card" style="padding:20px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-size:15px;font-weight:700">🏷️ 渠道分层管理</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">自定义渠道分层标签，支持按属性分类（如交付类、项目型等）</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openOpsTierModal()">＋ 新增分层</button>
           </div>
-          <div style="padding:12px 20px;background:#dbeafe;border-radius:10px;border:1px solid #bfdbfe">
-            <div style="font-size:20px;margin-bottom:4px">🔧</div>
-            日常运维
+          <div id="ops-tier-list"></div>
+        </div>
+        <!-- 分层分布图 -->
+        <div class="card" style="padding:20px">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px">📊 渠道分层分布</div>
+          <div id="ops-tier-chart"></div>
+        </div>
+      </div>
+
+      <!-- Tab4: 日常运维 -->
+      <div id="ops-panel-daily" style="display:none">
+        <!-- 线上运维：30天未联系提醒 -->
+        <div class="card" style="padding:16px 20px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <div style="font-size:15px;font-weight:700">📱 线上运维 · 跟进提醒</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">超过30天未推广记录的渠道，通知对应销售负责人</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="renderOpsDailyPage()">🔄 刷新</button>
           </div>
+          <div id="ops-daily-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px"></div>
+        </div>
+        <div id="ops-daily-online-container" class="card" style="padding:0;overflow:hidden;margin-bottom:16px"></div>
+        <!-- 线下运维：下单/中标信息 -->
+        <div class="card" style="padding:16px 20px;margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <div style="font-size:15px;font-weight:700">🏢 线下运维 · 业务记录</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">记录下单信息、中标信息等线下业务数据</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openOpsOfflineModal()">＋ 新增记录</button>
+          </div>
+        </div>
+        <div id="ops-daily-offline-container" class="card" style="padding:0;overflow:hidden"></div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：新增/编辑商机 -->
+    <div class="modal-overlay" id="modal-ops-biz" style="display:none">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-header">
+          <div class="modal-title" id="ops-biz-modal-title">💡 新增商机</div>
+          <button class="modal-close" onclick="closeModal('modal-ops-biz')">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>关联渠道 *</label>
+            <select class="form-control" id="ops-biz-channel" style="width:100%"></select>
+          </div>
+          <div class="form-group">
+            <label>商机状态 *</label>
+            <select class="form-control" id="ops-biz-status" style="width:100%">
+              <option value="线索">🔵 线索</option>
+              <option value="跟进中">🟡 跟进中</option>
+              <option value="方案中">🟠 方案中</option>
+              <option value="已中标">🟢 已中标</option>
+              <option value="已丢单">🔴 已丢单</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>预计金额（万元）</label>
+            <input class="form-control" id="ops-biz-amount" type="number" placeholder="如：50">
+          </div>
+          <div class="form-group">
+            <label>负责销售</label>
+            <select class="form-control" id="ops-biz-sales" style="width:100%"></select>
+          </div>
+          <div class="form-group">
+            <label>发现日期</label>
+            <input class="form-control" id="ops-biz-date" type="date" style="width:100%">
+          </div>
+          <div class="form-group">
+            <label>预计成交日期</label>
+            <input class="form-control" id="ops-biz-close-date" type="date" style="width:100%">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>商机描述 *</label>
+            <textarea class="form-control" id="ops-biz-desc" rows="3" placeholder="商机详情、客户需求、项目背景等…"></textarea>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>跟进记录</label>
+            <textarea class="form-control" id="ops-biz-notes" rows="2" placeholder="最新的跟进情况…"></textarea>
+          </div>
+        </div>
+        <input type="hidden" id="ops-biz-edit-id">
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-biz')">取消</button>
+          <button class="btn btn-primary" onclick="saveOpsBiz()">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：新增分层 -->
+    <div class="modal-overlay" id="modal-ops-tier" style="display:none">
+      <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+          <div class="modal-title">🏷️ 新增渠道分层</div>
+          <button class="modal-close" onclick="closeModal('modal-ops-tier')">×</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="form-group">
+            <label>分层名称 *</label>
+            <input class="form-control" id="ops-tier-name" placeholder="如：交付类、项目型">
+          </div>
+          <div class="form-group">
+            <label>标签颜色</label>
+            <input class="form-control" id="ops-tier-color" type="color" value="#4f46e5" style="height:40px;padding:4px">
+          </div>
+          <div class="form-group">
+            <label>排序权重（数字越小越靠前）</label>
+            <input class="form-control" id="ops-tier-order" type="number" value="10">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-tier')">取消</button>
+          <button class="btn btn-primary" onclick="saveOpsTier()">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：线下业务记录 -->
+    <div class="modal-overlay" id="modal-ops-offline" style="display:none">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-header">
+          <div class="modal-title" id="ops-offline-modal-title">🏢 新增线下业务记录</div>
+          <button class="modal-close" onclick="closeModal('modal-ops-offline')">×</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>关联渠道 *</label>
+            <select class="form-control" id="ops-offline-channel" style="width:100%"></select>
+          </div>
+          <div class="form-group">
+            <label>记录类型 *</label>
+            <select class="form-control" id="ops-offline-type" style="width:100%">
+              <option value="下单">📝 下单信息</option>
+              <option value="中标">🏆 中标信息</option>
+              <option value="拜访">🤝 客户拜访</option>
+              <option value="其他">📌 其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>金额（万元）</label>
+            <input class="form-control" id="ops-offline-amount" type="number" placeholder="如：30">
+          </div>
+          <div class="form-group">
+            <label>发生日期</label>
+            <input class="form-control" id="ops-offline-date" type="date" style="width:100%">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>记录内容 *</label>
+            <textarea class="form-control" id="ops-offline-desc" rows="3" placeholder="详细描述…"></textarea>
+          </div>
+        </div>
+        <input type="hidden" id="ops-offline-edit-id">
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-offline')">取消</button>
+          <button class="btn btn-primary" onclick="saveOpsOffline()">保存</button>
         </div>
       </div>
     </div>
@@ -2133,7 +2331,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.01-03';
+const APP_VERSION = 'v2026.04.01-04';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -2896,6 +3094,7 @@ function renderPage(page) {
   if(page === 'owner') renderOwnerPage();
   if(page === 'activities') renderActivities();
   if(page === 'channels') renderChannelsPage();
+  if(page === 'channelOps') renderChannelOpsPage();
   if(page === 'inbox') renderInboxPage();
   if(page === 'feedback') initFeedbackPage();
   if(page === 'settings') { renderSettings(); loadKimiConfigToForm(); }
@@ -8065,7 +8264,7 @@ function channelBatchExport() {
   const lines = [
     headers.map(escape).join(','),
     ...selected.map(c => [c.name,c.tier,c.city,c.district,c.sales,c.contact,c.phone,c.background,
-      (c.history||[]).map(h=>`${h.date} ${h.actName} ${h.note||''}`).join('|'), c.feedback
+      (c.history||[]).map(h=>`${h.date||''} [${h.type||''}] ${h.content||''}${h.speaker?'('+h.speaker+')':''}`).join('|'), c.feedback
     ].map(escape).join(','))
   ];
   const blob = new Blob([BOM + lines.join('\r\n')], {type:'text/csv;charset=utf-8;'});
@@ -8908,7 +9107,7 @@ function checkAndShowSalesReminder() {
   let toFollowUp = 0;
 
   salesChannels.forEach(c => {
-    const records = c.promotionRecords || [];
+    const records = Array.isArray(c.history) ? c.history : [];
     if (records.length === 0) {
       neverPromoted++;
     } else {
@@ -9601,6 +9800,702 @@ function checkMobileView() {
 // 初始化检测
 window.addEventListener('load', checkMobileView);
 window.addEventListener('resize', checkMobileView);
+
+// ===== 渠道运营中心 =====
+// 数据存储：使用 localStorage + COS 同步
+// ops_biz - 商机数据, ops_tiers - 自定义分层, ops_offline - 线下记录
+var opsBizData = [];
+var opsTierData = [];
+var opsOfflineData = [];
+
+function loadOpsData() {
+  try { opsBizData = JSON.parse(localStorage.getItem('mcm_ops_biz') || '[]'); } catch(e) { opsBizData = []; }
+  try { opsTierData = JSON.parse(localStorage.getItem('mcm_ops_tiers') || '[]'); } catch(e) { opsTierData = []; }
+  try { opsOfflineData = JSON.parse(localStorage.getItem('mcm_ops_offline') || '[]'); } catch(e) { opsOfflineData = []; }
+  if (!Array.isArray(opsBizData)) opsBizData = [];
+  if (!Array.isArray(opsTierData)) opsTierData = [];
+  if (!Array.isArray(opsOfflineData)) opsOfflineData = [];
+  // 如果没有自定义分层，用默认的
+  if (opsTierData.length === 0) {
+    opsTierData = [
+      { id: 't_core', name: '核心渠道', color: '#059669', order: 1 },
+      { id: 't_key', name: '重点渠道', color: '#2563eb', order: 2 },
+      { id: 't_normal', name: '一般渠道', color: '#64748b', order: 3 },
+      { id: 't_dev', name: '待开发', color: '#d97706', order: 4 },
+      { id: 't_hostile', name: '敌对渠道', color: '#dc2626', order: 5 },
+    ];
+    saveOpsTierData();
+  }
+}
+function saveOpsBizData() { try { localStorage.setItem('mcm_ops_biz', JSON.stringify(opsBizData)); } catch(e) {} }
+function saveOpsTierData() { try { localStorage.setItem('mcm_ops_tiers', JSON.stringify(opsTierData)); } catch(e) {} }
+function saveOpsOfflineData() { try { localStorage.setItem('mcm_ops_offline', JSON.stringify(opsOfflineData)); } catch(e) {} }
+
+// Tab 切换
+function switchOpsTab(tab) {
+  ['lib','biz','tier','daily'].forEach(t => {
+    const panel = document.getElementById('ops-panel-' + t);
+    const btn = document.getElementById('ops-tab-' + t);
+    if (panel) panel.style.display = t === tab ? '' : 'none';
+    if (btn) {
+      btn.style.background = t === tab ? 'var(--primary)' : 'transparent';
+      btn.style.color = t === tab ? '#fff' : 'var(--text-muted)';
+    }
+  });
+  // 切换到对应Tab时刷新数据
+  if (tab === 'lib') renderOpsLibTable();
+  if (tab === 'biz') renderOpsBizTable();
+  if (tab === 'tier') renderOpsTierPage();
+  if (tab === 'daily') renderOpsDailyPage();
+}
+
+// 渠道运营页面主入口
+function renderChannelOpsPage() {
+  loadOpsData();
+  loadChannels();
+  renderOpsStatsBar();
+  renderOpsLibTable();
+}
+
+// ===== 顶部统计概览 =====
+function renderOpsStatsBar() {
+  const el = document.getElementById('ops-stats-bar');
+  if (!el) return;
+  loadChannels();
+  const totalChannels = channels.length;
+  const bizActive = opsBizData.filter(b => b.status !== '已丢单' && b.status !== '已中标').length;
+  const bizWon = opsBizData.filter(b => b.status === '已中标').length;
+  const bizAmount = opsBizData.filter(b => b.status === '已中标').reduce((s,b) => s + (parseFloat(b.amount)||0), 0);
+  const offlineCount = opsOfflineData.length;
+  const overdue30 = channels.filter(c => { const d = daysSincePromo(c); return d >= 30 && d !== Infinity; }).length;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:20px">
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">🏢 渠道运营中心</div>
+        <div style="font-size:12px;color:var(--text-muted)">渠道库管理 · 商机挖掘 · 分层运营 · 日常运维</div>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap">
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:var(--primary)">${totalChannels}</div>
+          <div style="font-size:11px;color:var(--text-muted)">渠道总数</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#f59e0b">${bizActive}</div>
+          <div style="font-size:11px;color:var(--text-muted)">进行中商机</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#10b981">${bizWon}</div>
+          <div style="font-size:11px;color:var(--text-muted)">已中标</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#059669">${bizAmount > 0 ? bizAmount.toFixed(1) + '万' : '-'}</div>
+          <div style="font-size:11px;color:var(--text-muted)">中标金额</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#ef4444">${overdue30}</div>
+          <div style="font-size:11px;color:var(--text-muted)">超30天未联系</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#8b5cf6">${offlineCount}</div>
+          <div style="font-size:11px;color:var(--text-muted)">线下记录</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ===== Tab1: 渠道库管理 =====
+function renderOpsLibTable() {
+  loadChannels();
+  // 更新筛选下拉
+  const tierSet = new Set(channels.map(c => c.tier).filter(Boolean));
+  const citySet = new Set(channels.map(c => c.city).filter(Boolean));
+  const salesSet = new Set(channels.map(c => c.sales).filter(Boolean));
+  const tierSel = document.getElementById('ops-lib-filter-tier');
+  const citySel = document.getElementById('ops-lib-filter-city');
+  const salesSel = document.getElementById('ops-lib-filter-sales');
+  if (tierSel) tierSel.innerHTML = '<option value="">全部分层</option>' + [...tierSet].map(t=>`<option>${t}</option>`).join('');
+  if (citySel) citySel.innerHTML = '<option value="">全部地市</option>' + [...citySet].map(c=>`<option>${c}</option>`).join('');
+  if (salesSel) salesSel.innerHTML = '<option value="">全部销售</option>' + [...salesSet].map(s=>`<option>${s}</option>`).join('');
+
+  const kw = (document.getElementById('ops-lib-search')?.value || '').toLowerCase();
+  const tierF = document.getElementById('ops-lib-filter-tier')?.value || '';
+  const cityF = document.getElementById('ops-lib-filter-city')?.value || '';
+  const salesF = document.getElementById('ops-lib-filter-sales')?.value || '';
+
+  let filtered = channels.filter(c => {
+    if (tierF && c.tier !== tierF) return false;
+    if (cityF && c.city !== cityF) return false;
+    if (salesF && c.sales !== salesF) return false;
+    if (kw) { const t = [c.name,c.sales,c.contact,c.phone,c.background].join(' ').toLowerCase(); if (!t.includes(kw)) return false; }
+    return true;
+  });
+
+  const container = document.getElementById('ops-lib-container');
+  if (!container) return;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-muted)"><div style="font-size:48px;margin-bottom:12px">📦</div><div>${channels.length ? '没有符合条件的渠道' : '暂无渠道数据'}</div></div>`;
+    return;
+  }
+
+  // 统计每个渠道的商机数量
+  const bizCountMap = {};
+  opsBizData.forEach(b => { if (b.channelId) bizCountMap[b.channelId] = (bizCountMap[b.channelId]||0) + 1; });
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
+          <th style="padding:10px 14px;text-align:left;min-width:160px">渠道名称</th>
+          <th style="padding:10px 12px;text-align:left;min-width:80px">分层</th>
+          <th style="padding:10px 12px;text-align:left;min-width:100px">地市/区县</th>
+          <th style="padding:10px 12px;text-align:left;min-width:80px">负责销售</th>
+          <th style="padding:10px 12px;text-align:left;min-width:80px">联系人</th>
+          <th style="padding:10px 12px;text-align:left;min-width:100px">联系方式</th>
+          <th style="padding:10px 12px;text-align:left;min-width:160px">渠道背景</th>
+          <th style="padding:10px 12px;text-align:center;min-width:70px">商机</th>
+          <th style="padding:10px 12px;text-align:left;min-width:100px">最近推广</th>
+          <th style="padding:10px 12px;text-align:left;min-width:80px">距今</th>
+          <th style="padding:10px 14px;text-align:left;min-width:100px">操作</th>
+        </tr></thead>
+        <tbody>
+          ${filtered.map((c,i) => {
+            const days = daysSincePromo(c);
+            const lastDate = getChannelLastPromoDate(c);
+            const daysText = days === Infinity ? '从未' : days + '天';
+            const daysColor = days === Infinity ? '#9ca3af' : days > 80 ? '#ef4444' : days > 30 ? '#f97316' : '#10b981';
+            const rowBg = i % 2 === 0 ? '#fff' : '#fafafa';
+            const bizCnt = bizCountMap[c.id] || 0;
+            return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
+              <td style="padding:10px 14px;font-weight:600;font-size:13px">${c.name||'-'}</td>
+              <td style="padding:10px 12px"><span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
+              <td style="padding:10px 12px;font-size:13px;color:var(--text-muted)">${[c.city,c.district].filter(Boolean).join(' / ')||'-'}</td>
+              <td style="padding:10px 12px;font-size:13px">${c.sales||'-'}</td>
+              <td style="padding:10px 12px;font-size:13px">${c.contact||'-'}</td>
+              <td style="padding:10px 12px;font-size:13px">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary)">${c.phone}</a>` : '-'}</td>
+              <td style="padding:10px 12px;font-size:12px;color:var(--text-muted);max-width:200px;white-space:normal;word-break:break-all">${(c.background||'-').substring(0,60)}${(c.background||'').length>60?'…':''}</td>
+              <td style="padding:10px 12px;text-align:center">${bizCnt > 0 ? `<span style="background:#dbeafe;color:#2563eb;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${bizCnt}</span>` : '-'}</td>
+              <td style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${lastDate ? lastDate.toLocaleDateString('zh-CN') : '-'}</td>
+              <td style="padding:10px 12px;font-size:12px;font-weight:700;color:${daysColor}">${daysText}</td>
+              <td style="padding:10px 14px">
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openOpsEditChannelModal('${c.id}')">编辑</button>
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="openOpsBizModalForChannel('${c.id}')">+商机</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openOpsAddChannelModal() { openAddChannelModal(); }
+function openOpsEditChannelModal(chId) { openEditChannelModal(chId); }
+function openOpsBizModalForChannel(chId) { openOpsBizModal(chId); }
+
+function exportOpsLibCsv() {
+  loadChannels();
+  loadOpsData();
+  const headers = ['渠道名称','分层','地市','区县','销售','联系人','联系方式','背景','商机数','最近推广','距今(天)'];
+  const rows = channels.map(c => {
+    const bizCnt = opsBizData.filter(b => b.channelId === c.id).length;
+    const days = daysSincePromo(c);
+    const lastDate = getChannelLastPromoDate(c);
+    return [c.name,c.tier,c.city,c.district,c.sales,c.contact,c.phone,c.background,
+      bizCnt, lastDate ? lastDate.toLocaleDateString('zh-CN') : '从未',
+      days === Infinity ? '从未' : days].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '渠道运营_渠道库_' + new Date().toLocaleDateString('zh-CN') + '.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ===== Tab2: 商机跟进 =====
+function renderOpsBizTable() {
+  loadOpsData();
+  loadChannels();
+  // 填充销售下拉
+  const salesSet = new Set(channels.map(c => c.sales).filter(Boolean));
+  const salesSel = document.getElementById('ops-biz-filter-sales');
+  if (salesSel) salesSel.innerHTML = '<option value="">全部销售</option>' + [...salesSet].map(s=>`<option>${s}</option>`).join('');
+
+  const kw = (document.getElementById('ops-biz-search')?.value || '').toLowerCase();
+  const statusF = document.getElementById('ops-biz-filter-status')?.value || '';
+  const salesF = document.getElementById('ops-biz-filter-sales')?.value || '';
+
+  let filtered = opsBizData.filter(b => {
+    if (statusF && b.status !== statusF) return false;
+    if (salesF && b.sales !== salesF) return false;
+    if (kw) {
+      const ch = channels.find(c => c.id === b.channelId);
+      const chName = ch?.name || '';
+      const t = (chName + ' ' + (b.desc||'') + ' ' + (b.notes||'')).toLowerCase();
+      if (!t.includes(kw)) return false;
+    }
+    return true;
+  });
+
+  // 统计
+  const statsEl = document.getElementById('ops-biz-stats');
+  if (statsEl) {
+    const counts = {};
+    opsBizData.forEach(b => { counts[b.status] = (counts[b.status]||0) + 1; });
+    const totalAmount = opsBizData.reduce((s,b) => s + (parseFloat(b.amount)||0), 0);
+    const items = [
+      { icon:'💡', label:'全部商机', value: opsBizData.length, color:'#4f46e5' },
+      { icon:'🔵', label:'线索', value: counts['线索']||0, color:'#3b82f6' },
+      { icon:'🟡', label:'跟进中', value: counts['跟进中']||0, color:'#f59e0b' },
+      { icon:'🟠', label:'方案中', value: counts['方案中']||0, color:'#f97316' },
+      { icon:'🟢', label:'已中标', value: counts['已中标']||0, color:'#10b981' },
+      { icon:'💰', label:'总金额(万)', value: totalAmount.toFixed(1), color:'#059669' },
+    ];
+    statsEl.innerHTML = items.map(s => `
+      <div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">${s.icon}</span>
+        <div>
+          <div style="font-size:18px;font-weight:700;color:${s.color}">${s.value}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${s.label}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  const container = document.getElementById('ops-biz-container');
+  if (!container) return;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-muted)"><div style="font-size:48px;margin-bottom:12px">💡</div><div>暂无商机记录，点击「新增商机」开始</div></div>`;
+    return;
+  }
+
+  // 按状态排序：线索 > 跟进中 > 方案中 > 已中标 > 已丢单，同状态按日期倒序
+  const statusOrder = { '线索':0, '跟进中':1, '方案中':2, '已中标':3, '已丢单':4 };
+  const statusStyle = {
+    '线索': { bg:'#dbeafe', color:'#2563eb' },
+    '跟进中': { bg:'#fef3c7', color:'#d97706' },
+    '方案中': { bg:'#ffedd5', color:'#ea580c' },
+    '已中标': { bg:'#d1fae5', color:'#059669' },
+    '已丢单': { bg:'#fee2e2', color:'#dc2626' },
+  };
+  filtered.sort((a,b) => (statusOrder[a.status]||0) - (statusOrder[b.status]||0) || (b.date||'').localeCompare(a.date||''));
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
+          <th style="padding:10px 14px;text-align:left;min-width:120px">渠道名称</th>
+          <th style="padding:10px 12px;text-align:center;min-width:80px">状态</th>
+          <th style="padding:10px 12px;text-align:left;min-width:200px">商机描述</th>
+          <th style="padding:10px 12px;text-align:right;min-width:80px">金额(万)</th>
+          <th style="padding:10px 12px;text-align:left;min-width:80px">销售</th>
+          <th style="padding:10px 12px;text-align:left;min-width:100px">发现日期</th>
+          <th style="padding:10px 12px;text-align:left;min-width:100px">预计成交</th>
+          <th style="padding:10px 14px;text-align:left;min-width:100px">操作</th>
+        </tr></thead>
+        <tbody>
+          ${filtered.map((b,i) => {
+            const ch = channels.find(c => c.id === b.channelId);
+            const chName = ch?.name || '未知渠道';
+            const ss = statusStyle[b.status] || { bg:'#f1f5f9', color:'#64748b' };
+            const rowBg = i % 2 === 0 ? '#fff' : '#fafafa';
+            return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
+              <td style="padding:10px 14px;font-weight:600;font-size:13px">${chName}</td>
+              <td style="padding:10px 12px;text-align:center"><span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${ss.bg};color:${ss.color}">${b.status}</span></td>
+              <td style="padding:10px 12px;font-size:12px;color:var(--text-muted);max-width:250px;white-space:normal;word-break:break-all">${(b.desc||'').substring(0,80)}${(b.desc||'').length>80?'…':''}</td>
+              <td style="padding:10px 12px;text-align:right;font-weight:600;color:#059669">${b.amount ? parseFloat(b.amount).toFixed(1) : '-'}</td>
+              <td style="padding:10px 12px;font-size:13px">${b.sales||'-'}</td>
+              <td style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${b.date||'-'}</td>
+              <td style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${b.closeDate||'-'}</td>
+              <td style="padding:10px 14px">
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="editOpsBiz('${b.id}')">编辑</button>
+                <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;font-size:11px;padding:3px 8px" onclick="deleteOpsBiz('${b.id}')">删除</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openOpsBizModal(preChannelId) {
+  loadChannels();
+  loadOpsData();
+  const chSel = document.getElementById('ops-biz-channel');
+  const salesSel = document.getElementById('ops-biz-sales');
+  // 填充渠道下拉
+  if (chSel) chSel.innerHTML = '<option value="">请选择渠道</option>' + channels.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  // 填充销售下拉
+  const salesSet = [...new Set(channels.map(c => c.sales).filter(Boolean))];
+  if (salesSel) salesSel.innerHTML = '<option value="">请选择</option>' + salesSet.map(s => `<option>${s}</option>`).join('');
+  // 重置表单
+  document.getElementById('ops-biz-modal-title').textContent = '💡 新增商机';
+  document.getElementById('ops-biz-channel').value = preChannelId || '';
+  document.getElementById('ops-biz-status').value = '线索';
+  document.getElementById('ops-biz-amount').value = '';
+  document.getElementById('ops-biz-sales').value = '';
+  document.getElementById('ops-biz-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ops-biz-close-date').value = '';
+  document.getElementById('ops-biz-desc').value = '';
+  document.getElementById('ops-biz-notes').value = '';
+  document.getElementById('ops-biz-edit-id').value = '';
+  // 渠道选择后自动填充销售
+  if (chSel && preChannelId) {
+    const ch = channels.find(c => c.id === preChannelId);
+    if (ch && ch.sales && salesSel) salesSel.value = ch.sales;
+  }
+  showModal('modal-ops-biz');
+}
+
+function editOpsBiz(bizId) {
+  loadChannels();
+  loadOpsData();
+  const b = opsBizData.find(x => x.id === bizId);
+  if (!b) return;
+  openOpsBizModal();
+  document.getElementById('ops-biz-modal-title').textContent = '💡 编辑商机';
+  document.getElementById('ops-biz-channel').value = b.channelId || '';
+  document.getElementById('ops-biz-status').value = b.status || '线索';
+  document.getElementById('ops-biz-amount').value = b.amount || '';
+  document.getElementById('ops-biz-sales').value = b.sales || '';
+  document.getElementById('ops-biz-date').value = b.date || '';
+  document.getElementById('ops-biz-close-date').value = b.closeDate || '';
+  document.getElementById('ops-biz-desc').value = b.desc || '';
+  document.getElementById('ops-biz-notes').value = b.notes || '';
+  document.getElementById('ops-biz-edit-id').value = bizId;
+}
+
+function saveOpsBiz() {
+  const channelId = document.getElementById('ops-biz-channel').value;
+  const status = document.getElementById('ops-biz-status').value;
+  const amount = document.getElementById('ops-biz-amount').value;
+  const sales = document.getElementById('ops-biz-sales').value;
+  const date = document.getElementById('ops-biz-date').value;
+  const closeDate = document.getElementById('ops-biz-close-date').value;
+  const desc = document.getElementById('ops-biz-desc').value.trim();
+  const notes = document.getElementById('ops-biz-notes').value.trim();
+  const editId = document.getElementById('ops-biz-edit-id').value;
+
+  if (!channelId) { alert('请选择关联渠道'); return; }
+  if (!desc) { alert('请填写商机描述'); return; }
+
+  if (editId) {
+    const idx = opsBizData.findIndex(b => b.id === editId);
+    if (idx !== -1) {
+      opsBizData[idx] = { ...opsBizData[idx], channelId, status, amount, sales, date, closeDate, desc, notes, updatedAt: new Date().toISOString() };
+    }
+  } else {
+    opsBizData.push({ id: 'biz_' + Date.now(), channelId, status, amount, sales, date, closeDate, desc, notes, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  }
+  saveOpsBizData();
+  closeModal('modal-ops-biz');
+  renderOpsBizTable();
+  renderOpsStatsBar();
+}
+
+function deleteOpsBiz(bizId) {
+  if (!confirm('确认删除此商机记录？')) return;
+  opsBizData = opsBizData.filter(b => b.id !== bizId);
+  saveOpsBizData();
+  renderOpsBizTable();
+  renderOpsStatsBar();
+}
+
+// ===== Tab3: 渠道分层 =====
+function renderOpsTierPage() {
+  loadOpsData();
+  loadChannels();
+  opsTierData.sort((a,b) => (a.order||99) - (b.order||99));
+  renderOpsTierList();
+  renderOpsTierChart();
+}
+
+function renderOpsTierList() {
+  const el = document.getElementById('ops-tier-list');
+  if (!el) return;
+  const tierCounts = {};
+  channels.forEach(c => { tierCounts[c.tier||'未分类'] = (tierCounts[c.tier||'未分类']||0) + 1; });
+
+  el.innerHTML = opsTierData.map(t => {
+    const cnt = tierCounts[t.name] || 0;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
+      <div style="width:16px;height:16px;border-radius:50%;background:${t.color};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px">${t.name}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${cnt} 家渠道 · 排序: ${t.order||99}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="editOpsTier('${t.id}')">编辑</button>
+        <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;font-size:11px;padding:3px 8px" onclick="deleteOpsTier('${t.id}')">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderOpsTierChart() {
+  const el = document.getElementById('ops-tier-chart');
+  if (!el) return;
+  const tierCounts = {};
+  channels.forEach(c => { tierCounts[c.tier||'未分类'] = (tierCounts[c.tier||'未分类']||0) + 1; });
+  const total = channels.length || 1;
+
+  el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:12px">
+    ${opsTierData.map(t => {
+      const cnt = tierCounts[t.name] || 0;
+      const pct = Math.round(cnt / total * 100);
+      return `<div style="flex:1;min-width:140px;padding:14px 16px;border-radius:10px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="width:10px;height:10px;border-radius:50%;background:${t.color}"></div>
+          <span style="font-weight:600;font-size:13px">${t.name}</span>
+          <span style="margin-left:auto;font-size:18px;font-weight:700;color:${t.color}">${cnt}</span>
+        </div>
+        <div style="height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${t.color};border-radius:3px;transition:width .3s"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;text-align:right">${pct}%</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function openOpsTierModal() {
+  document.getElementById('ops-tier-name').value = '';
+  document.getElementById('ops-tier-color').value = '#4f46e5';
+  document.getElementById('ops-tier-order').value = opsTierData.length + 1;
+  showModal('modal-ops-tier');
+}
+
+function editOpsTier(tierId) {
+  const t = opsTierData.find(x => x.id === tierId);
+  if (!t) return;
+  document.getElementById('ops-tier-name').value = t.name;
+  document.getElementById('ops-tier-color').value = t.color || '#4f46e5';
+  document.getElementById('ops-tier-order').value = t.order || 10;
+  // 临时存储编辑ID
+  document.getElementById('ops-tier-name').dataset.editId = tierId;
+  showModal('modal-ops-tier');
+}
+
+function saveOpsTier() {
+  const name = document.getElementById('ops-tier-name').value.trim();
+  const color = document.getElementById('ops-tier-color').value;
+  const order = parseInt(document.getElementById('ops-tier-order').value) || 10;
+  const editId = document.getElementById('ops-tier-name').dataset.editId;
+  if (!name) { alert('请输入分层名称'); return; }
+
+  if (editId) {
+    const idx = opsTierData.findIndex(t => t.id === editId);
+    if (idx !== -1) { opsTierData[idx] = { ...opsTierData[idx], name, color, order }; }
+    delete document.getElementById('ops-tier-name').dataset.editId;
+  } else {
+    opsTierData.push({ id: 'tier_' + Date.now(), name, color, order });
+  }
+  saveOpsTierData();
+  closeModal('modal-ops-tier');
+  renderOpsTierPage();
+}
+
+function deleteOpsTier(tierId) {
+  if (!confirm('确认删除此分层？已使用该分层的渠道不会受影响。')) return;
+  opsTierData = opsTierData.filter(t => t.id !== tierId);
+  saveOpsTierData();
+  renderOpsTierPage();
+}
+
+// ===== Tab4: 日常运维 =====
+function renderOpsDailyPage() {
+  loadChannels();
+  loadOpsData();
+  renderOpsDailyOnline();
+  renderOpsDailyOffline();
+}
+
+function renderOpsDailyOnline() {
+  // 30天未联系提醒
+  const statsEl = document.getElementById('ops-daily-stats');
+  const over30 = channels.filter(c => { const d = daysSincePromo(c); return d >= 30 && d < Infinity; });
+  const over80 = channels.filter(c => { const d = daysSincePromo(c); return d >= 80; });
+  const never = channels.filter(c => daysSincePromo(c) === Infinity);
+
+  if (statsEl) {
+    statsEl.innerHTML = `
+      <div style="text-align:center;padding:8px 16px;background:#fef3c7;border-radius:8px;border:1px solid #fde68a">
+        <div style="font-size:20px;font-weight:700;color:#d97706">${over30.length}</div>
+        <div style="font-size:11px;color:#92400e">超30天未联系</div>
+      </div>
+      <div style="text-align:center;padding:8px 16px;background:#fee2e2;border-radius:8px;border:1px solid #fecaca">
+        <div style="font-size:20px;font-weight:700;color:#ef4444">${over80.length}</div>
+        <div style="font-size:11px;color:#991b1b">超80天未联系</div>
+      </div>
+      <div style="text-align:center;padding:8px 16px;background:#f1f5f9;border-radius:8px;border:1px solid #e2e8f0">
+        <div style="font-size:20px;font-weight:700;color:#6b7280">${never.length}</div>
+        <div style="font-size:11px;color:#4b5563">从未推广</div>
+      </div>`;
+  }
+
+  // 合并超30天+从未的列表
+  const allOverdue = channels.filter(c => daysSincePromo(c) >= 30).sort((a,b) => {
+    const da = daysSincePromo(a), db = daysSincePromo(b);
+    if (da === Infinity && db !== Infinity) return -1;
+    if (db === Infinity && da !== Infinity) return 1;
+    return db - da;
+  });
+
+  const container = document.getElementById('ops-daily-online-container');
+  if (!container) return;
+
+  if (!allOverdue.length) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">🎉</div><div>所有渠道均在30天内有过联系记录</div></div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
+          <th style="padding:10px 14px;text-align:left">渠道名称</th>
+          <th style="padding:10px 12px;text-align:left">分层</th>
+          <th style="padding:10px 12px;text-align:left">负责销售</th>
+          <th style="padding:10px 12px;text-align:left">联系方式</th>
+          <th style="padding:10px 12px;text-align:left">最近推广</th>
+          <th style="padding:10px 12px;text-align:left">距今</th>
+          <th style="padding:10px 12px;text-align:left">紧急程度</th>
+          <th style="padding:10px 14px;text-align:left">操作</th>
+        </tr></thead>
+        <tbody>
+          ${allOverdue.map((c,i) => {
+            const days = daysSincePromo(c);
+            const lastDate = getChannelLastPromoDate(c);
+            const isCrit = days >= 80;
+            const isNever = days === Infinity;
+            const urgentLabel = isNever ? '<span style="background:#f1f5f9;color:#6b7280;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">⚫ 从未</span>'
+                              : isCrit ? '<span style="background:#fee2e2;color:#ef4444;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🔴 严重</span>'
+                              : '<span style="background:#fef3c7;color:#d97706;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">🟡 注意</span>';
+            const rowBg = i % 2 === 0 ? '#fff' : '#fafafa';
+            return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
+              <td style="padding:10px 14px;font-weight:600;font-size:13px">${c.name}</td>
+              <td style="padding:10px 12px"><span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
+              <td style="padding:10px 12px;font-size:13px">${c.sales||'-'}</td>
+              <td style="padding:10px 12px;font-size:13px">${c.phone||'-'}</td>
+              <td style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${lastDate ? lastDate.toLocaleDateString('zh-CN') : '暂无'}</td>
+              <td style="padding:10px 12px;font-size:12px;font-weight:700;color:${isNever?'#9ca3af':isCrit?'#ef4444':'#d97706'}">${isNever ? '-' : days + '天'}</td>
+              <td style="padding:10px 12px">${urgentLabel}</td>
+              <td style="padding:10px 14px">
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="inboxGotoChannel('${c.id}')">查看详情</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderOpsDailyOffline() {
+  const container = document.getElementById('ops-daily-offline-container');
+  if (!container) return;
+
+  if (!opsOfflineData.length) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="font-size:36px;margin-bottom:8px">🏢</div><div>暂无线下业务记录</div></div>`;
+    return;
+  }
+
+  const typeIcon = { '下单':'📝', '中标':'🏆', '拜访':'🤝', '其他':'📌' };
+  const typeBg = { '下单':'#dbeafe', '中标':'#d1fae5', '拜访':'#fef3c7', '其他':'#f1f5f9' };
+  const typeColor = { '下单':'#2563eb', '中标':'#059669', '拜访':'#d97706', '其他':'#64748b' };
+
+  opsOfflineData.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  container.innerHTML = `
+    <div class="table-wrap">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
+          <th style="padding:10px 14px;text-align:left">日期</th>
+          <th style="padding:10px 12px;text-align:left">渠道</th>
+          <th style="padding:10px 12px;text-align:center">类型</th>
+          <th style="padding:10px 12px;text-align:right">金额(万)</th>
+          <th style="padding:10px 12px;text-align:left">内容</th>
+          <th style="padding:10px 14px;text-align:left">操作</th>
+        </tr></thead>
+        <tbody>
+          ${opsOfflineData.map((r,i) => {
+            const ch = channels.find(c => c.id === r.channelId);
+            const chName = ch?.name || '未知渠道';
+            const rowBg = i % 2 === 0 ? '#fff' : '#fafafa';
+            return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
+              <td style="padding:10px 14px;font-size:13px;color:var(--text-muted)">${r.date||'-'}</td>
+              <td style="padding:10px 12px;font-weight:600;font-size:13px">${chName}</td>
+              <td style="padding:10px 12px;text-align:center"><span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${typeBg[r.type]||'#f1f5f9'};color:${typeColor[r.type]||'#64748b'}">${typeIcon[r.type]||''} ${r.type}</span></td>
+              <td style="padding:10px 12px;text-align:right;font-weight:600;color:#059669">${r.amount ? parseFloat(r.amount).toFixed(1) : '-'}</td>
+              <td style="padding:10px 12px;font-size:12px;color:var(--text-muted);max-width:300px;white-space:normal;word-break:break-all">${(r.desc||'').substring(0,100)}${(r.desc||'').length>100?'…':''}</td>
+              <td style="padding:10px 14px">
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="editOpsOffline('${r.id}')">编辑</button>
+                <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;font-size:11px;padding:3px 8px" onclick="deleteOpsOffline('${r.id}')">删除</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openOpsOfflineModal() {
+  loadChannels();
+  const chSel = document.getElementById('ops-offline-channel');
+  if (chSel) chSel.innerHTML = '<option value="">请选择渠道</option>' + channels.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('ops-offline-modal-title').textContent = '🏢 新增线下业务记录';
+  document.getElementById('ops-offline-type').value = '下单';
+  document.getElementById('ops-offline-amount').value = '';
+  document.getElementById('ops-offline-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ops-offline-desc').value = '';
+  document.getElementById('ops-offline-edit-id').value = '';
+  showModal('modal-ops-offline');
+}
+
+function editOpsOffline(recordId) {
+  loadChannels();
+  const r = opsOfflineData.find(x => x.id === recordId);
+  if (!r) return;
+  const chSel = document.getElementById('ops-offline-channel');
+  if (chSel) chSel.innerHTML = '<option value="">请选择渠道</option>' + channels.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('ops-offline-modal-title').textContent = '🏢 编辑线下业务记录';
+  document.getElementById('ops-offline-channel').value = r.channelId || '';
+  document.getElementById('ops-offline-type').value = r.type || '下单';
+  document.getElementById('ops-offline-amount').value = r.amount || '';
+  document.getElementById('ops-offline-date').value = r.date || '';
+  document.getElementById('ops-offline-desc').value = r.desc || '';
+  document.getElementById('ops-offline-edit-id').value = recordId;
+  showModal('modal-ops-offline');
+}
+
+function saveOpsOffline() {
+  const channelId = document.getElementById('ops-offline-channel').value;
+  const type = document.getElementById('ops-offline-type').value;
+  const amount = document.getElementById('ops-offline-amount').value;
+  const date = document.getElementById('ops-offline-date').value;
+  const desc = document.getElementById('ops-offline-desc').value.trim();
+  const editId = document.getElementById('ops-offline-edit-id').value;
+  if (!channelId) { alert('请选择关联渠道'); return; }
+  if (!desc) { alert('请填写记录内容'); return; }
+
+  if (editId) {
+    const idx = opsOfflineData.findIndex(r => r.id === editId);
+    if (idx !== -1) { opsOfflineData[idx] = { ...opsOfflineData[idx], channelId, type, amount, date, desc, updatedAt: new Date().toISOString() }; }
+  } else {
+    opsOfflineData.push({ id: 'off_' + Date.now(), channelId, type, amount, date, desc, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+  }
+  saveOpsOfflineData();
+  closeModal('modal-ops-offline');
+  renderOpsDailyPage();
+  renderOpsStatsBar();
+}
+
+function deleteOpsOffline(recordId) {
+  if (!confirm('确认删除此记录？')) return;
+  opsOfflineData = opsOfflineData.filter(r => r.id !== recordId);
+  saveOpsOfflineData();
+  renderOpsDailyPage();
+  renderOpsStatsBar();
+}
 
 // 点击主内容区收起侧边栏（移动端）
 document.querySelector('.main')?.addEventListener('click', (e) => {
