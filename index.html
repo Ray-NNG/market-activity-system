@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.01-02</title>
+<title>市场活动全流程管理系统 v2026.04.01-03</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -4924,6 +4924,15 @@ function updateRoleDisplay() {
       // 无条件同步账号列表（确保任何设备都能用最新账号密码登录）
       if (data.users && Array.isArray(data.users) && data.users.length > 0) {
         localStorage.setItem('mcm_users', JSON.stringify(data.users));
+        // 如果已登录，更新当前用户的 modules 权限并刷新导航
+        if (_currentUser && _currentUser.username) {
+          const refreshed = data.users.find(u => u.username === _currentUser.username);
+          if (refreshed && refreshed.modules) {
+            _currentUser.modules = refreshed.modules;
+            localStorage.setItem('mcm_current_user', JSON.stringify(_currentUser));
+            updateRoleDisplay();
+          }
+        }
         console.log('✅ 账号列表已从云端自动同步，共', data.users.length, '个账号');
       }
     })
@@ -5003,7 +5012,7 @@ function doLogin() {
       }
       // 兜底账号匹配成功，先放行进入，后台继续尝试同步COS数据
       _currentRole = builtinMatch.role;
-      _currentUser = { id: builtinMatch.id, username: builtinMatch.username, name: builtinMatch.name, role: builtinMatch.role };
+      _currentUser = { id: builtinMatch.id, username: builtinMatch.username, name: builtinMatch.name, role: builtinMatch.role, modules: builtinMatch.modules || ['activity','analysis','channel'] };
       localStorage.setItem('mcm_auth_ts', Date.now().toString());
       localStorage.setItem('mcm_current_role', builtinMatch.role);
       localStorage.setItem('mcm_current_user', JSON.stringify(_currentUser));
@@ -5026,7 +5035,7 @@ function doLogin() {
 
     if (matched) {
       _currentRole = matched.role;
-      _currentUser = { id: matched.id, username: matched.username, name: matched.name, role: matched.role };
+      _currentUser = { id: matched.id, username: matched.username, name: matched.name, role: matched.role, modules: matched.modules || ['activity','analysis','channel'] };
       localStorage.setItem('mcm_auth_ts', Date.now().toString());
       localStorage.setItem('mcm_current_role', matched.role);
       localStorage.setItem('mcm_current_user', JSON.stringify(_currentUser));
