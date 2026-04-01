@@ -23,4 +23,4 @@ configure-cos*.html
 .data/
 
 # 日志文件
-*.log
+*.logclean-deploy/
