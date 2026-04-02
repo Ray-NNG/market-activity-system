@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.02-03</title>
+<title>市场活动全流程管理系统 v2026.04.02-04</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2496,7 +2496,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-03';
+const APP_VERSION = 'v2026.04.02-04';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10395,6 +10395,14 @@ function renderOpsLibTable() {
             const bizHtml = (c.bizTypes||[]).map(t=>`<span style="background:#f0fdf4;color:#059669;padding:1px 6px;border-radius:10px;font-size:11px;white-space:nowrap">${t}</span>`).join('');
             const maintCount = (c.maintRecords||[]).length;
             const winCount = (c.winRecords||[]).length;
+            // 运维记录内联内容
+            const maintListHtml = maintCount > 0
+              ? (c.maintRecords||[]).slice(-3).map((r,idx) => `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''}"><span style="color:var(--text-muted)">${r.date||''}</span> ${r.type?`<span style="color:#2563eb;margin:0 2px">[${r.type}]</span>`:''}<span style="color:#334155">${(r.content||'').replace(/</g,'&lt;')}</span></div>`).join('') + (maintCount > 3 ? `<div style="font-size:11px;color:var(--text-muted)">…共${maintCount}条</div>` : '')
+              : '<span style="font-size:11px;color:var(--text-muted)">暂无</span>';
+            // 过往中标内联内容
+            const winListHtml = winCount > 0
+              ? (c.winRecords||[]).slice(-3).map((r,idx) => `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''}"><span style="color:var(--text-muted)">${r.date||''}</span> <span style="color:#334155">${(r.content||'').replace(/</g,'&lt;')}</span>${r.amount?`<span style="color:#059669;margin-left:4px">${r.amount}万</span>`:''}</div>`).join('') + (winCount > 3 ? `<div style="font-size:11px;color:var(--text-muted)">…共${winCount}条</div>` : '')
+              : '<span style="font-size:11px;color:var(--text-muted)">暂无</span>';
             return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
               <td style="padding:10px 8px;text-align:center"><input type="checkbox" ${checked} onchange="toggleOpsBatchItem('${c.id}',this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></td>
               <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${[c.region,c.city,c.district].filter(Boolean).join('<br>')||'-'}</td>
@@ -10408,16 +10416,8 @@ function renderOpsLibTable() {
               <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.position||'-'}</td>
               <td style="padding:10px 10px">${c.relation?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${rc.bg};color:${rc.c}">${c.relation}</span>`:'-'}</td>
               <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${bizHtml||'-'}</div></td>
-              <td style="padding:10px 10px;text-align:center">
-                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px" onclick="openOpsChMaintModal('${c.id}')">
-                  ${maintCount > 0 ? `<span style="color:#2563eb;font-weight:600">${maintCount}条</span>` : '添加'}
-                </button>
-              </td>
-              <td style="padding:10px 10px;text-align:center">
-                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px" onclick="openOpsChWinModal('${c.id}')">
-                  ${winCount > 0 ? `<span style="color:#059669;font-weight:600">${winCount}条</span>` : '添加'}
-                </button>
-              </td>
+              <td style="padding:8px 10px;min-width:160px;cursor:pointer" onclick="openOpsChMaintModal('${c.id}')" title="点击编辑运维记录">${maintListHtml}</td>
+              <td style="padding:8px 10px;min-width:160px;cursor:pointer" onclick="openOpsChWinModal('${c.id}')" title="点击编辑中标记录">${winListHtml}</td>
               <td style="padding:10px 12px;white-space:nowrap">
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="editOpsChannel('${c.id}')">编辑</button>
                 <button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 8px" onclick="openOpsBizModal('${c.id}')">+商机</button>
