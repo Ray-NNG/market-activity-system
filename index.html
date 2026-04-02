@@ -2615,7 +2615,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-09';
+const APP_VERSION = 'v2026.04.02-10';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10149,14 +10149,21 @@ async function loadOpsDataFromCOS() {
       // 合并策略：COS 数据优先，但保留本地独有的（按 id 去重合并）
       const localBiz = JSON.parse(localStorage.getItem('mcm_ops_biz') || '[]');
       const localChannels = JSON.parse(localStorage.getItem('mcm_ops_channels') || '[]');
+      let needSyncBack = false;
       if (localBiz.length > opsBizData.length) {
         // 本地有更多数据，可能是离线新增的，合并
         const cosIds = new Set(opsBizData.map(b => b.id));
         localBiz.forEach(b => { if (!cosIds.has(b.id)) opsBizData.push(b); });
+        needSyncBack = true;
       }
       if (localChannels.length > opsChannelsData.length) {
         const cosIds = new Set(opsChannelsData.map(c => c.id));
         localChannels.forEach(c => { if (!cosIds.has(c.id)) opsChannelsData.push(c); });
+        needSyncBack = true;
+      }
+      if (needSyncBack) {
+        console.log('🔄 检测到本地有更多数据，自动同步到 COS');
+        _syncOpsDataToCOS();
       }
       // 写回 localStorage
       localStorage.setItem('mcm_ops_biz', JSON.stringify(opsBizData));
