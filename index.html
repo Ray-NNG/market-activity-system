@@ -560,7 +560,7 @@
   /* ===== 登录遮罩 ===== */
   #login-overlay {
     position: fixed; inset: 0; z-index: 9999;
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    background: linear-gradient(135deg, #0f1e3d 0%, #1e3a6e 50%, #0f1e3d 100%);
     display: flex; align-items: center; justify-content: center;
   }
   .login-card {
@@ -580,10 +580,10 @@
     font-size: 14px; outline: none; transition: border-color .2s;
     font-family: inherit;
   }
-  .login-field input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+  .login-field input:focus { border-color: #1d4ed8; box-shadow: 0 0 0 3px rgba(29,78,216,.12); }
   .login-btn {
     padding: 12px; border-radius: 10px; border: none; cursor: pointer;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
     color: #fff; font-size: 15px; font-weight: 700;
     transition: opacity .2s; margin-top: 4px;
   }
@@ -1040,7 +1040,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   <!-- 当前登录角色标识 -->
   <div id="sidebar-role-bar" style="padding:8px 16px 0;"></div>
   <nav class="sidebar-nav" id="sidebar-nav">
-    <div class="nav-section">
+    <div class="nav-section" id="nav-section-dashboard">
       <div class="nav-section-title">总览</div>
       <div class="nav-item active" onclick="goto('dashboard')">
         <span class="icon">🏠</span> 仪表盘
@@ -1086,7 +1086,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
     <div class="nav-section" id="nav-section-channelOps" style="display:none">
       <div class="nav-section-title">渠道运营</div>
       <div class="nav-item" onclick="goto('channelOps')">
-        <span class="icon">🏢</span> 渠道运营中心
+        <span class="icon">🏢</span> 分销渠道运营中心
       </div>
     </div>
     <div class="nav-item" onclick="goto('ai')">
@@ -1807,11 +1807,27 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <!-- Tab1: 渠道库管理 -->
       <div id="ops-panel-lib" style="display:none">
         <div class="card" style="padding:12px 20px;margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <input class="form-control" id="ops-lib-search" placeholder="🔍 搜索渠道名称、联系人、销售…" style="width:240px" oninput="renderOpsLibTable()">
-            <select class="form-control" id="ops-lib-filter-tier" onchange="renderOpsLibTable()" style="width:140px"><option value="">全部分层</option></select>
-            <select class="form-control" id="ops-lib-filter-city" onchange="renderOpsLibTable()" style="width:140px"><option value="">全部地市</option></select>
-            <select class="form-control" id="ops-lib-filter-sales" onchange="renderOpsLibTable()" style="width:140px"><option value="">全部销售</option></select>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input class="form-control" id="ops-lib-search" placeholder="🔍 搜索公司名称、联系人…" style="width:220px" oninput="renderOpsLibTable()">
+            <select class="form-control" id="ops-lib-filter-region" onchange="renderOpsLibTable()" style="width:120px"><option value="">全部区域</option><option value="广西">广西</option><option value="海南">海南</option></select>
+            <select class="form-control" id="ops-lib-filter-city" onchange="renderOpsLibTable()" style="width:120px"><option value="">全部地市</option></select>
+            <select class="form-control" id="ops-lib-filter-scale" onchange="renderOpsLibTable()" style="width:130px">
+              <option value="">全部规模</option>
+              <option value="0-5人">0-5人</option>
+              <option value="5-10人">5-10人</option>
+              <option value="10-15人">10-15人</option>
+              <option value="15-20人">15-20人</option>
+              <option value="20-30人">20-30人</option>
+              <option value="30人以上">30人以上</option>
+            </select>
+            <select class="form-control" id="ops-lib-filter-tag" onchange="renderOpsLibTable()" style="width:130px"><option value="">全部标签</option></select>
+            <select class="form-control" id="ops-lib-filter-relation" onchange="renderOpsLibTable()" style="width:120px">
+              <option value="">全部关系</option>
+              <option value="核心渠道">核心渠道</option>
+              <option value="机会渠道">机会渠道</option>
+              <option value="零散渠道">零散渠道</option>
+              <option value="敌对渠道">敌对渠道</option>
+            </select>
             <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <!-- 批量操作区 -->
               <div id="ops-batch-bar" style="display:none;align-items:center;gap:8px;margin-right:8px">
@@ -1902,58 +1918,133 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
     <!-- 渠道运营弹窗：添加/编辑渠道（独立于渠道名单） -->
     <div class="modal-overlay" id="modal-ops-channel" style="display:none">
-      <div class="modal" style="max-width:600px">
+      <div class="modal" style="max-width:700px">
         <div class="modal-header">
           <div class="modal-title" id="ops-ch-modal-title">➕ 添加渠道</div>
           <button class="modal-close" onclick="closeModal('modal-ops-channel')">×</button>
         </div>
+        <!-- 分区：基本信息 -->
+        <div style="padding:0 0 8px;font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.5px;margin-bottom:4px">📍 基本信息</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="form-group">
-            <label>渠道名称 *</label>
-            <input class="form-control" id="ops-ch-name" placeholder="渠道全称">
+          <div class="form-group" style="grid-column:1/-1">
+            <label>公司名称 *</label>
+            <input class="form-control" id="ops-ch-name" placeholder="渠道公司全称">
           </div>
           <div class="form-group">
-            <label>渠道分层</label>
-            <select class="form-control" id="ops-ch-tier" style="width:100%"></select>
+            <label>区域</label>
+            <select class="form-control" id="ops-ch-region" onchange="updateOpsChCityOptions()">
+              <option value="">请选择区域</option>
+              <option value="广西">广西</option>
+              <option value="海南">海南</option>
+            </select>
           </div>
           <div class="form-group">
             <label>所在地市</label>
-            <select class="form-control" id="ops-ch-city">
-              <option value="">请选择地市</option>
-              <option value="南宁市">南宁市</option><option value="柳州市">柳州市</option><option value="桂林市">桂林市</option>
-              <option value="梧州市">梧州市</option><option value="北海市">北海市</option><option value="防城港市">防城港市</option>
-              <option value="钦州市">钦州市</option><option value="贵港市">贵港市</option><option value="玉林市">玉林市</option>
-              <option value="百色市">百色市</option><option value="贺州市">贺州市</option><option value="河池市">河池市</option>
-              <option value="来宾市">来宾市</option><option value="崇左市">崇左市</option>
-            </select>
+            <select class="form-control" id="ops-ch-city"></select>
           </div>
           <div class="form-group">
             <label>区/县</label>
             <input class="form-control" id="ops-ch-district" placeholder="区/县名称">
           </div>
           <div class="form-group">
-            <label>负责销售</label>
-            <input class="form-control" id="ops-ch-sales" placeholder="负责人姓名">
+            <label>规模</label>
+            <select class="form-control" id="ops-ch-scale">
+              <option value="">请选择规模</option>
+              <option value="0-5人">0-5人</option>
+              <option value="5-10人">5-10人</option>
+              <option value="10-15人">10-15人</option>
+              <option value="15-20人">15-20人</option>
+              <option value="20-30人">20-30人</option>
+              <option value="30人以上">30人以上</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>关键联系人</label>
-            <input class="form-control" id="ops-ch-contact" placeholder="联系人姓名">
+            <label>关系</label>
+            <select class="form-control" id="ops-ch-relation">
+              <option value="">请选择关系</option>
+              <option value="核心渠道">核心渠道</option>
+              <option value="机会渠道">机会渠道</option>
+              <option value="零散渠道">零散渠道</option>
+              <option value="敌对渠道">敌对渠道</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label style="display:flex;align-items:center;justify-content:space-between">
+              <span>标签</span>
+              <span style="font-size:11px;color:var(--text-muted)">可多选，可自定义</span>
+            </label>
+            <div id="ops-ch-tag-area" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;min-height:40px">
+              <div id="ops-ch-tag-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap" id="ops-ch-tag-preset"></div>
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <input class="form-control" id="ops-ch-tag-input" placeholder="自定义标签…" style="flex:1;font-size:12px;padding:4px 8px" onkeydown="if(event.key==='Enter'){event.preventDefault();addOpsChTag()}">
+                <button type="button" class="btn btn-outline btn-sm" style="font-size:12px" onclick="addOpsChTag()">添加</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>公司背景</label>
+            <textarea class="form-control" id="ops-ch-background" rows="3" placeholder="公司资源、优势、历史合作等背景信息…"></textarea>
+          </div>
+        </div>
+        <!-- 分区：联系信息 -->
+        <div style="padding:12px 0 8px;font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.5px">👤 联系信息</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>联系人</label>
+            <input class="form-control" id="ops-ch-contact" placeholder="关键联系人姓名">
+          </div>
+          <div class="form-group">
+            <label>职务</label>
+            <input class="form-control" id="ops-ch-position" placeholder="如：总经理、销售总监">
           </div>
           <div class="form-group">
             <label>联系方式</label>
             <input class="form-control" id="ops-ch-phone" placeholder="手机号 / 微信">
           </div>
           <div class="form-group">
-            <label>行业类型</label>
-            <input class="form-control" id="ops-ch-industry" placeholder="如：教育、政府、医疗…">
+            <label>负责销售</label>
+            <input class="form-control" id="ops-ch-sales" placeholder="内部负责人姓名">
           </div>
-          <div class="form-group" style="grid-column:1/-1">
-            <label>渠道背景</label>
-            <textarea class="form-control" id="ops-ch-background" rows="3" placeholder="渠道资源、优势、历史合作等背景信息…"></textarea>
+        </div>
+        <!-- 分区：经营业务 -->
+        <div style="padding:12px 0 8px;font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.5px">💼 经营业务</div>
+        <div class="form-group">
+          <div id="ops-ch-biz-area" style="border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;min-height:40px">
+            <div id="ops-ch-biz-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap" id="ops-ch-biz-preset"></div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <input class="form-control" id="ops-ch-biz-input" placeholder="自定义业务类型…" style="flex:1;font-size:12px;padding:4px 8px" onkeydown="if(event.key==='Enter'){event.preventDefault();addOpsChBiz()}">
+              <button type="button" class="btn btn-outline btn-sm" style="font-size:12px" onclick="addOpsChBiz()">添加</button>
+            </div>
           </div>
-          <div class="form-group" style="grid-column:1/-1">
-            <label>备注</label>
-            <textarea class="form-control" id="ops-ch-remark" rows="2" placeholder="其他备注信息…"></textarea>
+        </div>
+        <!-- 分区：运维记录 -->
+        <div style="padding:12px 0 8px;font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.5px">📅 运维记录</div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:12px;color:var(--text-muted)">记录日常沟通、拜访、推广等运维活动</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="addOpsChMaintRow()" style="font-size:12px;padding:3px 10px">+ 添加记录</button>
+          </label>
+          <div id="ops-ch-maint-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:6px">
+            <div style="display:grid;grid-template-columns:130px 130px 1fr 120px 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
+              <span>时间</span><span>类型</span><span>内容</span><span>参与人</span><span></span>
+            </div>
+            <div id="ops-ch-maint-rows" style="display:flex;flex-direction:column"></div>
+          </div>
+        </div>
+        <!-- 分区：过往中标记录 -->
+        <div style="padding:12px 0 8px;font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.5px">🏆 过往中标记录</div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:12px;color:var(--text-muted)">记录该渠道过往合作的中标项目</span>
+            <button type="button" class="btn btn-outline btn-sm" onclick="addOpsChWinRow()" style="font-size:12px;padding:3px 10px">+ 添加记录</button>
+          </label>
+          <div id="ops-ch-win-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:6px">
+            <div style="display:grid;grid-template-columns:130px 1fr 100px 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
+              <span>时间</span><span>项目名称/内容</span><span>中标金额(万)</span><span></span>
+            </div>
+            <div id="ops-ch-win-rows" style="display:flex;flex-direction:column"></div>
           </div>
         </div>
         <input type="hidden" id="ops-ch-edit-id">
@@ -2407,7 +2498,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.01-06';
+const APP_VERSION = 'v2026.04.02-01';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -3142,7 +3233,7 @@ const pageTitles = {
   usermgmt: ['账户权限','管理各角色登录密码'],
   ai: ['AI 分析助手','由 Kimi 驱动的智能数据分析'],
   feedback: ['渠道反馈汇总','所有活动的渠道跟进反馈一览'],
-  channelOps: ['渠道运营中心','渠道库管理、商机跟进、日常运维']
+  channelOps: ['分销渠道运营中心','渠道库管理、商机跟进、日常运维']
 };
 
 function goto(page) {
@@ -5161,6 +5252,14 @@ function updateRoleDisplay() {
   const isSuperadmin = (role === 'superadmin');
   const userModules = user?.modules || [];
 
+  // 判断是否「仅有渠道运营权限」（只勾了 channelOps，没有其他业务模块）
+  const onlyChannelOps = !isSuperadmin && userModules.includes('channelOps') &&
+    !userModules.includes('activity') && !userModules.includes('analysis') && !userModules.includes('channel');
+
+  // 仪表盘：仅渠道运营权限时隐藏
+  const sectDash = document.getElementById('nav-section-dashboard');
+  if (sectDash) sectDash.style.display = onlyChannelOps ? 'none' : '';
+
   // 活动管理模块
   const sectActivity = document.getElementById('nav-section-activity');
   if (sectActivity) sectActivity.style.display = (isSuperadmin || userModules.includes('activity')) ? '' : 'none';
@@ -5176,6 +5275,11 @@ function updateRoleDisplay() {
   // 渠道运营模块（只有你权限最高时才显示）
   const sectChannelOps = document.getElementById('nav-section-channelOps');
   if (sectChannelOps) sectChannelOps.style.display = (isSuperadmin || userModules.includes('channelOps')) ? '' : 'none';
+
+  // 仅渠道运营权限时，自动跳到渠道运营页，不显示仪表盘
+  if (onlyChannelOps) {
+    setTimeout(() => goto('channelOps'), 0);
+  }
 }
 
 // ===== 页面启动时静默同步 sys_config（自动配置COS和账号，新设备无需任何手动操作）=====
@@ -7660,7 +7764,7 @@ function renderUserMgmt() {
     </div>
     ${users.map(u => {
     const mods = u.modules || (u.role === 'superadmin' ? ['activity','analysis','channel','channelOps'] : ['activity','analysis','channel']);
-    const modLabels = { activity:'活动管理', analysis:'数据分析', channel:'渠道管理', channelOps:'渠道运营' };
+    const modLabels = { activity:'活动管理', analysis:'数据分析', channel:'渠道管理', channelOps:'分销渠道运营' };
     const modColors = { activity:'#4f46e5', analysis:'#0ea5e9', channel:'#10b981', channelOps:'#f59e0b' };
     const modHtml = mods.map(m => `<span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:${modColors[m]||'#64748b'}15;color:${modColors[m]||'#64748b'};margin:1px 2px">${modLabels[m]||m}</span>`).join('');
     return `
@@ -10095,37 +10199,159 @@ function renderOpsDash() {
 }
 
 // ===== Tab1: 渠道库管理（独立渠道库） =====
+// 标签和经营业务的预设列表
+var OPS_TAG_PRESETS = ['区域龙头型','细分行业型','小微板块型','机会主义型'];
+var OPS_BIZ_PRESETS = ['系统集成','音视频','OA','PC'];
+var OPS_CITY_MAP = {
+  '广西': ['南宁市','柳州市','桂林市','梧州市','北海市','防城港市','钦州市','贵港市','玉林市','百色市','贺州市','河池市','来宾市','崇左市'],
+  '海南': ['海口市','三亚市','三沙市','儋州市','文昌市','琼海市','万宁市','东方市','定安县','屯昌县','澄迈县','临高县','白沙县','昌江县','乐东县','陵水县','保亭县','琼中县']
+};
+
+// 临时存储标签/经营业务/运维/中标记录
+var _opsChTags = [];
+var _opsChBizTypes = [];
+var _opsChMaintRows = [];
+var _opsChWinRows = [];
+
+function updateOpsChCityOptions() {
+  const region = document.getElementById('ops-ch-region')?.value || '';
+  const citySel = document.getElementById('ops-ch-city');
+  if (!citySel) return;
+  const cities = OPS_CITY_MAP[region] || [];
+  citySel.innerHTML = '<option value="">请选择地市</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function renderOpsChTagList() {
+  const list = document.getElementById('ops-ch-tag-list');
+  const preset = document.getElementById('ops-ch-tag-preset');
+  if (list) {
+    list.innerHTML = _opsChTags.map((t,i) => `<span style="background:var(--primary);color:#fff;padding:3px 10px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:4px">${t}<span onclick="_opsChTags.splice(${i},1);renderOpsChTagList()" style="cursor:pointer;font-size:14px;line-height:1;margin-left:2px">×</span></span>`).join('');
+  }
+  if (preset) {
+    preset.innerHTML = OPS_TAG_PRESETS.map(t => {
+      const active = _opsChTags.includes(t);
+      return `<span onclick="toggleOpsChTagPreset('${t}')" style="padding:3px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid ${active?'var(--primary)':'var(--border)'};background:${active?'#eff6ff':'#f8fafc'};color:${active?'var(--primary)':'var(--text-muted)'}">${t}</span>`;
+    }).join('');
+  }
+}
+function toggleOpsChTagPreset(t) {
+  if (_opsChTags.includes(t)) _opsChTags = _opsChTags.filter(x => x !== t);
+  else _opsChTags.push(t);
+  renderOpsChTagList();
+}
+function addOpsChTag() {
+  const input = document.getElementById('ops-ch-tag-input');
+  const v = (input?.value || '').trim();
+  if (!v) return;
+  if (!_opsChTags.includes(v)) { _opsChTags.push(v); renderOpsChTagList(); }
+  if (input) input.value = '';
+}
+
+function renderOpsChBizList() {
+  const list = document.getElementById('ops-ch-biz-list');
+  const preset = document.getElementById('ops-ch-biz-preset');
+  if (list) {
+    list.innerHTML = _opsChBizTypes.map((t,i) => `<span style="background:#059669;color:#fff;padding:3px 10px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:4px">${t}<span onclick="_opsChBizTypes.splice(${i},1);renderOpsChBizList()" style="cursor:pointer;font-size:14px;line-height:1;margin-left:2px">×</span></span>`).join('');
+  }
+  if (preset) {
+    preset.innerHTML = OPS_BIZ_PRESETS.map(t => {
+      const active = _opsChBizTypes.includes(t);
+      return `<span onclick="toggleOpsChBizPreset('${t}')" style="padding:3px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid ${active?'#059669':'var(--border)'};background:${active?'#f0fdf4':'#f8fafc'};color:${active?'#059669':'var(--text-muted)'}">${t}</span>`;
+    }).join('');
+  }
+}
+function toggleOpsChBizPreset(t) {
+  if (_opsChBizTypes.includes(t)) _opsChBizTypes = _opsChBizTypes.filter(x => x !== t);
+  else _opsChBizTypes.push(t);
+  renderOpsChBizList();
+}
+function addOpsChBiz() {
+  const input = document.getElementById('ops-ch-biz-input');
+  const v = (input?.value || '').trim();
+  if (!v) return;
+  if (!_opsChBizTypes.includes(v)) { _opsChBizTypes.push(v); renderOpsChBizList(); }
+  if (input) input.value = '';
+}
+
+function renderOpsChMaintRows() {
+  const container = document.getElementById('ops-ch-maint-rows');
+  if (!container) return;
+  if (!_opsChMaintRows.length) { container.innerHTML = '<div style="padding:12px 10px;color:var(--text-muted);font-size:13px;text-align:center">暂无记录，点击「+ 添加记录」</div>'; return; }
+  container.innerHTML = _opsChMaintRows.map((r,i) => `
+    <div style="display:grid;grid-template-columns:130px 130px 1fr 120px 36px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9;gap:6px">
+      <input type="date" class="form-control" style="padding:4px 6px;font-size:13px" value="${r.date||''}" oninput="_opsChMaintRows[${i}].date=this.value">
+      <select class="form-control" style="padding:4px 6px;font-size:13px" onchange="_opsChMaintRows[${i}].type=this.value">
+        <option value="">-- 类型 --</option>
+        ${['拜访','渠道赋能','渠道沙龙','协同入校','电话沟通','微信跟进','其他'].map(t=>`<option value="${t}" ${r.type===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <input type="text" class="form-control" style="padding:4px 8px;font-size:13px" placeholder="内容描述" value="${(r.content||'').replace(/"/g,'&quot;')}" oninput="_opsChMaintRows[${i}].content=this.value">
+      <input type="text" class="form-control" style="padding:4px 8px;font-size:13px" placeholder="参与人" value="${(r.person||'').replace(/"/g,'&quot;')}" oninput="_opsChMaintRows[${i}].person=this.value">
+      <button type="button" onclick="_opsChMaintRows.splice(${i},1);renderOpsChMaintRows()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;line-height:1;padding:0 4px">×</button>
+    </div>`).join('');
+}
+function addOpsChMaintRow() {
+  _opsChMaintRows.push({ date: new Date().toISOString().slice(0,10), type: '', content: '', person: '' });
+  renderOpsChMaintRows();
+}
+
+function renderOpsChWinRows() {
+  const container = document.getElementById('ops-ch-win-rows');
+  if (!container) return;
+  if (!_opsChWinRows.length) { container.innerHTML = '<div style="padding:12px 10px;color:var(--text-muted);font-size:13px;text-align:center">暂无记录，点击「+ 添加记录」</div>'; return; }
+  container.innerHTML = _opsChWinRows.map((r,i) => `
+    <div style="display:grid;grid-template-columns:130px 1fr 100px 36px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9;gap:6px">
+      <input type="date" class="form-control" style="padding:4px 6px;font-size:13px" value="${r.date||''}" oninput="_opsChWinRows[${i}].date=this.value">
+      <input type="text" class="form-control" style="padding:4px 8px;font-size:13px" placeholder="项目名称/内容" value="${(r.content||'').replace(/"/g,'&quot;')}" oninput="_opsChWinRows[${i}].content=this.value">
+      <input type="number" class="form-control" style="padding:4px 8px;font-size:13px" placeholder="金额(万)" value="${r.amount||''}" oninput="_opsChWinRows[${i}].amount=this.value">
+      <button type="button" onclick="_opsChWinRows.splice(${i},1);renderOpsChWinRows()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;line-height:1;padding:0 4px">×</button>
+    </div>`).join('');
+}
+function addOpsChWinRow() {
+  _opsChWinRows.push({ date: new Date().toISOString().slice(0,10), content: '', amount: '' });
+  renderOpsChWinRows();
+}
+
 function renderOpsLibTable() {
   loadOpsData();
   const ch = opsChannelsData;
+
   // 更新筛选下拉
-  const tierSel = document.getElementById('ops-lib-filter-tier');
+  const tagSel = document.getElementById('ops-lib-filter-tag');
   const citySel = document.getElementById('ops-lib-filter-city');
-  const salesSel = document.getElementById('ops-lib-filter-sales');
-  const tierSet = new Set(ch.map(c => c.tier).filter(Boolean));
-  const citySet = new Set(ch.map(c => c.city).filter(Boolean));
-  const salesSet = new Set(ch.map(c => c.sales).filter(Boolean));
-  if (tierSel) tierSel.innerHTML = '<option value="">全部分层</option>' + opsTierData.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-  if (citySel) citySel.innerHTML = '<option value="">全部地市</option>' + [...citySet].map(c => `<option>${c}</option>`).join('');
-  if (salesSel) salesSel.innerHTML = '<option value="">全部销售</option>' + [...salesSet].map(s => `<option>${s}</option>`).join('');
+  const regionSel = document.getElementById('ops-lib-filter-region');
+  const regionF = regionSel?.value || '';
+  // 所有出现过的标签
+  const tagSet = new Set();
+  ch.forEach(c => (c.tags||[]).forEach(t => tagSet.add(t)));
+  if (tagSel) {
+    const curTag = tagSel.value;
+    tagSel.innerHTML = '<option value="">全部标签</option>' + [...tagSet].map(t => `<option value="${t}" ${t===curTag?'selected':''}>${t}</option>`).join('');
+  }
+  // 按区域过滤地市
+  const allCities = regionF ? (OPS_CITY_MAP[regionF]||[]) : [...new Set(ch.map(c=>c.city).filter(Boolean))];
+  if (citySel) {
+    const curCity = citySel.value;
+    citySel.innerHTML = '<option value="">全部地市</option>' + allCities.map(c => `<option value="${c}" ${c===curCity?'selected':''}>${c}</option>`).join('');
+  }
 
   const kw = (document.getElementById('ops-lib-search')?.value || '').toLowerCase();
-  const tierF = document.getElementById('ops-lib-filter-tier')?.value || '';
   const cityF = document.getElementById('ops-lib-filter-city')?.value || '';
-  const salesF = document.getElementById('ops-lib-filter-sales')?.value || '';
+  const scaleF = document.getElementById('ops-lib-filter-scale')?.value || '';
+  const tagF = document.getElementById('ops-lib-filter-tag')?.value || '';
+  const relationF = document.getElementById('ops-lib-filter-relation')?.value || '';
 
   let filtered = ch.filter(c => {
-    if (tierF && c.tier !== tierF) return false;
+    if (regionF && c.region !== regionF) return false;
     if (cityF && c.city !== cityF) return false;
-    if (salesF && c.sales !== salesF) return false;
-    if (kw) { const t = [c.name,c.sales,c.contact,c.phone,c.background,c.industry].join(' ').toLowerCase(); if (!t.includes(kw)) return false; }
+    if (scaleF && c.scale !== scaleF) return false;
+    if (tagF && !(c.tags||[]).includes(tagF)) return false;
+    if (relationF && c.relation !== relationF) return false;
+    if (kw) { const t = [c.name,c.contact,c.phone,c.background,c.sales,(c.tags||[]).join(' '),(c.bizTypes||[]).join(' ')].join(' ').toLowerCase(); if (!t.includes(kw)) return false; }
     return true;
   });
 
   const container = document.getElementById('ops-lib-container');
   if (!container) return;
-
-  // 更新批量操作栏
   updateOpsBatchBar();
 
   if (!filtered.length) {
@@ -10142,20 +10368,21 @@ function renderOpsLibTable() {
   });
 
   const allChecked = filtered.every(c => opsBatchSelected.has(c.id));
+  const relationColor = r => r==='核心渠道'?{bg:'#eff6ff',c:'#2563eb'}:r==='机会渠道'?{bg:'#f0fdf4',c:'#059669'}:r==='敌对渠道'?{bg:'#fef2f2',c:'#dc2626'}:{bg:'#f8fafc',c:'#64748b'};
 
   container.innerHTML = `
     <div class="table-wrap">
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
-          <th style="padding:10px 8px;text-align:center;width:36px"><input type="checkbox" ${allChecked ? 'checked' : ''} onchange="toggleOpsBatchAll(this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></th>
-          <th style="padding:10px 12px;text-align:left;min-width:140px">渠道名称</th>
-          <th style="padding:10px 10px;text-align:left;min-width:72px">分层</th>
-          <th style="padding:10px 10px;text-align:left;min-width:80px">地市</th>
-          <th style="padding:10px 10px;text-align:left;min-width:70px">销售</th>
-          <th style="padding:10px 10px;text-align:left;min-width:70px">联系人</th>
-          <th style="padding:10px 10px;text-align:left;min-width:90px">联系方式</th>
+          <th style="padding:10px 8px;text-align:center;width:36px"><input type="checkbox" ${allChecked?'checked':''} onchange="toggleOpsBatchAll(this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></th>
+          <th style="padding:10px 12px;text-align:left;min-width:150px">公司名称</th>
+          <th style="padding:10px 10px;text-align:left;min-width:70px">关系</th>
+          <th style="padding:10px 10px;text-align:left;min-width:100px">区域/地市</th>
+          <th style="padding:10px 10px;text-align:left;min-width:70px">规模</th>
+          <th style="padding:10px 10px;text-align:left;min-width:100px">标签</th>
+          <th style="padding:10px 10px;text-align:left;min-width:80px">联系人/职务</th>
+          <th style="padding:10px 10px;text-align:left;min-width:80px">经营业务</th>
           <th style="padding:10px 10px;text-align:center;min-width:60px">商机</th>
-          <th style="padding:10px 10px;text-align:right;min-width:70px">中标金额</th>
           <th style="padding:10px 12px;text-align:left;min-width:90px">操作</th>
         </tr></thead>
         <tbody>
@@ -10163,17 +10390,23 @@ function renderOpsLibTable() {
             const biz = bizMap[c.id] || { count: 0, wonAmount: 0 };
             const rowBg = i % 2 === 0 ? '#fff' : '#fafafa';
             const checked = opsBatchSelected.has(c.id) ? 'checked' : '';
+            const rc = relationColor(c.relation);
+            const tagsHtml = (c.tags||[]).map(t=>`<span style="background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:10px;font-size:11px;white-space:nowrap">${t}</span>`).join('');
+            const bizHtml = (c.bizTypes||[]).map(t=>`<span style="background:#f0fdf4;color:#059669;padding:1px 6px;border-radius:10px;font-size:11px;white-space:nowrap">${t}</span>`).join('');
             return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
               <td style="padding:10px 8px;text-align:center"><input type="checkbox" ${checked} onchange="toggleOpsBatchItem('${c.id}',this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></td>
-              <td style="padding:10px 12px;font-weight:600;font-size:13px">${c.name||'-'}</td>
-              <td style="padding:10px 10px"><span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
-              <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.city||'-'}</td>
-              <td style="padding:10px 10px;font-size:13px">${c.sales||'-'}</td>
-              <td style="padding:10px 10px;font-size:13px">${c.contact||'-'}</td>
-              <td style="padding:10px 10px;font-size:12px">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary)">${c.phone}</a>` : '-'}</td>
+              <td style="padding:10px 12px;font-weight:600;font-size:13px">
+                ${c.name||'-'}
+                ${c.background?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(c.background||'').replace(/"/g,'&quot;')}">${c.background}</div>`:''}
+              </td>
+              <td style="padding:10px 10px">${c.relation?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${rc.bg};color:${rc.c}">${c.relation}</span>`:'-'}</td>
+              <td style="padding:10px 10px;font-size:12px">${[c.region,c.city,c.district].filter(Boolean).join(' / ')||'-'}</td>
+              <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.scale||'-'}</td>
+              <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${tagsHtml||'-'}</div></td>
+              <td style="padding:10px 10px;font-size:12px">${c.contact||'-'}${c.position?`<div style="color:var(--text-muted);font-size:11px">${c.position}</div>`:''}</td>
+              <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${bizHtml||'-'}</div></td>
               <td style="padding:10px 10px;text-align:center">${biz.count > 0 ? `<span style="background:#dbeafe;color:#2563eb;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${biz.count}</span>` : '-'}</td>
-              <td style="padding:10px 10px;text-align:right;font-weight:600;color:#059669;font-size:13px">${biz.wonAmount > 0 ? biz.wonAmount.toFixed(1) + '万' : '-'}</td>
-              <td style="padding:10px 12px">
+              <td style="padding:10px 12px;white-space:nowrap">
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="editOpsChannel('${c.id}')">编辑</button>
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="openOpsBizModal('${c.id}')">+商机</button>
               </td>
@@ -10244,62 +10477,89 @@ function batchDeleteOpsChannels() {
   alert(`已删除 ${deletedCount} 个渠道`);
 }
 
+// 初始化渠道弹窗的公共逻辑
+function _initOpsChModal() {
+  _opsChTags = [];
+  _opsChBizTypes = [];
+  _opsChMaintRows = [];
+  _opsChWinRows = [];
+  updateOpsChCityOptions();
+  renderOpsChTagList();
+  renderOpsChBizList();
+  renderOpsChMaintRows();
+  renderOpsChWinRows();
+}
+
 // 渠道 CRUD（独立库）
 function openOpsAddChannelModal() {
   loadOpsData();
   document.getElementById('ops-ch-modal-title').textContent = '➕ 添加渠道';
   document.getElementById('ops-ch-name').value = '';
-  document.getElementById('ops-ch-tier').innerHTML = '<option value="">请选择</option>' + opsTierData.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-  document.getElementById('ops-ch-city').value = '';
+  document.getElementById('ops-ch-region').value = '';
   document.getElementById('ops-ch-district').value = '';
-  document.getElementById('ops-ch-sales').value = '';
-  document.getElementById('ops-ch-contact').value = '';
-  document.getElementById('ops-ch-phone').value = '';
-  document.getElementById('ops-ch-industry').value = '';
+  document.getElementById('ops-ch-scale').value = '';
+  document.getElementById('ops-ch-relation').value = '';
   document.getElementById('ops-ch-background').value = '';
-  document.getElementById('ops-ch-remark').value = '';
+  document.getElementById('ops-ch-contact').value = '';
+  document.getElementById('ops-ch-position').value = '';
+  document.getElementById('ops-ch-phone').value = '';
+  document.getElementById('ops-ch-sales').value = '';
   document.getElementById('ops-ch-edit-id').value = '';
+  _initOpsChModal();
   showModal('modal-ops-channel');
 }
+
 function editOpsChannel(chId) {
   loadOpsData();
   const c = opsChannelsData.find(x => x.id === chId);
   if (!c) return;
   document.getElementById('ops-ch-modal-title').textContent = '✏️ 编辑渠道';
-  const tierSel = document.getElementById('ops-ch-tier');
-  tierSel.innerHTML = '<option value="">请选择</option>' + opsTierData.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
   document.getElementById('ops-ch-name').value = c.name || '';
-  tierSel.value = c.tier || '';
-  document.getElementById('ops-ch-city').value = c.city || '';
+  document.getElementById('ops-ch-region').value = c.region || '';
+  updateOpsChCityOptions();
+  setTimeout(() => { if (document.getElementById('ops-ch-city')) document.getElementById('ops-ch-city').value = c.city || ''; }, 0);
   document.getElementById('ops-ch-district').value = c.district || '';
-  document.getElementById('ops-ch-sales').value = c.sales || '';
-  document.getElementById('ops-ch-contact').value = c.contact || '';
-  document.getElementById('ops-ch-phone').value = c.phone || '';
-  document.getElementById('ops-ch-industry').value = c.industry || '';
+  document.getElementById('ops-ch-scale').value = c.scale || '';
+  document.getElementById('ops-ch-relation').value = c.relation || '';
   document.getElementById('ops-ch-background').value = c.background || '';
-  document.getElementById('ops-ch-remark').value = c.remark || '';
+  document.getElementById('ops-ch-contact').value = c.contact || '';
+  document.getElementById('ops-ch-position').value = c.position || '';
+  document.getElementById('ops-ch-phone').value = c.phone || '';
+  document.getElementById('ops-ch-sales').value = c.sales || '';
   document.getElementById('ops-ch-edit-id').value = chId;
+  _opsChTags = [...(c.tags||[])];
+  _opsChBizTypes = [...(c.bizTypes||[])];
+  _opsChMaintRows = JSON.parse(JSON.stringify(c.maintRecords||[]));
+  _opsChWinRows = JSON.parse(JSON.stringify(c.winRecords||[]));
+  renderOpsChTagList();
+  renderOpsChBizList();
+  renderOpsChMaintRows();
+  renderOpsChWinRows();
   showModal('modal-ops-channel');
 }
+
 function saveOpsChannel() {
   const name = document.getElementById('ops-ch-name').value.trim();
-  const tier = document.getElementById('ops-ch-tier').value;
-  const city = document.getElementById('ops-ch-city').value;
+  const region = document.getElementById('ops-ch-region').value;
+  const city = document.getElementById('ops-ch-city')?.value || '';
   const district = document.getElementById('ops-ch-district').value.trim();
-  const sales = document.getElementById('ops-ch-sales').value.trim();
-  const contact = document.getElementById('ops-ch-contact').value.trim();
-  const phone = document.getElementById('ops-ch-phone').value.trim();
-  const industry = document.getElementById('ops-ch-industry').value.trim();
+  const scale = document.getElementById('ops-ch-scale').value;
+  const relation = document.getElementById('ops-ch-relation').value;
   const background = document.getElementById('ops-ch-background').value.trim();
-  const remark = document.getElementById('ops-ch-remark').value.trim();
+  const contact = document.getElementById('ops-ch-contact').value.trim();
+  const position = document.getElementById('ops-ch-position').value.trim();
+  const phone = document.getElementById('ops-ch-phone').value.trim();
+  const sales = document.getElementById('ops-ch-sales').value.trim();
   const editId = document.getElementById('ops-ch-edit-id').value;
-  if (!name) { alert('请输入渠道名称'); return; }
+  if (!name) { alert('请输入公司名称'); return; }
+
+  const channelData = { name, region, city, district, scale, relation, tags: [..._opsChTags], bizTypes: [..._opsChBizTypes], background, contact, position, phone, sales, maintRecords: JSON.parse(JSON.stringify(_opsChMaintRows)), winRecords: JSON.parse(JSON.stringify(_opsChWinRows)), updatedAt: new Date().toISOString() };
 
   if (editId) {
     const idx = opsChannelsData.findIndex(c => c.id === editId);
-    if (idx !== -1) { opsChannelsData[idx] = { ...opsChannelsData[idx], name, tier, city, district, sales, contact, phone, industry, background, remark, updatedAt: new Date().toISOString() }; }
+    if (idx !== -1) { opsChannelsData[idx] = { ...opsChannelsData[idx], ...channelData }; }
   } else {
-    opsChannelsData.push({ id: 'opsch_' + Date.now(), name, tier, city, district, sales, contact, phone, industry, background, remark, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    opsChannelsData.push({ id: 'opsch_' + Date.now(), ...channelData, createdAt: new Date().toISOString() });
   }
   saveOpsChannelsData();
   closeModal('modal-ops-channel');
@@ -10314,10 +10574,10 @@ function exportOpsLibCsv() {
     bizMap[b.channelId].count++;
     if (b.status === '已中标') bizMap[b.channelId].wonAmount += (parseFloat(b.amount) || 0);
   });
-  const headers = ['渠道名称','分层','地市','区县','销售','联系人','联系方式','行业','背景','备注','商机数','中标金额(万)'];
+  const headers = ['公司名称','关系','区域','地市','区县','规模','标签','联系人','职务','联系方式','负责销售','经营业务','公司背景','商机数','中标金额(万)'];
   const rows = opsChannelsData.map(c => {
     const biz = bizMap[c.id] || { count: 0, wonAmount: 0 };
-    return [c.name,c.tier,c.city,c.district,c.sales,c.contact,c.phone,c.industry,c.background,c.remark,biz.count,biz.wonAmount > 0 ? biz.wonAmount.toFixed(1) : 0].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',');
+    return [c.name,c.relation,c.region,c.city,c.district,c.scale,(c.tags||[]).join('|'),c.contact,c.position,c.phone,c.sales,(c.bizTypes||[]).join('|'),c.background,biz.count,biz.wonAmount>0?biz.wonAmount.toFixed(1):0].map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',');
   });
   const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
