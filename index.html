@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.01-05</title>
+<title>市场活动全流程管理系统 v2026.04.02-03</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2496,7 +2496,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-02';
+const APP_VERSION = 'v2026.04.02-03';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10372,14 +10372,17 @@ function renderOpsLibTable() {
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
           <th style="padding:10px 8px;text-align:center;width:36px"><input type="checkbox" ${allChecked?'checked':''} onchange="toggleOpsBatchAll(this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></th>
-          <th style="padding:10px 12px;text-align:left;min-width:150px">公司名称</th>
-          <th style="padding:10px 10px;text-align:left;min-width:70px">关系</th>
-          <th style="padding:10px 10px;text-align:left;min-width:100px">区域/地市</th>
-          <th style="padding:10px 10px;text-align:left;min-width:70px">规模</th>
+          <th style="padding:10px 10px;text-align:left;min-width:70px">区域</th>
+          <th style="padding:10px 12px;text-align:left;min-width:130px">公司名称</th>
+          <th style="padding:10px 10px;text-align:left;min-width:120px">公司背景</th>
+          <th style="padding:10px 10px;text-align:left;min-width:60px">规模</th>
           <th style="padding:10px 10px;text-align:left;min-width:100px">标签</th>
-          <th style="padding:10px 10px;text-align:left;min-width:80px">联系人/职务</th>
-          <th style="padding:10px 10px;text-align:left;min-width:80px">经营业务</th>
-          <th style="padding:10px 10px;text-align:center;min-width:60px">商机</th>
+          <th style="padding:10px 10px;text-align:left;min-width:70px">联系人</th>
+          <th style="padding:10px 10px;text-align:left;min-width:70px">职务</th>
+          <th style="padding:10px 10px;text-align:left;min-width:70px">关系</th>
+          <th style="padding:10px 10px;text-align:left;min-width:100px">主营业务</th>
+          <th style="padding:10px 10px;text-align:center;min-width:70px">运维记录</th>
+          <th style="padding:10px 10px;text-align:center;min-width:80px">过往中标</th>
           <th style="padding:10px 12px;text-align:left;min-width:90px">操作</th>
         </tr></thead>
         <tbody>
@@ -10390,24 +10393,34 @@ function renderOpsLibTable() {
             const rc = relationColor(c.relation);
             const tagsHtml = (c.tags||[]).map(t=>`<span style="background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:10px;font-size:11px;white-space:nowrap">${t}</span>`).join('');
             const bizHtml = (c.bizTypes||[]).map(t=>`<span style="background:#f0fdf4;color:#059669;padding:1px 6px;border-radius:10px;font-size:11px;white-space:nowrap">${t}</span>`).join('');
+            const maintCount = (c.maintRecords||[]).length;
+            const winCount = (c.winRecords||[]).length;
             return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
               <td style="padding:10px 8px;text-align:center"><input type="checkbox" ${checked} onchange="toggleOpsBatchItem('${c.id}',this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></td>
-              <td style="padding:10px 12px;font-weight:600;font-size:13px">
-                ${c.name||'-'}
-                ${c.background?`<div style="font-size:11px;color:var(--text-muted);margin-top:2px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(c.background||'').replace(/"/g,'&quot;')}">${c.background}</div>`:''}
+              <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${[c.region,c.city,c.district].filter(Boolean).join('<br>')||'-'}</td>
+              <td style="padding:10px 12px;font-weight:600;font-size:13px">${c.name||'-'}</td>
+              <td style="padding:10px 10px;font-size:12px;color:#64748b;max-width:150px">
+                ${c.background?`<div style="overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4" title="${(c.background||'').replace(/"/g,'&quot;')}">${c.background}</div>`:'-'}
               </td>
-              <td style="padding:10px 10px">${c.relation?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${rc.bg};color:${rc.c}">${c.relation}</span>`:'-'}</td>
-              <td style="padding:10px 10px;font-size:12px">${[c.region,c.city,c.district].filter(Boolean).join(' / ')||'-'}</td>
               <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.scale||'-'}</td>
               <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${tagsHtml||'-'}</div></td>
-              <td style="padding:10px 10px;font-size:12px">${c.contact||'-'}${c.position?`<div style="color:var(--text-muted);font-size:11px">${c.position}</div>`:''}</td>
+              <td style="padding:10px 10px;font-size:12px;font-weight:500">${c.contact||'-'}</td>
+              <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.position||'-'}</td>
+              <td style="padding:10px 10px">${c.relation?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${rc.bg};color:${rc.c}">${c.relation}</span>`:'-'}</td>
               <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${bizHtml||'-'}</div></td>
-              <td style="padding:10px 10px;text-align:center">${biz.count > 0 ? `<span style="background:#dbeafe;color:#2563eb;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${biz.count}</span>` : '-'}</td>
+              <td style="padding:10px 10px;text-align:center">
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px" onclick="openOpsChMaintModal('${c.id}')">
+                  ${maintCount > 0 ? `<span style="color:#2563eb;font-weight:600">${maintCount}条</span>` : '添加'}
+                </button>
+              </td>
+              <td style="padding:10px 10px;text-align:center">
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 10px" onclick="openOpsChWinModal('${c.id}')">
+                  ${winCount > 0 ? `<span style="color:#059669;font-weight:600">${winCount}条</span>` : '添加'}
+                </button>
+              </td>
               <td style="padding:10px 12px;white-space:nowrap">
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="editOpsChannel('${c.id}')">编辑</button>
-                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openOpsChMaintModal('${c.id}')">📅 运维</button>
-                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openOpsChWinModal('${c.id}')">🏆 中标</button>
-                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="openOpsBizModal('${c.id}')">+商机</button>
+                <button class="btn btn-primary btn-sm" style="font-size:11px;padding:3px 8px" onclick="openOpsBizModal('${c.id}')">+商机</button>
               </td>
             </tr>`;
           }).join('')}
