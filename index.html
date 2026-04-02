@@ -828,8 +828,55 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         } catch(e) { return { success: false, message: e.message, local: true }; }
     }
 
+    // ===== ops_data.json 渠道运营数据独立存储 =====
+    const OPS_DATA_KEY = 'ops_data.json';
+    function getLocalOpsData() {
+        try {
+            const s = localStorage.getItem('mcm_ops_biz');
+            if (!s) return null; // 本地完全没有数据
+            return {
+                biz: JSON.parse(localStorage.getItem('mcm_ops_biz') || '[]'),
+                tiers: JSON.parse(localStorage.getItem('mcm_ops_tiers') || '[]'),
+                offline: JSON.parse(localStorage.getItem('mcm_ops_offline') || '[]'),
+                channels: JSON.parse(localStorage.getItem('mcm_ops_channels') || '[]')
+            };
+        } catch(e) { return null; }
+    }
+    function saveLocalOpsData(obj) {
+        localStorage.setItem('mcm_ops_biz', JSON.stringify(obj.biz || []));
+        localStorage.setItem('mcm_ops_tiers', JSON.stringify(obj.tiers || []));
+        localStorage.setItem('mcm_ops_offline', JSON.stringify(obj.offline || []));
+        localStorage.setItem('mcm_ops_channels', JSON.stringify(obj.channels || []));
+    }
+    async function loadOpsDataFromCOS() {
+        if (!isConfigured()) return null;
+        try {
+            const req = await buildCosRequest('GET', OPS_DATA_KEY);
+            const res = await fetch(req.url, { method: 'GET', headers: req.headers, signal: AbortSignal.timeout(6000) });
+            if (res.ok) {
+                const d = await res.json();
+                saveLocalOpsData(d);
+                console.log('✅ 渠道运营数据从 COS 加载成功');
+                return d;
+            }
+            if (res.status === 404) return null; // COS 上还没有，用本地
+            throw new Error(`HTTP ${res.status}`);
+        } catch(e) { console.warn('⚠️ COS ops_data.json 获取失败，使用本地:', e.message); return null; }
+    }
+    async function saveOpsDataToCOS(obj) {
+        saveLocalOpsData(obj);
+        if (!isConfigured()) return;
+        try {
+            const dataStr = JSON.stringify(obj, null, 2);
+            const req = await buildCosRequest('PUT', OPS_DATA_KEY, dataStr, 'application/json');
+            const res = await fetch(req.url, { method: 'PUT', headers: req.headers, body: dataStr, signal: AbortSignal.timeout(15000) });
+            if (res.ok) console.log('✅ 渠道运营数据已同步到 COS');
+            else console.warn('⚠️ 渠道运营数据 COS 同步失败:', res.status);
+        } catch(e) { console.warn('⚠️ 渠道运营数据 COS 同步失败:', e.message); }
+    }
+
     if (!window.MarketActivityCOS) window.MarketActivityCOS = {};
-    window.MarketActivityCOS.adapter = { configure, getData, saveData, testConnection, isConfigured, loadConfig, getConfig: () => ({ ...CONFIG }), buildRequest: buildCosRequest, getChannels, saveChannelsData };
+    window.MarketActivityCOS.adapter = { configure, getData, saveData, testConnection, isConfigured, loadConfig, getConfig: () => ({ ...CONFIG }), buildRequest: buildCosRequest, getChannels, saveChannelsData, loadOpsDataFromCOS, saveOpsDataToCOS };
     window.MarketActivityCOS.version = 'inline-1.0.1';
     loadConfig();
     console.log('✅ COS 适配器已就绪，配置状态:', isConfigured());
@@ -1795,7 +1842,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div style="display:flex;gap:4px;margin-bottom:16px;background:#f1f5f9;padding:4px;border-radius:12px;overflow-x:auto">
         <button id="ops-tab-dash" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('dash')">📊 数据看板</button>
         <button id="ops-tab-lib" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('lib')">📦 渠道库管理</button>
-        <button id="ops-tab-biz" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('biz')">💡 商机跟进</button>
       </div>
 
       <!-- Tab0: 数据看板 -->
@@ -1849,29 +1895,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
           </div>
         </div>
         <div id="ops-lib-container" class="card" style="padding:0;overflow:hidden"></div>
-      </div>
-
-      <!-- Tab2: 商机跟进 -->
-      <div id="ops-panel-biz" style="display:none">
-        <div class="card" style="padding:12px 20px;margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <input class="form-control" id="ops-biz-search" placeholder="🔍 搜索渠道名、商机内容…" style="width:260px" oninput="renderOpsBizTable()">
-            <select class="form-control" id="ops-biz-filter-status" onchange="renderOpsBizTable()" style="width:140px">
-              <option value="">全部状态</option>
-              <option value="线索">🔵 线索</option>
-              <option value="跟进中">🟡 跟进中</option>
-              <option value="方案中">🟠 方案中</option>
-              <option value="已中标">🟢 已中标</option>
-              <option value="已丢单">🔴 已丢单</option>
-            </select>
-            <select class="form-control" id="ops-biz-filter-sales" onchange="renderOpsBizTable()" style="width:140px"><option value="">全部销售</option></select>
-            <div style="margin-left:auto;display:flex;gap:8px">
-              <button class="btn btn-primary btn-sm" onclick="openOpsBizModal()">＋ 新增商机</button>
-            </div>
-          </div>
-        </div>
-        <div id="ops-biz-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px"></div>
-        <div id="ops-biz-container" class="card" style="padding:0;overflow:hidden"></div>
       </div>
 
     <!-- 渠道运营弹窗：批量分层 -->
@@ -2592,7 +2615,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-08';
+const APP_VERSION = 'v2026.04.02-09';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10079,14 +10102,15 @@ window.addEventListener('load', checkMobileView);
 window.addEventListener('resize', checkMobileView);
 
 // ===== 渠道运营中心 =====
-// 数据存储：使用 localStorage（独立于渠道名单）
-// ops_biz - 商机数据, ops_tiers - 自定义分层, ops_offline - 线下记录, ops_channels - 渠道库（独立）
+// 数据存储：localStorage + COS 云端同步（ops_data.json）
 var opsBizData = [];
 var opsTierData = [];
 var opsOfflineData = [];
-var opsChannelsData = [];  // 渠道运营中心的独立渠道库
+var opsChannelsData = [];
+var _opsDataLoadedFromCOS = false; // 标记是否已从COS加载过
 
-function loadOpsData() {
+// 从 localStorage 读取（同步，作为后备和初始加载）
+function _loadOpsDataLocal() {
   try { opsBizData = JSON.parse(localStorage.getItem('mcm_ops_biz') || '[]'); } catch(e) { opsBizData = []; }
   try { opsTierData = JSON.parse(localStorage.getItem('mcm_ops_tiers') || '[]'); } catch(e) { opsTierData = []; }
   try { opsOfflineData = JSON.parse(localStorage.getItem('mcm_ops_offline') || '[]'); } catch(e) { opsOfflineData = []; }
@@ -10104,19 +10128,83 @@ function loadOpsData() {
       { id: 't_dev', name: '待开发', color: '#d97706', order: 4 },
       { id: 't_hostile', name: '敌对渠道', color: '#dc2626', order: 5 },
     ];
-    saveOpsTierData();
+    _syncOpsDataToCOS();
   }
 }
-function saveOpsBizData() { try { localStorage.setItem('mcm_ops_biz', JSON.stringify(opsBizData)); } catch(e) {} }
-function saveOpsTierData() { try { localStorage.setItem('mcm_ops_tiers', JSON.stringify(opsTierData)); } catch(e) {} }
-function saveOpsOfflineData() { try { localStorage.setItem('mcm_ops_offline', JSON.stringify(opsOfflineData)); } catch(e) {} }
-function saveOpsChannelsData() { try { localStorage.setItem('mcm_ops_channels', JSON.stringify(opsChannelsData)); } catch(e) {} }
+
+// 异步从 COS 加载（首次进入时调用）
+async function loadOpsDataFromCOS() {
+  if (_opsDataLoadedFromCOS) return;
+  _opsDataLoadedFromCOS = true;
+  const adapter = window.MarketActivityCOS?.adapter;
+  if (!adapter?.loadOpsDataFromCOS) return;
+  try {
+    const cosData = await adapter.loadOpsDataFromCOS();
+    if (cosData) {
+      // 用 COS 数据覆盖本地
+      opsBizData = Array.isArray(cosData.biz) ? cosData.biz : opsBizData;
+      opsTierData = Array.isArray(cosData.tiers) ? cosData.tiers : opsTierData;
+      opsOfflineData = Array.isArray(cosData.offline) ? cosData.offline : opsOfflineData;
+      opsChannelsData = Array.isArray(cosData.channels) ? cosData.channels : opsChannelsData;
+      // 合并策略：COS 数据优先，但保留本地独有的（按 id 去重合并）
+      const localBiz = JSON.parse(localStorage.getItem('mcm_ops_biz') || '[]');
+      const localChannels = JSON.parse(localStorage.getItem('mcm_ops_channels') || '[]');
+      if (localBiz.length > opsBizData.length) {
+        // 本地有更多数据，可能是离线新增的，合并
+        const cosIds = new Set(opsBizData.map(b => b.id));
+        localBiz.forEach(b => { if (!cosIds.has(b.id)) opsBizData.push(b); });
+      }
+      if (localChannels.length > opsChannelsData.length) {
+        const cosIds = new Set(opsChannelsData.map(c => c.id));
+        localChannels.forEach(c => { if (!cosIds.has(c.id)) opsChannelsData.push(c); });
+      }
+      // 写回 localStorage
+      localStorage.setItem('mcm_ops_biz', JSON.stringify(opsBizData));
+      localStorage.setItem('mcm_ops_tiers', JSON.stringify(opsTierData));
+      localStorage.setItem('mcm_ops_offline', JSON.stringify(opsOfflineData));
+      localStorage.setItem('mcm_ops_channels', JSON.stringify(opsChannelsData));
+      console.log('✅ 渠道运营数据已从 COS 同步');
+    }
+  } catch(e) { console.warn('⚠️ 渠道运营数据 COS 加载失败:', e.message); }
+}
+
+// 同步加载（从 localStorage，用于页面渲染）
+function loadOpsData() { _loadOpsDataLocal(); }
+
+// 异步同步到 COS（每次保存后调用）
+function _syncOpsDataToCOS() {
+  const adapter = window.MarketActivityCOS?.adapter;
+  if (!adapter?.saveOpsDataToCOS) return;
+  adapter.saveOpsDataToCOS({
+    biz: opsBizData,
+    tiers: opsTierData,
+    offline: opsOfflineData,
+    channels: opsChannelsData
+  });
+}
+
+function saveOpsBizData() {
+  try { localStorage.setItem('mcm_ops_biz', JSON.stringify(opsBizData)); } catch(e) {}
+  _syncOpsDataToCOS();
+}
+function saveOpsTierData() {
+  try { localStorage.setItem('mcm_ops_tiers', JSON.stringify(opsTierData)); } catch(e) {}
+  _syncOpsDataToCOS();
+}
+function saveOpsOfflineData() {
+  try { localStorage.setItem('mcm_ops_offline', JSON.stringify(opsOfflineData)); } catch(e) {}
+  _syncOpsDataToCOS();
+}
+function saveOpsChannelsData() {
+  try { localStorage.setItem('mcm_ops_channels', JSON.stringify(opsChannelsData)); } catch(e) {}
+  _syncOpsDataToCOS();
+}
 
 // Tab 切换
 var opsBatchSelected = new Set();  // 批量选中渠道ID集合
 
 function switchOpsTab(tab) {
-  ['dash','lib','biz'].forEach(t => {
+  ['dash','lib'].forEach(t => {
     const panel = document.getElementById('ops-panel-' + t);
     const btn = document.getElementById('ops-tab-' + t);
     if (panel) panel.style.display = t === tab ? '' : 'none';
@@ -10127,7 +10215,6 @@ function switchOpsTab(tab) {
   });
   if (tab === 'dash') renderOpsDash();
   if (tab === 'lib') renderOpsLibTable();
-  if (tab === 'biz') renderOpsBizTable();
 }
 
 // 渠道运营页面主入口
@@ -10135,6 +10222,11 @@ function renderChannelOpsPage() {
   loadOpsData();
   renderOpsDash();
   renderOpsLibTable();
+  // 异步从 COS 加载最新数据（首次时）
+  loadOpsDataFromCOS().then(() => {
+    renderOpsDash();
+    renderOpsLibTable();
+  });
 }
 
 // ===== Tab0: 数据看板 =====
@@ -10477,23 +10569,23 @@ function renderOpsLibTable() {
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
           <th style="padding:10px 8px;text-align:center;width:36px"><input type="checkbox" ${allChecked?'checked':''} onchange="toggleOpsBatchAll(this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></th>
-          <th style="padding:10px 10px;text-align:left;min-width:70px">区域</th>
-          <th style="padding:10px 12px;text-align:left;min-width:130px">公司名称</th>
+          <th style="padding:10px 10px;text-align:left;min-width:130px">公司名称</th>
           <th style="padding:10px 10px;text-align:left;min-width:120px">公司背景</th>
           <th style="padding:10px 10px;text-align:left;min-width:60px">规模</th>
           <th style="padding:10px 10px;text-align:left;min-width:100px">标签</th>
           <th style="padding:10px 10px;text-align:left;min-width:70px">联系人</th>
           <th style="padding:10px 10px;text-align:left;min-width:70px">职务</th>
+          <th style="padding:10px 10px;text-align:left;min-width:80px">负责销售</th>
           <th style="padding:10px 10px;text-align:left;min-width:70px">关系</th>
           <th style="padding:10px 10px;text-align:left;min-width:100px">主营业务</th>
+          <th style="padding:10px 10px;text-align:left;min-width:70px">地市</th>
+          <th style="padding:10px 10px;text-align:left;min-width:70px">区县</th>
           <th style="padding:10px 10px;text-align:center;min-width:160px">运维记录</th>
           <th style="padding:10px 10px;text-align:center;min-width:160px">过往中标</th>
-          <th style="padding:10px 10px;text-align:center;min-width:120px">商机</th>
           <th style="padding:10px 12px;text-align:left;min-width:90px">操作</th>
         </tr></thead>
         <tbody>
           ${filtered.map((c,i) => {
-            const biz = bizMap[c.id] || { count: 0, wonAmount: 0 };
             const rowBg = i % 2 === 0 ? '#fff' : '#fafafa';
             const checked = opsBatchSelected.has(c.id) ? 'checked' : '';
             const rc = relationColor(c.relation);
@@ -10509,17 +10601,8 @@ function renderOpsLibTable() {
             const winListHtml = winCount > 0
               ? (c.winRecords||[]).slice(-3).map((r,idx) => `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''};cursor:pointer" onclick="openOpsChWinViewModal('${c.id}')"><span style="color:var(--text-muted)">${r.date||''}</span> <span style="color:#334155">${(r.content||'').replace(/</g,'&lt;')}</span>${r.amount?`<span style="color:#059669;margin-left:4px">${r.amount}万</span>`:''}</div>`).join('') + (winCount > 3 ? `<div style="font-size:11px;color:#059669;cursor:pointer;text-align:right" onclick="openOpsChWinViewModal('${c.id}')">查看全部${winCount}条 →</div>` : '')
               : '<span style="font-size:11px;color:var(--text-muted)">暂无记录</span>';
-            // 商机内联内容（可点击查看全部）
-            const chBizList = opsBizData.filter(b => b.channelId === c.id);
-            const bizListHtml = chBizList.length > 0
-              ? chBizList.slice(-3).map((r,idx) => {
-                  const stColor = r.status==='已中标'?'#059669':r.status==='跟进中'?'#d97706':r.status==='方案中'?'#ea580c':r.status==='已丢单'?'#dc2626':'#3b82f6';
-                  return `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''};cursor:pointer" onclick="openOpsChBizViewModal('${c.id}')"><span style="color:${stColor};font-weight:600">[${r.status||'未知'}]</span> <span style="color:#334155">${(r.desc||'').replace(/</g,'&lt;')}</span>${r.amount?`<span style="color:#059669;margin-left:4px">${r.amount}万</span>`:''}</div>`;
-                }).join('') + (chBizList.length > 3 ? `<div style="font-size:11px;color:#4f46e5;cursor:pointer;text-align:right" onclick="openOpsChBizViewModal('${c.id}')">查看全部${chBizList.length}条 →</div>` : '')
-              : '<span style="font-size:11px;color:var(--text-muted)">暂无商机</span>';
             return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
               <td style="padding:10px 8px;text-align:center"><input type="checkbox" ${checked} onchange="toggleOpsBatchItem('${c.id}',this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></td>
-              <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${[c.region,c.city,c.district].filter(Boolean).join('<br>')||'-'}</td>
               <td style="padding:10px 12px;font-weight:600;font-size:13px">${c.name||'-'}</td>
               <td style="padding:10px 10px;font-size:12px;color:#64748b;max-width:150px">
                 ${c.background?`<div style="overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4" title="${(c.background||'').replace(/"/g,'&quot;')}">${c.background}</div>`:'-'}
@@ -10528,8 +10611,11 @@ function renderOpsLibTable() {
               <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${tagsHtml||'-'}</div></td>
               <td style="padding:10px 10px;font-size:12px;font-weight:500">${c.contact||'-'}</td>
               <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.position||'-'}</td>
+              <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.sales||'-'}</td>
               <td style="padding:10px 10px">${c.relation?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${rc.bg};color:${rc.c}">${c.relation}</span>`:'-'}</td>
               <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${bizHtml||'-'}</div></td>
+              <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.city||'-'}</td>
+              <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.district||'-'}</td>
               <td style="padding:8px 10px;min-width:160px">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 8px;color:#2563eb;border-color:#bfdbfe" onclick="openOpsChMaintModal('${c.id}')">维护</button></div>
                 <div>${maintListHtml}</div>
@@ -10537,10 +10623,6 @@ function renderOpsLibTable() {
               <td style="padding:8px 10px;min-width:160px">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 8px;color:#059669;border-color:#a7f3d0" onclick="openOpsChWinModal('${c.id}')">维护</button></div>
                 <div>${winListHtml}</div>
-              </td>
-              <td style="padding:8px 10px;min-width:140px">
-                <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-primary btn-sm" style="font-size:10px;padding:2px 8px" onclick="openOpsBizModal('${c.id}')">+商机</button></div>
-                <div>${bizListHtml}</div>
               </td>
               <td style="padding:10px 12px;white-space:nowrap">
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="editOpsChannel('${c.id}')">编辑</button>
