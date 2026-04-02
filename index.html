@@ -974,7 +974,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
             <input type="checkbox" value="channelOps" class="user-module-cb" style="width:16px;height:16px">
             <span>🏢 渠道运营</span>
-            <span style="font-size:11px;color:var(--text-muted)">— 渠道库、商机跟进、日常运维（需单独授权）</span>
+            <span style="font-size:11px;color:var(--text-muted)">— 渠道库、商机跟进（需单独授权）</span>
           </label>
           <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
             <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllModules(true)" style="font-size:11px;padding:3px 10px">全选</button>
@@ -1796,7 +1796,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <button id="ops-tab-dash" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('dash')">📊 数据看板</button>
         <button id="ops-tab-lib" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('lib')">📦 渠道库管理</button>
         <button id="ops-tab-biz" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('biz')">💡 商机跟进</button>
-        <button id="ops-tab-daily" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('daily')">🔧 日常运维</button>
       </div>
 
       <!-- Tab0: 数据看板 -->
@@ -1866,34 +1865,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <div id="ops-biz-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px"></div>
         <div id="ops-biz-container" class="card" style="padding:0;overflow:hidden"></div>
       </div>
-
-      <!-- Tab3: 日常运维 -->
-      <div id="ops-panel-daily" style="display:none">
-        <!-- 线上运维：30天未联系提醒 -->
-        <div class="card" style="padding:16px 20px;margin-bottom:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div>
-              <div style="font-size:15px;font-weight:700">📱 线上运维 · 跟进提醒</div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">超过30天未推广记录的渠道，通知对应销售负责人</div>
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="renderOpsDailyPage()">🔄 刷新</button>
-          </div>
-          <div id="ops-daily-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px"></div>
-        </div>
-        <div id="ops-daily-online-container" class="card" style="padding:0;overflow:hidden;margin-bottom:16px"></div>
-        <!-- 线下运维：下单/中标信息 -->
-        <div class="card" style="padding:16px 20px;margin-bottom:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div>
-              <div style="font-size:15px;font-weight:700">🏢 线下运维 · 业务记录</div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">记录下单信息、中标信息等线下业务数据</div>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="openOpsOfflineModal()">＋ 新增记录</button>
-          </div>
-        </div>
-        <div id="ops-daily-offline-container" class="card" style="padding:0;overflow:hidden"></div>
-      </div>
-    </div>
 
     <!-- 渠道运营弹窗：批量分层 -->
     <div class="modal-overlay" id="modal-ops-batch-tier" style="display:none">
@@ -2019,34 +1990,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
             </div>
           </div>
         </div>
-        <!-- 分区：运维记录 -->
-        <div style="padding:12px 0 8px;font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.5px">📅 运维记录</div>
-        <div class="form-group">
-          <label style="display:flex;align-items:center;justify-content:space-between">
-            <span style="font-size:12px;color:var(--text-muted)">记录日常沟通、拜访、推广等运维活动</span>
-            <button type="button" class="btn btn-outline btn-sm" onclick="addOpsChMaintRow()" style="font-size:12px;padding:3px 10px">+ 添加记录</button>
-          </label>
-          <div id="ops-ch-maint-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:6px">
-            <div style="display:grid;grid-template-columns:130px 130px 1fr 120px 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
-              <span>时间</span><span>类型</span><span>内容</span><span>参与人</span><span></span>
-            </div>
-            <div id="ops-ch-maint-rows" style="display:flex;flex-direction:column"></div>
-          </div>
-        </div>
-        <!-- 分区：过往中标记录 -->
-        <div style="padding:12px 0 8px;font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.5px">🏆 过往中标记录</div>
-        <div class="form-group">
-          <label style="display:flex;align-items:center;justify-content:space-between">
-            <span style="font-size:12px;color:var(--text-muted)">记录该渠道过往合作的中标项目</span>
-            <button type="button" class="btn btn-outline btn-sm" onclick="addOpsChWinRow()" style="font-size:12px;padding:3px 10px">+ 添加记录</button>
-          </label>
-          <div id="ops-ch-win-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:6px">
-            <div style="display:grid;grid-template-columns:130px 1fr 100px 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
-              <span>时间</span><span>项目名称/内容</span><span>中标金额(万)</span><span></span>
-            </div>
-            <div id="ops-ch-win-rows" style="display:flex;flex-direction:column"></div>
-          </div>
-        </div>
+        <!-- 分区：运维记录（独立弹窗，此处不展示） -->
         <input type="hidden" id="ops-ch-edit-id">
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="closeModal('modal-ops-channel')">取消</button>
@@ -2106,6 +2050,60 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="closeModal('modal-ops-biz')">取消</button>
           <button class="btn btn-primary" onclick="saveOpsBiz()">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：运维记录（独立弹窗） -->
+    <div class="modal-overlay" id="modal-ops-maint" style="display:none">
+      <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+          <div class="modal-title">📅 运维记录 — <span id="ops-maint-ch-name"></span></div>
+          <button class="modal-close" onclick="closeModal('modal-ops-maint')">×</button>
+        </div>
+        <div style="padding:8px 0 12px">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">记录日常沟通、拜访、推广等运维活动</div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+            <button type="button" class="btn btn-outline btn-sm" onclick="addOpsChMaintRow()" style="font-size:12px;padding:3px 10px">+ 添加记录</button>
+          </div>
+          <div id="ops-ch-maint-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:130px 130px 1fr 120px 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
+              <span>时间</span><span>类型</span><span>内容</span><span>参与人</span><span></span>
+            </div>
+            <div id="ops-ch-maint-rows" style="display:flex;flex-direction:column"></div>
+          </div>
+        </div>
+        <input type="hidden" id="ops-maint-ch-id">
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-maint')">取消</button>
+          <button class="btn btn-primary" onclick="saveOpsChMaintModal()">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：过往中标记录（独立弹窗） -->
+    <div class="modal-overlay" id="modal-ops-win" style="display:none">
+      <div class="modal" style="max-width:640px">
+        <div class="modal-header">
+          <div class="modal-title">🏆 过往中标记录 — <span id="ops-win-ch-name"></span></div>
+          <button class="modal-close" onclick="closeModal('modal-ops-win')">×</button>
+        </div>
+        <div style="padding:8px 0 12px">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">记录该渠道过往合作的中标项目</div>
+          <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+            <button type="button" class="btn btn-outline btn-sm" onclick="addOpsChWinRow()" style="font-size:12px;padding:3px 10px">+ 添加记录</button>
+          </div>
+          <div id="ops-ch-win-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:130px 1fr 100px 36px;background:#f8fafc;padding:6px 10px;font-size:12px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border)">
+              <span>时间</span><span>项目名称/内容</span><span>中标金额(万)</span><span></span>
+            </div>
+            <div id="ops-ch-win-rows" style="display:flex;flex-direction:column"></div>
+          </div>
+        </div>
+        <input type="hidden" id="ops-win-ch-id">
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-win')">取消</button>
+          <button class="btn btn-primary" onclick="saveOpsChWinModal()">保存</button>
         </div>
       </div>
     </div>
@@ -2498,7 +2496,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-01';
+const APP_VERSION = 'v2026.04.02-02';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -3233,7 +3231,7 @@ const pageTitles = {
   usermgmt: ['账户权限','管理各角色登录密码'],
   ai: ['AI 分析助手','由 Kimi 驱动的智能数据分析'],
   feedback: ['渠道反馈汇总','所有活动的渠道跟进反馈一览'],
-  channelOps: ['分销渠道运营中心','渠道库管理、商机跟进、日常运维']
+  channelOps: ['分销渠道运营中心','渠道库管理、商机跟进']
 };
 
 function goto(page) {
@@ -10019,7 +10017,7 @@ function saveOpsChannelsData() { try { localStorage.setItem('mcm_ops_channels', 
 var opsBatchSelected = new Set();  // 批量选中渠道ID集合
 
 function switchOpsTab(tab) {
-  ['dash','lib','biz','daily'].forEach(t => {
+  ['dash','lib','biz'].forEach(t => {
     const panel = document.getElementById('ops-panel-' + t);
     const btn = document.getElementById('ops-tab-' + t);
     if (panel) panel.style.display = t === tab ? '' : 'none';
@@ -10031,7 +10029,6 @@ function switchOpsTab(tab) {
   if (tab === 'dash') renderOpsDash();
   if (tab === 'lib') renderOpsLibTable();
   if (tab === 'biz') renderOpsBizTable();
-  if (tab === 'daily') renderOpsDailyPage();
 }
 
 // 渠道运营页面主入口
@@ -10408,6 +10405,8 @@ function renderOpsLibTable() {
               <td style="padding:10px 10px;text-align:center">${biz.count > 0 ? `<span style="background:#dbeafe;color:#2563eb;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">${biz.count}</span>` : '-'}</td>
               <td style="padding:10px 12px;white-space:nowrap">
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="editOpsChannel('${c.id}')">编辑</button>
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openOpsChMaintModal('${c.id}')">📅 运维</button>
+                <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;margin-right:4px" onclick="openOpsChWinModal('${c.id}')">🏆 中标</button>
                 <button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px" onclick="openOpsBizModal('${c.id}')">+商机</button>
               </td>
             </tr>`;
@@ -10481,13 +10480,9 @@ function batchDeleteOpsChannels() {
 function _initOpsChModal() {
   _opsChTags = [];
   _opsChBizTypes = [];
-  _opsChMaintRows = [];
-  _opsChWinRows = [];
   updateOpsChCityOptions();
   renderOpsChTagList();
   renderOpsChBizList();
-  renderOpsChMaintRows();
-  renderOpsChWinRows();
 }
 
 // 渠道 CRUD（独立库）
@@ -10529,12 +10524,8 @@ function editOpsChannel(chId) {
   document.getElementById('ops-ch-edit-id').value = chId;
   _opsChTags = [...(c.tags||[])];
   _opsChBizTypes = [...(c.bizTypes||[])];
-  _opsChMaintRows = JSON.parse(JSON.stringify(c.maintRecords||[]));
-  _opsChWinRows = JSON.parse(JSON.stringify(c.winRecords||[]));
   renderOpsChTagList();
   renderOpsChBizList();
-  renderOpsChMaintRows();
-  renderOpsChWinRows();
   showModal('modal-ops-channel');
 }
 
@@ -10553,16 +10544,68 @@ function saveOpsChannel() {
   const editId = document.getElementById('ops-ch-edit-id').value;
   if (!name) { alert('请输入公司名称'); return; }
 
-  const channelData = { name, region, city, district, scale, relation, tags: [..._opsChTags], bizTypes: [..._opsChBizTypes], background, contact, position, phone, sales, maintRecords: JSON.parse(JSON.stringify(_opsChMaintRows)), winRecords: JSON.parse(JSON.stringify(_opsChWinRows)), updatedAt: new Date().toISOString() };
+  const channelData = { name, region, city, district, scale, relation, tags: [..._opsChTags], bizTypes: [..._opsChBizTypes], background, contact, position, phone, sales, updatedAt: new Date().toISOString() };
 
   if (editId) {
     const idx = opsChannelsData.findIndex(c => c.id === editId);
-    if (idx !== -1) { opsChannelsData[idx] = { ...opsChannelsData[idx], ...channelData }; }
+    if (idx !== -1) {
+      // 保留已有的运维记录和过往中标记录，不因主弹窗保存而覆盖
+      const keep = { maintRecords: opsChannelsData[idx].maintRecords || [], winRecords: opsChannelsData[idx].winRecords || [] };
+      opsChannelsData[idx] = { ...opsChannelsData[idx], ...channelData, ...keep };
+    }
   } else {
-    opsChannelsData.push({ id: 'opsch_' + Date.now(), ...channelData, createdAt: new Date().toISOString() });
+    opsChannelsData.push({ id: 'opsch_' + Date.now(), ...channelData, maintRecords: [], winRecords: [], createdAt: new Date().toISOString() });
   }
   saveOpsChannelsData();
   closeModal('modal-ops-channel');
+  renderOpsLibTable();
+}
+
+// ===== 独立弹窗：运维记录 =====
+function openOpsChMaintModal(chId) {
+  loadOpsData();
+  const c = opsChannelsData.find(x => x.id === chId);
+  if (!c) return;
+  document.getElementById('ops-maint-ch-name').textContent = c.name || '';
+  document.getElementById('ops-maint-ch-id').value = chId;
+  _opsChMaintRows = JSON.parse(JSON.stringify(c.maintRecords || []));
+  renderOpsChMaintRows();
+  showModal('modal-ops-maint');
+}
+
+function saveOpsChMaintModal() {
+  const chId = document.getElementById('ops-maint-ch-id').value;
+  if (!chId) return;
+  const idx = opsChannelsData.findIndex(c => c.id === chId);
+  if (idx === -1) return;
+  opsChannelsData[idx].maintRecords = JSON.parse(JSON.stringify(_opsChMaintRows));
+  opsChannelsData[idx].updatedAt = new Date().toISOString();
+  saveOpsChannelsData();
+  closeModal('modal-ops-maint');
+  renderOpsLibTable();
+}
+
+// ===== 独立弹窗：过往中标记录 =====
+function openOpsChWinModal(chId) {
+  loadOpsData();
+  const c = opsChannelsData.find(x => x.id === chId);
+  if (!c) return;
+  document.getElementById('ops-win-ch-name').textContent = c.name || '';
+  document.getElementById('ops-win-ch-id').value = chId;
+  _opsChWinRows = JSON.parse(JSON.stringify(c.winRecords || []));
+  renderOpsChWinRows();
+  showModal('modal-ops-win');
+}
+
+function saveOpsChWinModal() {
+  const chId = document.getElementById('ops-win-ch-id').value;
+  if (!chId) return;
+  const idx = opsChannelsData.findIndex(c => c.id === chId);
+  if (idx === -1) return;
+  opsChannelsData[idx].winRecords = JSON.parse(JSON.stringify(_opsChWinRows));
+  opsChannelsData[idx].updatedAt = new Date().toISOString();
+  saveOpsChannelsData();
+  closeModal('modal-ops-win');
   renderOpsLibTable();
 }
 
