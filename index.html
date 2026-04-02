@@ -1839,18 +1839,18 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
     <!-- ===== 渠道运营中心（仅授权用户可见） ===== -->
     <div id="page-channelOps" class="page">
       <!-- Tab 导航 -->
-      <div style="display:flex;gap:4px;margin-bottom:16px;background:#f1f5f9;padding:4px;border-radius:12px;overflow-x:auto">
+      <div style="display:none;gap:4px;margin-bottom:16px;background:#f1f5f9;padding:4px;border-radius:12px;overflow-x:auto">
         <button id="ops-tab-dash" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('dash')">📊 数据看板</button>
         <button id="ops-tab-lib" class="btn" style="flex:1;min-width:0;font-size:13px;font-weight:600;background:transparent;color:var(--text-muted);border:none;border-radius:8px;padding:8px 12px;white-space:nowrap" onclick="switchOpsTab('lib')">📦 渠道库管理</button>
       </div>
 
       <!-- Tab0: 数据看板 -->
-      <div id="ops-panel-dash">
+      <div id="ops-panel-dash" style="display:none">
         <div id="ops-dash-content"></div>
       </div>
 
       <!-- Tab1: 渠道库管理 -->
-      <div id="ops-panel-lib" style="display:none">
+      <div id="ops-panel-lib" style="display:block">
         <!-- 搜索筛选行 -->
         <div class="card" style="padding:12px 20px;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -2616,7 +2616,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-15';
+const APP_VERSION = 'v2026.04.02-16';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
