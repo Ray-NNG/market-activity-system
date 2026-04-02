@@ -849,10 +849,10 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         localStorage.setItem('mcm_ops_channels', JSON.stringify(obj.channels || []));
     }
     async function loadOpsDataFromCOS() {
-        if (!isConfigured()) return null;
         try {
-            const req = await buildCosRequest('GET', OPS_DATA_KEY);
-            const res = await fetch(req.url, { method: 'GET', headers: req.headers, signal: AbortSignal.timeout(6000) });
+            // ops_data.json 是公开可读的，直接用 COS URL 获取（无需签名，避免浏览器兼容问题）
+            const cosUrl = `https://${CONFIG.bucket}.cos.${CONFIG.region}.myqcloud.com/${OPS_DATA_KEY}`;
+            const res = await fetch(cosUrl, { method: 'GET', signal: AbortSignal.timeout(6000) });
             if (res.ok) {
                 const d = await res.json();
                 saveLocalOpsData(d);
@@ -2615,7 +2615,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-10';
+const APP_VERSION = 'v2026.04.02-11';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
