@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.02-05</title>
+<title>市场活动全流程管理系统 v2026.04.02-06</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1805,7 +1805,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
       <!-- Tab1: 渠道库管理 -->
       <div id="ops-panel-lib" style="display:none">
-        <div class="card" style="padding:12px 20px;margin-bottom:16px">
+        <!-- 搜索筛选行 -->
+        <div class="card" style="padding:12px 20px;margin-bottom:12px">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <input class="form-control" id="ops-lib-search" placeholder="🔍 搜索公司名称、联系人…" style="width:220px" oninput="renderOpsLibTable()">
             <select class="form-control" id="ops-lib-filter-region" onchange="renderOpsLibTable()" style="width:120px"><option value="">全部区域</option><option value="广西">广西</option><option value="海南">海南</option></select>
@@ -1827,17 +1828,24 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
               <option value="零散渠道">零散渠道</option>
               <option value="敌对渠道">敌对渠道</option>
             </select>
-            <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <!-- 批量操作区 -->
-              <div id="ops-batch-bar" style="display:none;align-items:center;gap:8px;margin-right:8px">
-                <span style="font-size:12px;color:var(--primary);font-weight:600" id="ops-batch-count">已选 0 项</span>
-                <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="openOpsBatchTierModal()">🏷️ 批量分层</button>
-                <button class="btn btn-outline btn-sm" style="font-size:11px;color:#ef4444;border-color:#fecaca" onclick="batchDeleteOpsChannels()">🗑️ 批量删除</button>
-                <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="clearOpsBatchSelection()">取消</button>
-              </div>
-              <button class="btn btn-outline btn-sm" onclick="exportOpsLibCsv()">📤 导出</button>
-              <button class="btn btn-primary btn-sm" onclick="openOpsAddChannelModal()">＋ 添加渠道</button>
-            </div>
+          </div>
+        </div>
+        <!-- 操作按钮行 -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;padding:0 4px">
+          <button class="btn btn-primary btn-sm" onclick="openOpsAddChannelModal()">＋ 手动添加</button>
+          <button class="btn btn-outline btn-sm" onclick="exportOpsLibCsv()">📤 导出CSV</button>
+          <button class="btn btn-outline btn-sm" onclick="downloadOpsLibTemplate()">📥 下载模板</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('ops-lib-import-file').click()">📄 导入Excel</button>
+          <input type="file" id="ops-lib-import-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importOpsLibExcel(event)">
+          <div style="flex:1"></div>
+          <!-- 批量操作区 -->
+          <div id="ops-batch-bar" style="display:none;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--primary);font-weight:600" id="ops-batch-count">已选 0 项</span>
+            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="openOpsBatchTierModal()">🏷️ 批量分层</button>
+            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="openOpsBatchRelationModal()">🔄 批量修改关系</button>
+            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="openOpsBatchSalesModal()">👤 批量分配销售</button>
+            <button class="btn btn-outline btn-sm" style="font-size:11px;color:#ef4444;border-color:#fecaca" onclick="batchDeleteOpsChannels()">🗑️ 批量删除</button>
+            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="clearOpsBatchSelection()">取消选择</button>
           </div>
         </div>
         <div id="ops-lib-container" class="card" style="padding:0;overflow:hidden"></div>
@@ -1883,6 +1891,52 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="closeModal('modal-ops-batch-tier')">取消</button>
           <button class="btn btn-primary" onclick="saveOpsBatchTier()">确认修改</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：批量修改关系 -->
+    <div class="modal-overlay" id="modal-ops-batch-relation" style="display:none">
+      <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+          <div class="modal-title">🔄 批量修改关系</div>
+          <button class="modal-close" onclick="closeModal('modal-ops-batch-relation')">×</button>
+        </div>
+        <div style="padding:12px 0">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">将为选中的 <strong id="ops-batch-relation-count">0</strong> 个渠道统一设置关系类型：</div>
+          <div class="form-group">
+            <select class="form-control" id="ops-batch-relation-target" style="width:100%">
+              <option value="">请选择关系类型</option>
+              <option value="核心渠道">核心渠道</option>
+              <option value="机会渠道">机会渠道</option>
+              <option value="零散渠道">零散渠道</option>
+              <option value="敌对渠道">敌对渠道</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-batch-relation')">取消</button>
+          <button class="btn btn-primary" onclick="saveOpsBatchRelation()">确认修改</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：批量分配销售 -->
+    <div class="modal-overlay" id="modal-ops-batch-sales" style="display:none">
+      <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+          <div class="modal-title">👤 批量分配销售</div>
+          <button class="modal-close" onclick="closeModal('modal-ops-batch-sales')">×</button>
+        </div>
+        <div style="padding:12px 0">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px">将为选中的 <strong id="ops-batch-sales-count">0</strong> 个渠道统一分配销售负责人：</div>
+          <div class="form-group">
+            <input class="form-control" id="ops-batch-sales-target" placeholder="请输入销售负责人姓名" style="width:100%">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-batch-sales')">取消</button>
+          <button class="btn btn-primary" onclick="saveOpsBatchSales()">确认分配</button>
         </div>
       </div>
     </div>
@@ -2496,7 +2550,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-05';
+const APP_VERSION = 'v2026.04.02-06';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10496,15 +10550,114 @@ function saveOpsBatchTier() {
   alert(`已为 ${count} 个渠道设置分层「${tier}」`);
 }
 
-// 批量删除
-function batchDeleteOpsChannels() {
-  if (!confirm(`确认删除选中的 ${opsBatchSelected.size} 个渠道？关联的商机记录不会被删除。`)) return;
-  opsChannelsData = opsChannelsData.filter(c => !opsBatchSelected.has(c.id));
+// 批量修改关系
+function openOpsBatchRelationModal() {
+  document.getElementById('ops-batch-relation-count').textContent = opsBatchSelected.size;
+  document.getElementById('ops-batch-relation-target').value = '';
+  showModal('modal-ops-batch-relation');
+}
+function saveOpsBatchRelation() {
+  const relation = document.getElementById('ops-batch-relation-target').value;
+  if (!relation) { alert('请选择关系类型'); return; }
+  let count = 0;
+  opsChannelsData.forEach(c => {
+    if (opsBatchSelected.has(c.id)) { c.relation = relation; c.updatedAt = new Date().toISOString(); count++; }
+  });
   saveOpsChannelsData();
-  const deletedCount = opsBatchSelected.size;
+  closeModal('modal-ops-batch-relation');
   opsBatchSelected.clear();
   renderOpsLibTable();
-  alert(`已删除 ${deletedCount} 个渠道`);
+  alert(`已为 ${count} 个渠道设置关系「${relation}」`);
+}
+
+// 批量分配销售
+function openOpsBatchSalesModal() {
+  document.getElementById('ops-batch-sales-count').textContent = opsBatchSelected.size;
+  document.getElementById('ops-batch-sales-target').value = '';
+  showModal('modal-ops-batch-sales');
+}
+function saveOpsBatchSales() {
+  const sales = (document.getElementById('ops-batch-sales-target').value || '').trim();
+  if (!sales) { alert('请输入销售负责人姓名'); return; }
+  let count = 0;
+  opsChannelsData.forEach(c => {
+    if (opsBatchSelected.has(c.id)) { c.sales = sales; c.updatedAt = new Date().toISOString(); count++; }
+  });
+  saveOpsChannelsData();
+  closeModal('modal-ops-batch-sales');
+  opsBatchSelected.clear();
+  renderOpsLibTable();
+  alert(`已为 ${count} 个渠道分配销售「${sales}」`);
+}
+
+// 下载导入模板
+function downloadOpsLibTemplate() {
+  const headers = ['公司名称','关系','区域','地市','区县','规模','标签(用|分隔)','联系人','职务','联系方式','负责销售','经营业务(用|分隔)','公司背景'];
+  const csv = '\uFEFF' + headers.join(',');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '渠道导入模板.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// 导入Excel/CSV
+function importOpsLibExcel(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) { alert('文件为空或只有表头'); return; }
+      function parseCSVLine(line) {
+        const result = [];
+        let current = '', inQuote = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') { inQuote = !inQuote; }
+          else if (ch === ',' && !inQuote) { result.push(current.trim()); current = ''; }
+          else { current += ch; }
+        }
+        result.push(current.trim());
+        return result;
+      }
+      const header = parseCSVLine(lines[0]);
+      const colMap = {};
+      const fieldMap = {'公司名称':'name','关系':'relation','区域':'region','地市':'city','区县':'district','规模':'scale','标签(用|分隔)':'tags','标签':'tags','联系人':'contact','职务':'position','联系方式':'phone','负责销售':'sales','经营业务(用|分隔)':'bizTypes','经营业务':'bizTypes','公司背景':'background'};
+      header.forEach((h, i) => { const f = fieldMap[h]; if (f) colMap[f] = i; });
+      let imported = 0, skipped = 0;
+      loadOpsData();
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        const name = (cols[colMap.name] || '').trim();
+        if (!name) { skipped++; continue; }
+        const existing = opsChannelsData.find(c => c.name === name);
+        if (existing) { skipped++; continue; }
+        opsChannelsData.push({
+          id: 'opsch_' + Date.now() + '_' + i,
+          name, relation: cols[colMap.relation] || '', region: cols[colMap.region] || '',
+          city: cols[colMap.city] || '', district: cols[colMap.district] || '',
+          scale: cols[colMap.scale] || '',
+          tags: (cols[colMap.tags] || '').split('|').map(t=>t.trim()).filter(Boolean),
+          contact: cols[colMap.contact] || '', position: cols[colMap.position] || '',
+          phone: cols[colMap.phone] || '', sales: cols[colMap.sales] || '',
+          bizTypes: (cols[colMap.bizTypes] || '').split('|').map(t=>t.trim()).filter(Boolean),
+          background: cols[colMap.background] || '',
+          maintRecords: [], winRecords: [],
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+        });
+        imported++;
+      }
+      saveOpsChannelsData();
+      renderOpsLibTable();
+      alert(`导入完成：成功 ${imported} 条，跳过（重复/空行）${skipped} 条`);
+    } catch(err) { alert('导入失败：' + err.message); }
+  };
+  reader.readAsText(file, 'utf-8');
 }
 
 // 初始化渠道弹窗的公共逻辑
