@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.02-07</title>
+<title>市场活动全流程管理系统 v2026.04.02-13</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2615,7 +2615,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-12';
+const APP_VERSION = 'v2026.04.02-13';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10624,11 +10624,11 @@ function renderOpsLibTable() {
               <td style="padding:10px 10px">${c.relation?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${rc.bg};color:${rc.c}">${c.relation}</span>`:'-'}</td>
               <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${bizHtml||'-'}</div></td>
               <td style="padding:8px 10px;min-width:160px">
-                <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 8px;color:#2563eb;border-color:#bfdbfe" onclick="openOpsChMaintModal('${c.id}')">维护</button></div>
+                <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 8px;color:#2563eb;border-color:#bfdbfe" onclick="openOpsChMaintModal('${c.id}')">修改</button></div>
                 <div>${maintListHtml}</div>
               </td>
               <td style="padding:8px 10px;min-width:160px">
-                <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 8px;color:#059669;border-color:#a7f3d0" onclick="openOpsChWinModal('${c.id}')">维护</button></div>
+                <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 8px;color:#059669;border-color:#a7f3d0" onclick="openOpsChWinModal('${c.id}')">修改</button></div>
                 <div>${winListHtml}</div>
               </td>
               <td style="padding:10px 12px;white-space:nowrap">
