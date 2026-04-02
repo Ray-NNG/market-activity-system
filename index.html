@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.02-06</title>
+<title>市场活动全流程管理系统 v2026.04.02-07</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2162,6 +2162,48 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       </div>
     </div>
 
+    <!-- 渠道运营弹窗：查看全部运维记录（只读） -->
+    <div class="modal-overlay" id="modal-ops-maint-view" style="display:none">
+      <div class="modal" style="max-width:760px">
+        <div class="modal-header">
+          <div class="modal-title">📋 全部运维记录 — <span id="ops-maint-view-ch-name"></span></div>
+          <button class="modal-close" onclick="closeModal('modal-ops-maint-view')">×</button>
+        </div>
+        <div id="ops-maint-view-content" style="max-height:60vh;overflow-y:auto"></div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-maint-view')">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：查看全部过往中标（只读） -->
+    <div class="modal-overlay" id="modal-ops-win-view" style="display:none">
+      <div class="modal" style="max-width:700px">
+        <div class="modal-header">
+          <div class="modal-title">📋 全部中标记录 — <span id="ops-win-view-ch-name"></span></div>
+          <button class="modal-close" onclick="closeModal('modal-ops-win-view')">×</button>
+        </div>
+        <div id="ops-win-view-content" style="max-height:60vh;overflow-y:auto"></div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-win-view')">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 渠道运营弹窗：查看全部商机（只读，可跳转商机跟进） -->
+    <div class="modal-overlay" id="modal-ops-biz-view" style="display:none">
+      <div class="modal" style="max-width:760px">
+        <div class="modal-header">
+          <div class="modal-title">📋 全部商机 — <span id="ops-biz-view-ch-name"></span></div>
+          <button class="modal-close" onclick="closeModal('modal-ops-biz-view')">×</button>
+        </div>
+        <div id="ops-biz-view-content" style="max-height:60vh;overflow-y:auto"></div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeModal('modal-ops-biz-view')">关闭</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 渠道运营弹窗：新增分层 -->
     <div class="modal-overlay" id="modal-ops-tier" style="display:none">
       <div class="modal" style="max-width:400px">
@@ -2550,7 +2592,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-06';
+const APP_VERSION = 'v2026.04.02-07';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10450,21 +10492,21 @@ function renderOpsLibTable() {
             const bizHtml = (c.bizTypes||[]).map(t=>`<span style="background:#f0fdf4;color:#059669;padding:1px 6px;border-radius:10px;font-size:11px;white-space:nowrap">${t}</span>`).join('');
             const maintCount = (c.maintRecords||[]).length;
             const winCount = (c.winRecords||[]).length;
-            // 运维记录内联内容
+            // 运维记录内联内容（可点击查看全部）
             const maintListHtml = maintCount > 0
-              ? (c.maintRecords||[]).slice(-3).map((r,idx) => `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''}"><span style="color:var(--text-muted)">${r.date||''}</span> ${r.type?`<span style="color:#2563eb;margin:0 2px">[${r.type}]</span>`:''}<span style="color:#334155">${(r.content||'').replace(/</g,'&lt;')}</span></div>`).join('') + (maintCount > 3 ? `<div style="font-size:11px;color:var(--text-muted)">…共${maintCount}条</div>` : '')
+              ? (c.maintRecords||[]).slice(-3).map((r,idx) => `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''};cursor:pointer" onclick="openOpsChMaintViewModal('${c.id}')"><span style="color:var(--text-muted)">${r.date||''}</span> ${r.type?`<span style="color:#2563eb;margin:0 2px">[${r.type}]</span>`:''}<span style="color:#334155">${(r.content||'').replace(/</g,'&lt;')}</span></div>`).join('') + (maintCount > 3 ? `<div style="font-size:11px;color:#2563eb;cursor:pointer;text-align:right" onclick="openOpsChMaintViewModal('${c.id}')">查看全部${maintCount}条 →</div>` : '')
               : '<span style="font-size:11px;color:var(--text-muted)">暂无记录</span>';
-            // 过往中标内联内容
+            // 过往中标内联内容（可点击查看全部）
             const winListHtml = winCount > 0
-              ? (c.winRecords||[]).slice(-3).map((r,idx) => `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''}"><span style="color:var(--text-muted)">${r.date||''}</span> <span style="color:#334155">${(r.content||'').replace(/</g,'&lt;')}</span>${r.amount?`<span style="color:#059669;margin-left:4px">${r.amount}万</span>`:''}</div>`).join('') + (winCount > 3 ? `<div style="font-size:11px;color:var(--text-muted)">…共${winCount}条</div>` : '')
+              ? (c.winRecords||[]).slice(-3).map((r,idx) => `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''};cursor:pointer" onclick="openOpsChWinViewModal('${c.id}')"><span style="color:var(--text-muted)">${r.date||''}</span> <span style="color:#334155">${(r.content||'').replace(/</g,'&lt;')}</span>${r.amount?`<span style="color:#059669;margin-left:4px">${r.amount}万</span>`:''}</div>`).join('') + (winCount > 3 ? `<div style="font-size:11px;color:#059669;cursor:pointer;text-align:right" onclick="openOpsChWinViewModal('${c.id}')">查看全部${winCount}条 →</div>` : '')
               : '<span style="font-size:11px;color:var(--text-muted)">暂无记录</span>';
-            // 商机内联内容
+            // 商机内联内容（可点击查看全部）
             const chBizList = opsBizData.filter(b => b.channelId === c.id);
             const bizListHtml = chBizList.length > 0
               ? chBizList.slice(-3).map((r,idx) => {
-                  const stColor = r.status==='已中标'?'#059669':r.status==='推进中'?'#2563eb':r.status==='已丢单'?'#dc2626':'#64748b';
-                  return `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''}"><span style="color:${stColor};font-weight:600">[${r.status||'未知'}]</span> <span style="color:#334155">${(r.project||'').replace(/</g,'&lt;')}</span>${r.amount?`<span style="color:#059669;margin-left:4px">${r.amount}万</span>`:''}</div>`;
-                }).join('') + (chBizList.length > 3 ? `<div style="font-size:11px;color:var(--text-muted)">…共${chBizList.length}条</div>` : '')
+                  const stColor = r.status==='已中标'?'#059669':r.status==='跟进中'?'#d97706':r.status==='方案中'?'#ea580c':r.status==='已丢单'?'#dc2626':'#3b82f6';
+                  return `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''};cursor:pointer" onclick="openOpsChBizViewModal('${c.id}')"><span style="color:${stColor};font-weight:600">[${r.status||'未知'}]</span> <span style="color:#334155">${(r.desc||'').replace(/</g,'&lt;')}</span>${r.amount?`<span style="color:#059669;margin-left:4px">${r.amount}万</span>`:''}</div>`;
+                }).join('') + (chBizList.length > 3 ? `<div style="font-size:11px;color:#4f46e5;cursor:pointer;text-align:right" onclick="openOpsChBizViewModal('${c.id}')">查看全部${chBizList.length}条 →</div>` : '')
               : '<span style="font-size:11px;color:var(--text-muted)">暂无商机</span>';
             return `<tr style="background:${rowBg};border-bottom:1px solid #f1f5f9">
               <td style="padding:10px 8px;text-align:center"><input type="checkbox" ${checked} onchange="toggleOpsBatchItem('${c.id}',this.checked)" style="width:14px;height:14px;accent-color:var(--primary)"></td>
@@ -10746,6 +10788,126 @@ function saveOpsChannel() {
 }
 
 // ===== 独立弹窗：运维记录 =====
+// ===== 查看全部弹窗（只读） =====
+function openOpsChMaintViewModal(chId) {
+  loadOpsData();
+  const c = opsChannelsData.find(x => x.id === chId);
+  if (!c) return;
+  document.getElementById('ops-maint-view-ch-name').textContent = c.name || '';
+  const records = c.maintRecords || [];
+  const el = document.getElementById('ops-maint-view-content');
+  if (!records.length) {
+    el.innerHTML = '<div style="text-align:center;padding:36px;color:var(--text-muted)">暂无运维记录</div>';
+  } else {
+    el.innerHTML = `
+      <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)">共 ${records.length} 条记录</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
+          <th style="padding:8px 12px;text-align:left">时间</th>
+          <th style="padding:8px 12px;text-align:left">类型</th>
+          <th style="padding:8px 12px;text-align:left">内容</th>
+          <th style="padding:8px 12px;text-align:left">参与人</th>
+        </tr></thead>
+        <tbody>${records.slice().reverse().map((r,i) => `
+          <tr style="background:${i%2===0?'#fff':'#fafafa'};border-bottom:1px solid #f1f5f9">
+            <td style="padding:8px 12px;color:var(--text-muted)">${r.date||'-'}</td>
+            <td style="padding:8px 12px"><span style="background:#eff6ff;color:#2563eb;padding:2px 8px;border-radius:10px;font-size:11px">${r.type||'-'}</span></td>
+            <td style="padding:8px 12px;max-width:320px;white-space:normal;word-break:break-all">${r.content||'-'}</td>
+            <td style="padding:8px 12px;color:var(--text-muted)">${r.person||'-'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+  showModal('modal-ops-maint-view');
+}
+
+function openOpsChWinViewModal(chId) {
+  loadOpsData();
+  const c = opsChannelsData.find(x => x.id === chId);
+  if (!c) return;
+  document.getElementById('ops-win-view-ch-name').textContent = c.name || '';
+  const records = c.winRecords || [];
+  const el = document.getElementById('ops-win-view-content');
+  const totalAmount = records.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+  if (!records.length) {
+    el.innerHTML = '<div style="text-align:center;padding:36px;color:var(--text-muted)">暂无中标记录</div>';
+  } else {
+    el.innerHTML = `
+      <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)">共 ${records.length} 条记录，中标总金额 <strong style="color:#059669">${totalAmount.toFixed(1)} 万</strong></div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
+          <th style="padding:8px 12px;text-align:left">时间</th>
+          <th style="padding:8px 12px;text-align:left">项目名称/内容</th>
+          <th style="padding:8px 12px;text-align:right">中标金额(万)</th>
+        </tr></thead>
+        <tbody>${records.slice().reverse().map((r,i) => `
+          <tr style="background:${i%2===0?'#fff':'#fafafa'};border-bottom:1px solid #f1f5f9">
+            <td style="padding:8px 12px;color:var(--text-muted)">${r.date||'-'}</td>
+            <td style="padding:8px 12px;max-width:350px;white-space:normal;word-break:break-all">${r.content||'-'}</td>
+            <td style="padding:8px 12px;text-align:right;font-weight:600;color:#059669">${r.amount ? parseFloat(r.amount).toFixed(1) : '-'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+  showModal('modal-ops-win-view');
+}
+
+function openOpsChBizViewModal(chId) {
+  loadOpsData();
+  const c = opsChannelsData.find(x => x.id === chId);
+  if (!c) return;
+  document.getElementById('ops-biz-view-ch-name').textContent = c.name || '';
+  const list = opsBizData.filter(b => b.channelId === chId);
+  const el = document.getElementById('ops-biz-view-content');
+  const statusStyle = {
+    '线索': { bg:'#dbeafe', color:'#2563eb' },
+    '跟进中': { bg:'#fef3c7', color:'#d97706' },
+    '方案中': { bg:'#ffedd5', color:'#ea580c' },
+    '已中标': { bg:'#d1fae5', color:'#059669' },
+    '已丢单': { bg:'#fee2e2', color:'#dc2626' },
+  };
+  const totalAmount = list.filter(b=>b.status==='已中标').reduce((s,b) => s+(parseFloat(b.amount)||0), 0);
+  if (!list.length) {
+    el.innerHTML = '<div style="text-align:center;padding:36px;color:var(--text-muted)">暂无商机记录</div>';
+  } else {
+    el.innerHTML = `
+      <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)">共 ${list.length} 条商机，已中标金额 <strong style="color:#059669">${totalAmount.toFixed(1)} 万</strong></div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f8fafc;font-size:12px;color:var(--text-muted);font-weight:600">
+          <th style="padding:8px 12px;text-align:center">状态</th>
+          <th style="padding:8px 12px;text-align:left">商机描述</th>
+          <th style="padding:8px 12px;text-align:right">金额(万)</th>
+          <th style="padding:8px 12px;text-align:left">销售</th>
+          <th style="padding:8px 12px;text-align:left">发现日期</th>
+          <th style="padding:8px 12px;text-align:center">操作</th>
+        </tr></thead>
+        <tbody>${list.map((r,i) => {
+          const ss = statusStyle[r.status] || { bg:'#f1f5f9', color:'#64748b' };
+          return `
+          <tr style="background:${i%2===0?'#fff':'#fafafa'};border-bottom:1px solid #f1f5f9">
+            <td style="padding:8px 12px;text-align:center"><span style="padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${ss.bg};color:${ss.color}">${r.status||'未知'}</span></td>
+            <td style="padding:8px 12px;max-width:220px;white-space:normal;word-break:break-all">${(r.desc||'-').substring(0,60)}${(r.desc||'').length>60?'…':''}</td>
+            <td style="padding:8px 12px;text-align:right;font-weight:600;color:#059669">${r.amount ? parseFloat(r.amount).toFixed(1) : '-'}</td>
+            <td style="padding:8px 12px">${r.sales||'-'}</td>
+            <td style="padding:8px 12px;color:var(--text-muted)">${r.date||'-'}</td>
+            <td style="padding:8px 12px;text-align:center"><button class="btn btn-outline btn-sm" style="font-size:11px;padding:3px 8px;color:#4f46e5;border-color:#c7d2fe" onclick="jumpToBizDetail('${r.id}')">查看详情</button></td>
+          </tr>`;}).join('')}
+        </tbody>
+      </table>`;
+  }
+  showModal('modal-ops-biz-view');
+}
+
+// 从商机查看弹窗跳转到商机跟进tab并打开编辑
+function jumpToBizDetail(bizId) {
+  closeModal('modal-ops-biz-view');
+  // 切换到商机跟进tab
+  switchOpsTab('biz');
+  // 延迟一帧后打开编辑弹窗
+  setTimeout(() => { editOpsBiz(bizId); }, 100);
+}
+
+// ===== 独立弹窗：运维记录编辑 =====
 function openOpsChMaintModal(chId) {
   loadOpsData();
   const c = opsChannelsData.find(x => x.id === chId);
