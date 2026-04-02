@@ -2592,7 +2592,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-07';
+const APP_VERSION = 'v2026.04.02-08';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -8658,14 +8658,17 @@ function renderChannelHistoryRows(rows) {
     <div style="display:grid;grid-template-columns:130px 130px 1fr 120px 36px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9;gap:6px" id="ch-hist-row-${i}">
       <input type="date" class="form-control" style="padding:4px 6px;font-size:13px;border:1px solid var(--border);border-radius:6px"
         value="${r.date||''}" oninput="updateChannelHistoryRow(${i},'date',this.value)">
-      <select class="form-control" style="padding:4px 6px;font-size:13px;border:1px solid var(--border);border-radius:6px"
-        onchange="updateChannelHistoryRow(${i},'type',this.value)">
-        <option value="">-- 类型 --</option>
-        <option value="渠道赋能" ${r.type==='渠道赋能'?'selected':''}>渠道赋能</option>
-        <option value="渠道沙龙" ${r.type==='渠道沙龙'?'selected':''}>渠道沙龙</option>
-        <option value="拜访" ${r.type==='拜访'?'selected':''}>拜访</option>
-        <option value="协同入校" ${r.type==='协同入校'?'selected':''}>协同入校</option>
-      </select>
+      <input type="text" list="ch-history-type-list" class="form-control" style="padding:4px 6px;font-size:13px;border:1px solid var(--border);border-radius:6px"
+        placeholder="选择或输入类型" value="${(r.type||'').replace(/"/g,'&quot;')}" oninput="updateChannelHistoryRow(${i},'type',this.value)">
+      <datalist id="ch-history-type-list">
+        <option value="渠道赋能">
+        <option value="渠道沙龙">
+        <option value="拜访">
+        <option value="协同入校">
+        <option value="电话沟通">
+        <option value="微信跟进">
+        <option value="其他">
+      </datalist>
       <input type="text" class="form-control" style="padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:6px"
         placeholder="活动名称或描述" value="${(r.content||'').replace(/"/g,'&quot;')}" oninput="updateChannelHistoryRow(${i},'content',this.value)">
       <input type="text" class="form-control" style="padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:6px"
@@ -10373,10 +10376,16 @@ function renderOpsChMaintRows() {
   container.innerHTML = _opsChMaintRows.map((r,i) => `
     <div style="display:grid;grid-template-columns:130px 130px 1fr 120px 36px;align-items:center;padding:5px 8px;border-bottom:1px solid #f1f5f9;gap:6px">
       <input type="date" class="form-control" style="padding:4px 6px;font-size:13px" value="${r.date||''}" oninput="_opsChMaintRows[${i}].date=this.value">
-      <select class="form-control" style="padding:4px 6px;font-size:13px" onchange="_opsChMaintRows[${i}].type=this.value">
-        <option value="">-- 类型 --</option>
-        ${['拜访','渠道赋能','渠道沙龙','协同入校','电话沟通','微信跟进','其他'].map(t=>`<option value="${t}" ${r.type===t?'selected':''}>${t}</option>`).join('')}
-      </select>
+      <input type="text" list="ops-maint-type-list" class="form-control" style="padding:4px 6px;font-size:13px" placeholder="选择或输入类型" value="${(r.type||'').replace(/"/g,'&quot;')}" oninput="_opsChMaintRows[${i}].type=this.value">
+      <datalist id="ops-maint-type-list">
+        <option value="拜访">
+        <option value="渠道赋能">
+        <option value="渠道沙龙">
+        <option value="协同入校">
+        <option value="电话沟通">
+        <option value="微信跟进">
+        <option value="其他">
+      </datalist>
       <input type="text" class="form-control" style="padding:4px 8px;font-size:13px" placeholder="内容描述" value="${(r.content||'').replace(/"/g,'&quot;')}" oninput="_opsChMaintRows[${i}].content=this.value">
       <input type="text" class="form-control" style="padding:4px 8px;font-size:13px" placeholder="参与人" value="${(r.person||'').replace(/"/g,'&quot;')}" oninput="_opsChMaintRows[${i}].person=this.value">
       <button type="button" onclick="_opsChMaintRows.splice(${i},1);renderOpsChMaintRows()" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;line-height:1;padding:0 4px">×</button>
