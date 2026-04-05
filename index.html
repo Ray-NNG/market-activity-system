@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.05-21</title>
+<title>市场活动全流程管理系统 v2026.04.05-22</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2628,7 +2628,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.05-21';
+const APP_VERSION = 'v2026.04.05-22';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10790,8 +10790,13 @@ function _doBatchDeleteOpsChannels(ids) {
 
 // 下载导入模板
 function downloadOpsLibTemplate() {
-  const headers = ['公司名称','关系','区域','地市','区县','规模','标签(用|分隔)','联系人','职务','联系方式','负责销售','经营业务(用|分隔)','公司背景'];
-  const csv = '\uFEFF' + headers.join(',');
+  const headers = ['公司名称','关系','区域','地市','区县','规模','标签(用|分隔)','联系人','职务','联系方式','负责销售','经营业务(用|分隔)','公司背景','优势单位','历史中标个数'];
+  const examples = [
+    ['示例公司','一般','广西','南宁','青秀区','中型','IT|教育','张经理','总经理','13800000001','李销售','系统集成|软件开发','合作三年，主要做教育行业','教育系统、政府机关','5'],
+    ['（请在此行开始填写，可删除示例数据）','','','','','','','','','','','','','',''],
+  ];
+  const escape = v => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; };
+  const csv = '\uFEFF' + [headers.map(escape).join(','), ...examples.map(row => row.map(escape).join(','))].join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -10825,7 +10830,7 @@ function importOpsLibExcel(event) {
       }
       const header = parseCSVLine(lines[0]);
       const colMap = {};
-      const fieldMap = {'公司名称':'name','关系':'relation','区域':'region','地市':'city','区县':'district','规模':'scale','标签(用|分隔)':'tags','标签':'tags','联系人':'contact','职务':'position','联系方式':'phone','负责销售':'sales','经营业务(用|分隔)':'bizTypes','经营业务':'bizTypes','公司背景':'background'};
+      const fieldMap = {'公司名称':'name','关系':'relation','区域':'region','地市':'city','区县':'district','规模':'scale','标签(用|分隔)':'tags','标签':'tags','联系人':'contact','职务':'position','联系方式':'phone','负责销售':'sales','经营业务(用|分隔)':'bizTypes','经营业务':'bizTypes','公司背景':'background','优势单位':'advantageUnit','历史中标个数':'historyWinCount'};
       header.forEach((h, i) => { const f = fieldMap[h]; if (f) colMap[f] = i; });
       let imported = 0, skipped = 0;
       loadOpsData();
@@ -10845,6 +10850,8 @@ function importOpsLibExcel(event) {
           phone: cols[colMap.phone] || '', sales: cols[colMap.sales] || '',
           bizTypes: (cols[colMap.bizTypes] || '').split('|').map(t=>t.trim()).filter(Boolean),
           background: cols[colMap.background] || '',
+          advantageUnit: cols[colMap.advantageUnit] || '',
+          historyWinCount: cols[colMap.historyWinCount] !== undefined ? (cols[colMap.historyWinCount] !== '' ? Number(cols[colMap.historyWinCount]) : '') : '',
           maintRecords: [], winRecords: [],
           createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
         });
