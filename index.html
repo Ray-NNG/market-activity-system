@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.05-20</title>
+<title>市场活动全流程管理系统 v2026.04.05-21</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2070,10 +2070,14 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         </div>
         <!-- 分区：优势单位 -->
         <div style="padding:20px 28px 8px;font-size:15px;font-weight:700;color:var(--primary);letter-spacing:.5px">🏆 优势单位</div>
-        <div style="display:grid;grid-template-columns:1fr;gap:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="form-group">
+            <label>历史中标个数</label>
+            <input class="form-control" id="ops-ch-history-win-count" type="number" min="0" placeholder="留空则自动统计过往中标记录数">
+          </div>
           <div class="form-group">
             <label>优势单位</label>
-            <input class="form-control" id="ops-ch-advantage-unit" placeholder="该渠道擅长服务的客户单位、行业或区域，如：教育系统、医院、政府机关…">
+            <input class="form-control" id="ops-ch-advantage-unit" placeholder="如：教育系统、医院、政府机关…">
           </div>
         </div>
         <!-- 分区：运维记录（独立弹窗，此处不展示） -->
@@ -2624,7 +2628,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.05-20';
+const APP_VERSION = 'v2026.04.05-21';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10610,7 +10614,8 @@ function renderOpsLibTable() {
             const tagsHtml = (c.tags||[]).map(t=>`<span style="background:#eff6ff;color:#2563eb;padding:1px 6px;border-radius:10px;font-size:11px;white-space:nowrap">${t}</span>`).join('');
             const bizHtml = (c.bizTypes||[]).map(t=>`<span style="background:#f0fdf4;color:#059669;padding:1px 6px;border-radius:10px;font-size:11px;white-space:nowrap">${t}</span>`).join('');
             const maintCount = (c.maintRecords||[]).length;
-            const winCount = (c.winRecords||[]).length;
+            const winCountAuto = (c.winRecords||[]).length;
+            const winCount = (c.historyWinCount !== undefined && c.historyWinCount !== '') ? Number(c.historyWinCount) : winCountAuto;
             // 运维记录内联内容（可点击查看全部）
             const maintListHtml = maintCount > 0
               ? (c.maintRecords||[]).slice(-3).map((r,idx) => `<div style="font-size:11px;line-height:1.5;padding:2px 0;${idx>0?'border-top:1px dashed #e2e8f0':''};cursor:pointer" onclick="openOpsChMaintViewModal('${c.id}')"><span style="color:var(--text-muted)">${r.date||''}</span> ${r.type?`<span style="color:#2563eb;margin:0 2px">[${r.type}]</span>`:''}<span style="color:#334155">${(r.content||'').replace(/</g,'&lt;')}</span></div>`).join('') + (maintCount > 3 ? `<div style="font-size:11px;color:#2563eb;cursor:pointer;text-align:right" onclick="openOpsChMaintViewModal('${c.id}')">查看全部${maintCount}条 →</div>` : '')
@@ -10878,6 +10883,7 @@ function openOpsAddChannelModal() {
   document.getElementById('ops-ch-sales').value = '';
   document.getElementById('ops-ch-edit-id').value = '';
   if (document.getElementById('ops-ch-advantage-unit')) document.getElementById('ops-ch-advantage-unit').value = '';
+  if (document.getElementById('ops-ch-history-win-count')) document.getElementById('ops-ch-history-win-count').value = '';
   _initOpsChModal();
   showModal('modal-ops-channel');
 }
@@ -10900,6 +10906,7 @@ function editOpsChannel(chId) {
   document.getElementById('ops-ch-phone').value = c.phone || '';
   document.getElementById('ops-ch-sales').value = c.sales || '';
   if (document.getElementById('ops-ch-advantage-unit')) document.getElementById('ops-ch-advantage-unit').value = c.advantageUnit || '';
+  if (document.getElementById('ops-ch-history-win-count')) document.getElementById('ops-ch-history-win-count').value = (c.historyWinCount !== undefined && c.historyWinCount !== '') ? c.historyWinCount : '';
   document.getElementById('ops-ch-edit-id').value = chId;
   _opsChTags = [...(c.tags||[])];
   _opsChBizTypes = [...(c.bizTypes||[])];
@@ -10921,17 +10928,18 @@ function saveOpsChannel() {
   const phone = document.getElementById('ops-ch-phone').value.trim();
   const sales = document.getElementById('ops-ch-sales').value.trim();
   const advantageUnit = document.getElementById('ops-ch-advantage-unit')?.value.trim() || '';
+  const historyWinCountRaw = document.getElementById('ops-ch-history-win-count')?.value.trim();
+  const historyWinCount = historyWinCountRaw !== '' && historyWinCountRaw !== undefined ? Number(historyWinCountRaw) : '';
   const editId = document.getElementById('ops-ch-edit-id').value;
   if (!name) { alert('请输入公司名称'); return; }
 
-  const channelData = { name, region, city, district, scale, relation, tags: [..._opsChTags], bizTypes: [..._opsChBizTypes], background, contact, position, phone, sales, advantageUnit, updatedAt: new Date().toISOString() };
+  const channelData = { name, region, city, district, scale, relation, tags: [..._opsChTags], bizTypes: [..._opsChBizTypes], background, contact, position, phone, sales, advantageUnit, historyWinCount, updatedAt: new Date().toISOString() };
 
   if (editId) {
     const idx = opsChannelsData.findIndex(c => c.id === editId);
     if (idx !== -1) {
       // 保留已有的运维记录和过往中标记录，不因主弹窗保存而覆盖
-      const keep = { maintRecords: opsChannelsData[idx].maintRecords || [], winRecords: opsChannelsData[idx].winRecords || [] };
-      opsChannelsData[idx] = { ...opsChannelsData[idx], ...channelData, ...keep };
+      const keep = { maintRecords: opsChannelsData[idx].maintRecords || [], winRecords: opsChannelsData[idx].winRecords || [] };      opsChannelsData[idx] = { ...opsChannelsData[idx], ...channelData, ...keep };
     }
   } else {
     opsChannelsData.push({ id: 'opsch_' + Date.now(), ...channelData, maintRecords: [], winRecords: [], createdAt: new Date().toISOString() });
