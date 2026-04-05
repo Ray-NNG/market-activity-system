@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.05-19</title>
+<title>市场活动全流程管理系统 v2026.04.05-20</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2068,6 +2068,14 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
             </div>
           </div>
         </div>
+        <!-- 分区：优势单位 -->
+        <div style="padding:20px 28px 8px;font-size:15px;font-weight:700;color:var(--primary);letter-spacing:.5px">🏆 优势单位</div>
+        <div style="display:grid;grid-template-columns:1fr;gap:12px">
+          <div class="form-group">
+            <label>优势单位</label>
+            <input class="form-control" id="ops-ch-advantage-unit" placeholder="该渠道擅长服务的客户单位、行业或区域，如：教育系统、医院、政府机关…">
+          </div>
+        </div>
         <!-- 分区：运维记录（独立弹窗，此处不展示） -->
         <input type="hidden" id="ops-ch-edit-id">
         <div class="modal-footer">
@@ -2616,7 +2624,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.05-19';
+const APP_VERSION = 'v2026.04.05-20';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10588,6 +10596,8 @@ function renderOpsLibTable() {
           <th style="padding:10px 10px;text-align:left;min-width:70px">职务</th>
           <th style="padding:10px 10px;text-align:left;min-width:70px">关系</th>
           <th style="padding:10px 10px;text-align:left;min-width:100px">主营业务</th>
+          <th style="padding:10px 10px;text-align:center;min-width:70px">历史中标个数</th>
+          <th style="padding:10px 10px;text-align:left;min-width:120px">优势单位</th>
           <th style="padding:10px 10px;text-align:center;min-width:160px">运维记录</th>
           <th style="padding:10px 10px;text-align:center;min-width:160px">过往中标</th>
           <th style="padding:10px 12px;text-align:left;min-width:90px">操作</th>
@@ -10624,6 +10634,12 @@ function renderOpsLibTable() {
               <td style="padding:10px 10px;font-size:12px;color:var(--text-muted)">${c.position||'-'}</td>
               <td style="padding:10px 10px">${c.relation?`<span style="padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:${rc.bg};color:${rc.c}">${c.relation}</span>`:'-'}</td>
               <td style="padding:10px 10px"><div style="display:flex;flex-wrap:wrap;gap:3px">${bizHtml||'-'}</div></td>
+              <td style="padding:10px 10px;text-align:center">
+                ${winCount > 0 ? `<span style="display:inline-block;background:#f0fdf4;color:#059669;font-weight:700;font-size:13px;padding:2px 10px;border-radius:20px">${winCount}</span>` : '<span style="font-size:12px;color:var(--text-muted)">-</span>'}
+              </td>
+              <td style="padding:10px 10px;font-size:12px;color:#334155;max-width:150px">
+                ${c.advantageUnit ? `<div style="overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4" title="${(c.advantageUnit||'').replace(/"/g,'&quot;')}">${c.advantageUnit}</div>` : '<span style="color:var(--text-muted)">-</span>'}
+              </td>
               <td style="padding:8px 10px;min-width:160px">
                 <div style="display:flex;justify-content:flex-end;margin-bottom:4px"><button class="btn btn-outline btn-sm" style="font-size:10px;padding:2px 8px;color:#2563eb;border-color:#bfdbfe" onclick="openOpsChMaintModal('${c.id}')">修改</button></div>
                 <div>${maintListHtml}</div>
@@ -10861,6 +10877,7 @@ function openOpsAddChannelModal() {
   document.getElementById('ops-ch-phone').value = '';
   document.getElementById('ops-ch-sales').value = '';
   document.getElementById('ops-ch-edit-id').value = '';
+  if (document.getElementById('ops-ch-advantage-unit')) document.getElementById('ops-ch-advantage-unit').value = '';
   _initOpsChModal();
   showModal('modal-ops-channel');
 }
@@ -10882,6 +10899,7 @@ function editOpsChannel(chId) {
   document.getElementById('ops-ch-position').value = c.position || '';
   document.getElementById('ops-ch-phone').value = c.phone || '';
   document.getElementById('ops-ch-sales').value = c.sales || '';
+  if (document.getElementById('ops-ch-advantage-unit')) document.getElementById('ops-ch-advantage-unit').value = c.advantageUnit || '';
   document.getElementById('ops-ch-edit-id').value = chId;
   _opsChTags = [...(c.tags||[])];
   _opsChBizTypes = [...(c.bizTypes||[])];
@@ -10902,10 +10920,11 @@ function saveOpsChannel() {
   const position = document.getElementById('ops-ch-position').value.trim();
   const phone = document.getElementById('ops-ch-phone').value.trim();
   const sales = document.getElementById('ops-ch-sales').value.trim();
+  const advantageUnit = document.getElementById('ops-ch-advantage-unit')?.value.trim() || '';
   const editId = document.getElementById('ops-ch-edit-id').value;
   if (!name) { alert('请输入公司名称'); return; }
 
-  const channelData = { name, region, city, district, scale, relation, tags: [..._opsChTags], bizTypes: [..._opsChBizTypes], background, contact, position, phone, sales, updatedAt: new Date().toISOString() };
+  const channelData = { name, region, city, district, scale, relation, tags: [..._opsChTags], bizTypes: [..._opsChBizTypes], background, contact, position, phone, sales, advantageUnit, updatedAt: new Date().toISOString() };
 
   if (editId) {
     const idx = opsChannelsData.findIndex(c => c.id === editId);
