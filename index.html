@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.02-18</title>
+<title>市场活动全流程管理系统 v2026.04.05-19</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2616,7 +2616,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.02-18';
+const APP_VERSION = 'v2026.04.05-19';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -10729,6 +10729,42 @@ function saveOpsBatchSales() {
   opsBatchSelected.clear();
   renderOpsLibTable();
   alert(`已为 ${count} 个渠道分配销售「${sales}」`);
+}
+
+// 批量删除渠道
+function batchDeleteOpsChannels() {
+  const ids = [...opsBatchSelected];
+  if (ids.length === 0) return;
+  // 弹出确认框
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay show';
+  overlay.id = 'ops-batch-del-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <div class="modal-title">🗑️ 批量删除确认</div>
+        <button class="modal-close" onclick="document.getElementById('ops-batch-del-overlay').remove()">×</button>
+      </div>
+      <div style="padding:20px 28px">
+        <div style="font-size:15px;margin-bottom:8px">确定要删除选中的 <strong style="color:#ef4444">${ids.length}</strong> 个渠道吗？</div>
+        <div style="font-size:13px;color:var(--text-muted)">删除后数据不可恢复，包括关联的运维记录和中标记录。</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('ops-batch-del-overlay').remove()">取消</button>
+        <button class="btn btn-danger" onclick="document.getElementById('ops-batch-del-overlay').remove();_doBatchDeleteOpsChannels(window._opsBatchDelIds)">确认删除</button>
+      </div>
+    </div>`;
+  window._opsBatchDelIds = ids;
+  document.body.appendChild(overlay);
+}
+function _doBatchDeleteOpsChannels(ids) {
+  const idSet = new Set(ids);
+  opsChannelsData = opsChannelsData.filter(c => !idSet.has(c.id));
+  saveOpsChannelsData();
+  opsBatchSelected.clear();
+  updateOpsBatchBar();
+  renderOpsLibTable();
+  alert(`已成功删除 ${ids.length} 个渠道`);
 }
 
 // 下载导入模板
