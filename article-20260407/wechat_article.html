@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>无界融通提质效 城乡共研向未来</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    background: #f0f4f8;
+    color: #333;
+  }
+  .article-wrapper {
+    max-width: 677px;
+    margin: 0 auto;
+    background: #fff;
+    padding-bottom: 40px;
+  }
+
+  /* ===== 封面区域 ===== */
+  .cover {
+    position: relative;
+    background: linear-gradient(150deg, #0B6ACB 0%, #1E90FF 45%, #0D7FE8 75%, #0A55A8 100%);
+    padding: 0;
+    overflow: hidden;
+  }
+  .cover-img {
+    width: 100%;
+    display: block;
+    max-height: 320px;
+    object-fit: cover;
+    opacity: 0.85;
+  }
+  .cover-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(10,60,120,0.88) 0%, rgba(10,60,120,0.3) 60%, transparent 100%);
+    padding: 24px 24px 30px;
+  }
+  .cover-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.22);
+    border: 1px solid rgba(255,255,255,0.45);
+    color: #fff;
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 3px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .cover-title-cn {
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.4;
+    letter-spacing: 3px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    margin-bottom: 8px;
+  }
+  .cover-title-cn span { display: block; }
+  .cover-subtitle {
+    font-size: 13px;
+    color: rgba(255,255,255,0.88);
+    line-height: 1.7;
+    letter-spacing: 0.5px;
+  }
+  .cover-date {
+    margin-top: 10px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 1px;
+  }
+
+  /* 无图时的纯色封面备用 */
+  .cover-fallback {
+    padding: 52px 28px 58px;
+    text-align: center;
+  }
+  .cover-fallback .cover-tag { display: inline-block; margin-bottom: 22px; }
+  .cover-fallback .cover-title-cn { font-size: 28px; margin-bottom: 10px; }
+  .cover-divider {
+    width: 50px; height: 3px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 2px;
+    margin: 16px auto;
+  }
+
+  /* ===== 正文区域 ===== */
+  .content { padding: 28px 20px 0; }
+
+  /* 导读 */
+  .intro-box {
+    background: linear-gradient(135deg, #EBF4FF, #D6EAFF);
+    border-left: 4px solid #1E90FF;
+    border-radius: 0 8px 8px 0;
+    padding: 15px 18px;
+    margin-bottom: 26px;
+    font-size: 15px;
+    color: #1a5fa8;
+    line-height: 1.9;
+    font-style: italic;
+  }
+  .intro-box::before {
+    content: '导读 · ';
+    font-weight: 700;
+    font-style: normal;
+    color: #0B6ACB;
+  }
+
+  /* 段落 */
+  .para {
+    font-size: 16px;
+    line-height: 1.95;
+    color: #3a3a3a;
+    text-align: justify;
+    margin-bottom: 18px;
+    text-indent: 2em;
+  }
+
+  /* 图片块 */
+  .img-block {
+    margin: 18px 0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(11,106,203,0.12);
+  }
+  .img-block img {
+    width: 100%;
+    display: block;
+  }
+  .img-caption {
+    background: #f5f9ff;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #7a9fc8;
+    text-align: center;
+    letter-spacing: 0.5px;
+    border-top: 1px solid #d4e8ff;
+  }
+
+  /* 双图并排 */
+  .img-row {
+    display: flex;
+    gap: 8px;
+    margin: 18px 0;
+  }
+  .img-row .img-block {
+    flex: 1;
+    margin: 0;
+  }
+  .img-row .img-block img {
+    height: 160px;
+    object-fit: cover;
+  }
+
+  /* 章节标题 */
+  .section-title {
+    display: flex;
+    align-items: center;
+    margin: 32px 0 16px;
+    gap: 12px;
+  }
+  .section-title .icon {
+    width: 36px; height: 36px; min-width: 36px;
+    background: linear-gradient(135deg, #1E90FF, #0B6ACB);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(30,144,255,0.3);
+  }
+  .section-title .title-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0B6ACB;
+    line-height: 1.4;
+  }
+  .section-title .title-text small {
+    display: block;
+    font-size: 12px;
+    color: #90aec8;
+    font-weight: 400;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  /* 亮点卡片 */
+  .highlight-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 18px 0;
+  }
+  .highlight-card {
+    background: #fff;
+    border: 1px solid #c8dff5;
+    border-radius: 10px;
+    padding: 15px 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(11,106,203,0.07);
+  }
+  .highlight-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, #1E90FF, #0B6ACB);
+  }
+  .highlight-card h4 {
+    font-size: 14px;
+    color: #0B6ACB;
+    font-weight: 700;
+    margin-bottom: 7px;
+    margin-left: 4px;
+  }
+  .highlight-card p {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.8;
+    margin-left: 4px;
+  }
+
+  /* 数字成就展示 */
+  .stats-bar {
+    background: linear-gradient(135deg, #0B6ACB, #1E90FF);
+    border-radius: 12px;
+    padding: 22px 16px;
+    margin: 26px 0;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 14px;
+    box-shadow: 0 6px 20px rgba(11,106,203,0.22);
+  }
+  .stat-item { text-align: center; flex: 1; min-width: 70px; }
+  .stat-num {
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .stat-num span { font-size: 14px; font-weight: 500; }
+  .stat-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.82);
+    margin-top: 5px;
+    letter-spacing: 0.5px;
+  }
+
+  /* 引用块 */
+  .quote-block {
+    background: #f2f8ff;
+    border: 1px dashed #5aabff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 20px 0;
+    position: relative;
+  }
+  .quote-block::before {
+    content: '\201C';
+    position: absolute;
+    top: -10px; left: 14px;
+    font-size: 52px;
+    color: #1E90FF;
+    opacity: 0.22;
+    line-height: 1;
+    font-family: Georgia, serif;
+  }
+  .quote-block .quote-text {
+    font-size: 15px;
+    color: #1a5fa8;
+    line-height: 1.9;
+    font-style: italic;
+    padding-top: 6px;
+  }
+  .quote-block .quote-source {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #98b8d5;
+    text-align: right;
+  }
+
+  /* 模式介绍 */
+  .model-steps {
+    margin: 18px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .model-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #f2f8ff;
+    border-radius: 8px;
+    padding: 13px 15px;
+  }
+  .step-badge {
+    min-width: 32px; height: 32px;
+    background: linear-gradient(135deg, #1E90FF, #0B6ACB);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(30,144,255,0.3);
+  }
+  .step-content strong {
+    display: block;
+    font-size: 14px;
+    color: #0B6ACB;
+    margin-bottom: 4px;
+  }
+  .step-content span {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.7;
+  }
+
+  /* 专家点评 */
+  .expert-review {
+    background: linear-gradient(135deg, #f2f8ff, #e5f1ff);
+    border-radius: 12px;
+    padding: 18px;
+    margin: 18px 0;
+    border: 1px solid #c4dcf5;
+  }
+  .expert-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .expert-avatar {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, #1E90FF, #0B6ACB);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(30,144,255,0.3);
+  }
+  .expert-info strong {
+    display: block;
+    font-size: 15px;
+    color: #0B6ACB;
+  }
+  .expert-info small { font-size: 12px; color: #88a5c0; }
+  .expert-text {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.85;
+    text-indent: 2em;
+  }
+
+  /* 分隔线 */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 28px 0;
+    color: #b0cde8;
+    font-size: 13px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c8dff5, transparent);
+  }
+
+  /* 结尾展望 */
+  .ending-box {
+    background: linear-gradient(135deg, #0B6ACB 0%, #1E90FF 100%);
+    border-radius: 14px;
+    padding: 28px 22px;
+    margin: 26px 0 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(11,106,203,0.25);
+  }
+  .ending-box::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .ending-box::after {
+    content: '';
+    position: absolute;
+    bottom: -30px; left: -30px;
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .ending-box .end-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+    position: relative; z-index: 1;
+  }
+  .ending-box .end-text {
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.9;
+    position: relative; z-index: 1;
+  }
+  .ending-box .end-slogan {
+    margin-top: 20px;
+    font-size: 17px;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 3px;
+    position: relative; z-index: 1;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.15);
+  }
+
+  /* 底部 */
+  .footer {
+    padding: 22px 20px 10px;
+    text-align: center;
+    font-size: 13px;
+    color: #aaa;
+    border-top: 1px solid #e8f2ff;
+    margin-top: 30px;
+    line-height: 2;
+  }
+  .footer .org { color: #1E90FF; font-weight: 600; }
+
+  /* 标签 */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 22px 0 8px;
+  }
+  .tag {
+    background: #e8f3ff;
+    border: 1px solid #aad1f7;
+    color: #1E90FF;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* 蓝色分节线装饰 */
+  .section-divider {
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #1E90FF, #0B6ACB, transparent);
+    border-radius: 2px;
+    margin: 26px 0 0;
+    opacity: 0.25;
+  }
+</style>
+</head>
+<body>
+
+<div class="article-wrapper">
+
+  <!-- 封面（带图片） -->
+  <div class="cover">
+    <img class="cover-img" src="img1.jpeg" alt="活动现场封面" onerror="this.style.display='none';document.querySelector('.cover-fallback').style.display='block'">
+    <div class="cover-overlay">
+      <div class="cover-tag">教育数字化 · 城乡协同发展</div>
+      <div class="cover-title-cn">
+        <span>无界融通提质效</span>
+        <span>城乡共研向未来</span>
+      </div>
+      <div class="cover-subtitle">
+        南宁市兴宁区2026年专递课堂建设推进会<br>暨城乡教学共同体研讨活动成功举办
+      </div>
+      <div class="cover-date">📅 2026年4月3日 · 南宁玉蟾路小学</div>
+    </div>
+    <!-- 无图备用 -->
+    <div class="cover-fallback" style="display:none;">
+      <div class="cover-tag">教育数字化 · 城乡协同发展</div>
+      <div class="cover-title-cn">
+        <span>无界融通提质效</span>
+        <span>城乡共研向未来</span>
+      </div>
+      <div class="cover-divider"></div>
+      <div class="cover-subtitle">
+        南宁市兴宁区2026年专递课堂建设推进会<br>暨城乡教学共同体研讨活动成功举办
+      </div>
+      <div class="cover-date">📅 2026年4月3日 · 南宁玉蟾路小学</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- 导读 -->
+    <div class="intro-box">
+      一堂跨越三地的专递课堂、一套可复制的创新教研模式、一场汇聚专家的深度研讨——2026年4月3日，南宁市兴宁区以"无界融通提质效 城乡共研向未来"为主题，书写了教育公平的生动答卷。
+    </div>
+
+    <!-- 活动图：开幕/全景 -->
+    <div class="img-block">
+      <img src="img2.jpeg" alt="活动开幕现场" onerror="this.parentNode.style.display='none'">
+      <div class="img-caption">▲ 推进会暨城乡教学共同体研讨活动开幕现场</div>
+    </div>
+
+    <!-- 活动背景 -->
+    <p class="para">
+      为深入推进专递课堂常态化应用，深化城乡教学共同体建设，2026年4月3日，以"无界融通提质效 城乡共研向未来"为主题的南宁市兴宁区专递课堂建设推进会暨城乡教学共同体研讨活动在玉蟾路小学成功举办。
+    </p>
+    <p class="para">
+      高校专家、教育科研机构代表、技术企业负责人，以及兴宁区专递课堂主讲端、乡村听讲端学校的领导和骨干教师齐聚现场，线上线下同步联动，共探城乡教育协同发展新路径。这也是兴宁区践行<strong>"品学兴宁 品质发展"</strong>理念，打造教育优质均衡"兴宁样板"的又一实践举措。
+    </p>
+
+    <!-- 数字成就 -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-num">13<span>所</span></div>
+        <div class="stat-label">主讲端学校</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">33<span>所</span></div>
+        <div class="stat-label">乡村听讲端学校</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">1060<span>万</span></div>
+        <div class="stat-label">财政建设投入</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">9<span>节</span></div>
+        <div class="stat-label">自治区优秀课例</div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- 第一亮点 -->
+    <div class="section-title">
+      <div class="icon">01</div>
+      <div class="title-text">
+        跨越三地的专递课堂
+        <small>同屏互动 · 优质共享</small>
+      </div>
+    </div>
+
+    <p class="para">
+      活动伊始，一堂跨越三地的专递课堂精彩开讲。南宁市兴望小学韦锦婷老师以《蜡染方巾》为题，通过玉蟾路小学录播教室作为主讲端，同步连线<strong>玉林市北流市石窝镇中心小学、兴宁区三塘镇同仁小学</strong>两个听讲端，借助魔法游戏、互动提问、仿制体验等多元教学策略，让三地学生同屏互动、同步学习。
+    </p>
+
+    <!-- 课堂图片并排 -->
+    <div class="img-row">
+      <div class="img-block">
+        <img src="img3.jpeg" alt="主讲端课堂">
+        <div class="img-caption">▲ 主讲端现场</div>
+      </div>
+      <div class="img-block">
+        <img src="img4.jpeg" alt="听讲端互动">
+        <div class="img-caption">▲ 乡村听讲端连线</div>
+      </div>
+    </div>
+
+    <div class="quote-block">
+      <p class="quote-text">数字化技术成为连接城乡教育的桥梁，让乡村孩子足不出校就能享受和城区孩子同等的优质教学资源，生动诠释了专递课堂"让每个孩子都能享有公平而有质量的教育"的初心。</p>
+      <p class="quote-source">—— 本次活动现场纪实</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- 第二亮点 -->
+    <div class="section-title">
+      <div class="icon">02</div>
+      <div class="title-text">
+        三阶六位一体混合式教研模式
+        <small>创新引领 · 全链条呈现</small>
+      </div>
+    </div>
+
+    <p class="para">
+      作为兴宁区教育数字化转型的核心成果，"三阶六位一体混合式教研模式"在本次活动中迎来全面成果展示。兴望小学教研团队以这节跨区域专递课堂为蓝本，从三个维度完整呈现了模式落地的全流程：
+    </p>
+
+    <!-- 教研模式图示 -->
+    <div class="img-block">
+      <img src="img5.jpeg" alt="三阶六位一体教研模式展示" onerror="this.parentNode.style.display='none'">
+      <div class="img-caption">▲ "三阶六位一体混合式教研模式"全流程展示</div>
+    </div>
+
+    <div class="model-steps">
+      <div class="model-step">
+        <div class="step-badge">课前</div>
+        <div class="step-content">
+          <strong>共研共备</strong>
+          <span>多轮线上协同备课，精心打磨教学设计，城乡教师共同参与、集体智慧碰撞</span>
+        </div>
+      </div>
+      <div class="model-step">
+        <div class="step-badge">课中</div>
+        <div class="step-content">
+          <strong>双师共上</strong>
+          <span>双师协同推进跨区域课堂，三地学生同步互动，技术赋能高效联通</span>
+        </div>
+      </div>
+      <div class="model-step">
+        <div class="step-badge">课后</div>
+        <div class="step-content">
+          <strong>共思共长</strong>
+          <span>三地教师深度复盘反思，形成"教、研、训、赛、展、评"六环节有机融合</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="para">
+      该模式已成为兴宁区推动13所主讲端学校与33所乡村听讲端学校结对共建的核心抓手，依托希沃、科大讯飞等数字化设备，实现美术、音乐、英语等乡村紧缺学科的同步授课全覆盖，为城乡教师协同发展提供了可复制、可推广的实践样本。
+    </p>
+
+    <div class="section-divider"></div>
+
+    <!-- 第三亮点 -->
+    <div class="section-title">
+      <div class="icon">03</div>
+      <div class="title-text">
+        破壁·联动·共生
+        <small>无界融通的城乡教学共同体建构实践</small>
+      </div>
+    </div>
+
+    <!-- 主题发言图 -->
+    <div class="img-block">
+      <img src="img6.jpeg" alt="朱习冰主任专题发言" onerror="this.parentNode.style.display='none'">
+      <div class="img-caption">▲ 兴宁区教研室主任朱习冰作专题发言</div>
+    </div>
+
+    <p class="para">
+      活动现场，兴宁区教育局教研室主任朱习冰作专题发言，系统阐述了无界融通城乡教学共同体建构的三大路径：
+    </p>
+
+    <div class="highlight-cards">
+      <div class="highlight-card">
+        <h4>🏫 打造无边界学习场域</h4>
+        <p>立足城区实际，聚焦现存问题，打破学习空间与形式的局限，让教育资源触手可及，实现优质教育全域覆盖。</p>
+      </div>
+      <div class="highlight-card">
+        <h4>🤝 构建城乡教学共同体</h4>
+        <p>搭建双向交流平台，推动城乡教师协同共进、优势互补，让优质教育资源从"单向输送"转向"双向融通"。</p>
+      </div>
+      <div class="highlight-card">
+        <h4>🔬 创新教研模式</h4>
+        <p>创建"三阶六位一体"混合式教研模式，不断厚实城乡教师专业素养，真正转化为教学生产力，构建"共建、共研、共享、共生"新生态。</p>
+      </div>
+    </div>
+
+    <p class="para">
+      近年来，兴宁区获得各级财政投入<strong>1060万元</strong>资金用于专递课堂建设，实现农村学校网络全覆盖、千兆带宽到校、百兆带宽到班，为专递课堂常态化开展筑牢硬件基础。
+    </p>
+
+    <div class="section-divider"></div>
+
+    <!-- 第四亮点 -->
+    <div class="section-title">
+      <div class="icon">04</div>
+      <div class="title-text">
+        专家精准点评
+        <small>高位引领 · 指明方向</small>
+      </div>
+    </div>
+
+    <!-- 专家点评图 -->
+    <div class="img-block">
+      <img src="img7.jpeg" alt="专家点评现场" onerror="this.parentNode.style.display='none'">
+      <div class="img-caption">▲ 高校专家与教育科研机构代表出席现场点评</div>
+    </div>
+
+    <div class="expert-review">
+      <div class="expert-header">
+        <div class="expert-avatar">龙</div>
+        <div class="expert-info">
+          <strong>龙云</strong>
+          <small>南宁市现代教育技术中心 副主任</small>
+        </div>
+      </div>
+      <p class="expert-text">
+        本节课真正实现思维培养落地，有效破解项目式学习中学生"放手不知做什么"的难题。课堂充分体现跨校协同优势，实现传统美术技法、AI技术与数字人应用的深度结合，促进认知发展与核心素养同步提升。
+      </p>
+    </div>
+
+    <div class="expert-review">
+      <div class="expert-header">
+        <div class="expert-avatar">余</div>
+        <div class="expert-info">
+          <strong>余朝文</strong>
+          <small>南宁师范大学教育科学学院 党委书记</small>
+        </div>
+      </div>
+      <p class="expert-text">
+        本节课在数字人运用、多班级同步互动、全员参与游戏设计等方面亮点突出，教师能够均衡兼顾多个班级的提问与展示，有效推动城乡优质教育资源共享，展现了专递课堂的深厚潜力与创新价值。
+      </p>
+    </div>
+
+    <div class="divider">✦ ✦ ✦</div>
+
+    <!-- 总结 -->
+    <div class="section-title">
+      <div class="icon">✨</div>
+      <div class="title-text">
+        一堂跨域课，联结城乡情
+        <small>从实践到理论的深度对话</small>
+      </div>
+    </div>
+
+    <p class="para">
+      本次活动通过课例展示、团队教研、专题分享、专家点评的全链条呈现，完成了从实践到理论、从技术到教研的深度对话。参会人员深刻感受到，兴宁区的专递课堂正让：
+    </p>
+
+    <div class="highlight-cards">
+      <div class="highlight-card">
+        <h4>📖 课堂：从封闭走向开放</h4>
+        <p>乡村学生与城区学生同堂共学，优质教育资源跨越地理边界自由流动。</p>
+      </div>
+      <div class="highlight-card">
+        <h4>👩‍🏫 教师：从单兵走向协同</h4>
+        <p>一批"带不走"的乡村骨干教师正在崛起，在协同成长中持续提升专业素养。</p>
+      </div>
+      <div class="highlight-card">
+        <h4>🌐 资源：从零散走向整合</h4>
+        <p>真正构建起"无界融通"的城乡教学共同体新生态，实现教育公平的系统性突破。</p>
+      </div>
+    </div>
+
+    <!-- 合影/活动结束图 -->
+    <div class="img-block" style="margin-top:24px;">
+      <img src="img8.jpeg" alt="与会嘉宾合影" onerror="this.parentNode.style.display='none'">
+      <div class="img-caption">▲ 与会领导、专家及参会代表合影留念</div>
+    </div>
+
+    <!-- 结尾展望 -->
+    <div class="ending-box">
+      <div class="end-title">🌱 展望未来</div>
+      <div class="end-text">
+        兴宁区自获评广西基础教育信息化融合创新实验区以来，已累计有<strong style="color:#fff;">9节课例</strong>获评自治区基础教育专递课堂融合创新优秀课例，<strong style="color:#fff;">4项科研成果</strong>获评自治区教育数字化转型优秀案例。<br><br>
+        此次推进会后，兴宁区将以"三阶六位一体混合式教研模式"为核心，进一步扩大专递课堂覆盖范围，深化城乡教学共同体建设，让数字化教育的春风吹遍每一所乡村学校，让教育公平的温度照亮每个孩子的成长之路。
+      </div>
+      <div class="end-slogan">无界 · 融通 · 共生 · 共荣</div>
+    </div>
+
+    <!-- 标签 -->
+    <div class="tags">
+      <span class="tag">#专递课堂</span>
+      <span class="tag">#城乡教育均衡</span>
+      <span class="tag">#教育数字化</span>
+      <span class="tag">#兴宁教育</span>
+      <span class="tag">#城乡教学共同体</span>
+      <span class="tag">#品学兴宁</span>
+    </div>
+
+  </div>
+
+  <!-- 底部 -->
+  <div class="footer">
+    <div class="org">南宁市兴宁区教育局</div>
+    <div>出品 · 2026年4月</div>
+    <div style="margin-top:8px; font-size:12px;">让每个孩子都能享有公平而有质量的教育</div>
+  </div>
+
+</div>
+
+</body>
+</html>
