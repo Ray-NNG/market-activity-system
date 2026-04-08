@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.08-02</title>
+<title>市场活动全流程管理系统 v2026.04.08-03</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -192,6 +192,8 @@
 
   .page { display: none; }
   .page.active { display: block; }
+  /* AI 页面需要 flex 布局才能铺满高度 */
+  #page-ai.active { display: flex; }
 
   /* 活动卡片 */
   .activity-card {
@@ -1224,9 +1226,19 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <div class="card" style="display:flex;flex-direction:column;">
           <div class="card-header">
             <div class="card-title">🗂 活动流程概览</div>
+            <div style="display:flex;gap:8px;align-items:center" id="dash-flow-filters">
+              <button onclick="dashFlowFilter('all',this)" class="dash-flow-tab active" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#3b82f6;color:#fff;cursor:pointer;transition:all .15s">全部</button>
+              <button onclick="dashFlowFilter('策划中',this)" class="dash-flow-tab" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;color:#374151;cursor:pointer;transition:all .15s">策划中</button>
+              <button onclick="dashFlowFilter('执行中',this)" class="dash-flow-tab" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;color:#374151;cursor:pointer;transition:all .15s">执行中</button>
+              <button onclick="dashFlowFilter('复盘中',this)" class="dash-flow-tab" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;color:#374151;cursor:pointer;transition:all .15s">复盘中</button>
+              <button onclick="dashFlowFilter('已完成',this)" class="dash-flow-tab" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;color:#374151;cursor:pointer;transition:all .15s">已完成</button>
+            </div>
           </div>
-          <div style="height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px;" id="dashboard-activity-list">
+          <!-- 表头 -->
+          <div style="display:grid;grid-template-columns:2fr 1fr 80px 120px 70px 60px;gap:0;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:2px;font-size:12px;color:#94a3b8;font-weight:600;letter-spacing:.03em">
+            <span>活动名称</span><span>负责人 · 地市</span><span>状态</span><span>进度</span><span style="text-align:right">预算利用</span><span style="text-align:right">操作</span>
           </div>
+          <div style="max-height:280px;overflow-y:auto;" id="dashboard-activity-list"></div>
         </div>
       </div>
 
@@ -1564,154 +1576,134 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
     </div>
 
     <!-- ===== AI 分析助手 ===== -->
-    <div id="page-ai" class="page">
-      <div style="max-width:900px">
+    <div id="page-ai" class="page" style="display:flex;flex-direction:column;height:calc(100vh - 90px);min-height:0">
 
-        <!-- 顶部标题栏 -->
-        <div class="card" style="margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <span style="font-size:22px">🤖</span>
-            <div style="flex:1;min-width:180px">
-              <div style="font-weight:700;font-size:16px">AI 智能分析 Agent</div>
-              <div style="font-size:12px;color:var(--text-muted)">支持数据分析、生成报告/PPT、上传附件解析</div>
-            </div>
-            <select class="form-control" id="ai-data-scope" style="width:185px;font-size:13px">
-              <option value="fulldata">🌐 全量数据（推荐）</option>
-              <option value="all">📊 全部活动数据</option>
-              <option value="review">🔍 复盘活动数据</option>
-              <option value="budget">💰 预算与支出数据</option>
-              <option value="owner">👤 负责人绩效数据</option>
-              <option value="channels">🤝 渠道管理数据</option>
-              <option value="ops_channels">🏢 分销渠道库</option>
-              <option value="ops_biz">💼 商机跟进数据</option>
-            </select>
-            <button class="btn btn-outline btn-sm" onclick="aiClearChat()" style="font-size:12px">🗑️ 清空对话</button>
+      <!-- 顶部标题栏（窄条，横跨全宽） -->
+      <div class="card" style="margin-bottom:12px;padding:10px 16px;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-size:22px">🤖</span>
+          <div style="flex:1;min-width:180px">
+            <div style="font-weight:700;font-size:16px">AI 智能分析 Agent</div>
+            <div style="font-size:12px;color:var(--text-muted)">支持数据分析、生成报告/PPT、上传附件解析</div>
           </div>
-        </div>
-
-        <!-- Agent 能力面板 -->
-        <div class="card" style="margin-bottom:14px;padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;display:flex;align-items:center;gap:6px">
-            <span>⚡</span> Agent 能力
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
-            <!-- 生成PPT -->
-            <div onclick="aiAgentAction('ppt')" style="cursor:pointer;border:1.5px solid #e0e7ff;border-radius:10px;padding:12px;background:#f5f3ff;transition:all .2s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#eef2ff'" onmouseout="this.style.borderColor='#e0e7ff';this.style.background='#f5f3ff'">
-              <div style="font-size:22px;margin-bottom:6px">📊</div>
-              <div style="font-size:13px;font-weight:600;color:#4338ca">生成 PPT 文件</div>
-              <div style="font-size:11px;color:#6366f1;margin-top:3px">AI生成内容，直接下载.pptx</div>
-            </div>
-            <!-- 生成季报 -->
-            <div onclick="aiAgentAction('report')" style="cursor:pointer;border:1.5px solid #d1fae5;border-radius:10px;padding:12px;background:#f0fdf4;transition:all .2s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#d1fae5';this.style.background='#f0fdf4'">
-              <div style="font-size:22px;margin-bottom:6px">📝</div>
-              <div style="font-size:13px;font-weight:600;color:#15803d">生成季报</div>
-              <div style="font-size:11px;color:#16a34a;margin-top:3px">一键生成活动季度总结报告</div>
-            </div>
-            <!-- 预算分析报告 -->
-            <div onclick="aiAgentAction('budget_report')" style="cursor:pointer;border:1.5px solid #fef3c7;border-radius:10px;padding:12px;background:#fffbeb;transition:all .2s" onmouseover="this.style.borderColor='#f59e0b';this.style.background='#fef9c3'" onmouseout="this.style.borderColor='#fef3c7';this.style.background='#fffbeb'">
-              <div style="font-size:22px;margin-bottom:6px">💰</div>
-              <div style="font-size:13px;font-weight:600;color:#b45309">预算分析报告</div>
-              <div style="font-size:11px;color:#d97706;margin-top:3px">深度分析预算执行与超支情况</div>
-            </div>
-            <!-- 上传附件 -->
-            <div onclick="document.getElementById('ai-file-input').click()" style="cursor:pointer;border:1.5px dashed #cbd5e1;border-radius:10px;padding:12px;background:#f8fafc;transition:all .2s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#f5f3ff'" onmouseout="this.style.borderColor='#cbd5e1';this.style.background='#f8fafc'">
-              <div style="font-size:22px;margin-bottom:6px">📎</div>
-              <div style="font-size:13px;font-weight:600;color:#475569">上传附件分析</div>
-              <div style="font-size:11px;color:#64748b;margin-top:3px">Excel / PDF / 图片，AI提取内容分析</div>
-            </div>
-            <!-- 执行人绩效报告 -->
-            <div onclick="aiAgentAction('owner_report')" style="cursor:pointer;border:1.5px solid #fce7f3;border-radius:10px;padding:12px;background:#fdf4ff;transition:all .2s" onmouseover="this.style.borderColor='#ec4899';this.style.background='#fce7f3'" onmouseout="this.style.borderColor='#fce7f3';this.style.background='#fdf4ff'">
-              <div style="font-size:22px;margin-bottom:6px">👤</div>
-              <div style="font-size:13px;font-weight:600;color:#be185d">负责人绩效报告</div>
-              <div style="font-size:11px;color:#db2777;margin-top:3px">各负责人活动执行能力排名</div>
-            </div>
-            <!-- 改进建议 -->
-            <div onclick="aiAgentAction('improve')" style="cursor:pointer;border:1.5px solid #e0f2fe;border-radius:10px;padding:12px;background:#f0f9ff;transition:all .2s" onmouseover="this.style.borderColor='#0ea5e9';this.style.background='#e0f2fe'" onmouseout="this.style.borderColor='#e0f2fe';this.style.background='#f0f9ff'">
-              <div style="font-size:22px;margin-bottom:6px">💡</div>
-              <div style="font-size:13px;font-weight:600;color:#0369a1">改进建议</div>
-              <div style="font-size:11px;color:#0284c7;margin-top:3px">AI给出下一步优化落地方案</div>
-            </div>
-            <!-- 分销渠道分析 -->
-            <div onclick="aiAgentAction('ops_channel_report')" style="cursor:pointer;border:1.5px solid #dcfce7;border-radius:10px;padding:12px;background:#f0fdf4;transition:all .2s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#dcfce7';this.style.background='#f0fdf4'">
-              <div style="font-size:22px;margin-bottom:6px">🏢</div>
-              <div style="font-size:13px;font-weight:600;color:#15803d">分销渠道分析</div>
-              <div style="font-size:11px;color:#16a34a;margin-top:3px">渠道库画像、中标、优势单位分析</div>
-            </div>
-            <!-- 商机报告 -->
-            <div onclick="aiAgentAction('biz_report')" style="cursor:pointer;border:1.5px solid #fed7aa;border-radius:10px;padding:12px;background:#fff7ed;transition:all .2s" onmouseover="this.style.borderColor='#f97316';this.style.background='#ffedd5'" onmouseout="this.style.borderColor='#fed7aa';this.style.background='#fff7ed'">
-              <div style="font-size:22px;margin-bottom:6px">💼</div>
-              <div style="font-size:13px;font-weight:600;color:#c2410c">商机漏斗报告</div>
-              <div style="font-size:11px;color:#ea580c;margin-top:3px">商机转化率、丢单原因分析</div>
-            </div>
-          </div>
-          <!-- 文件上传input（隐藏） -->
-          <input type="file" id="ai-file-input" style="display:none" accept=".pdf,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg,.docx"
-            onchange="aiHandleFileUpload(this)">
-          <!-- 已上传附件列表 -->
-          <div id="ai-file-list" style="margin-top:10px;display:none">
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">📎 已上传附件：</div>
-            <div id="ai-file-tags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-          </div>
-        </div>
-
-        <!-- 快捷提问 -->
-        <div class="card" style="margin-bottom:14px;padding:12px 16px">
-          <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">💬 快捷提问</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px" id="ai-quick-btns">
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('summary')" style="font-size:12px">📋 活动整体总结</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('budget')" style="font-size:12px">💰 预算执行分析</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('owner')" style="font-size:12px">👤 负责人绩效对比</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('channel')" style="font-size:12px">🤝 渠道效果分析</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('ops_channel_status')" style="font-size:12px">🏢 分销渠道情况</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('biz_status')" style="font-size:12px">💼 商机跟进情况</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('risk')" style="font-size:12px">⚠️ 风险与问题识别</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('suggest')" style="font-size:12px">💡 优化建议</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('roi_rank')" style="font-size:12px">📈 ROI 排行</button>
-            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('city')" style="font-size:12px">🗺️ 地市分布分析</button>
-          </div>
-        </div>
-
-        <!-- 对话区域 -->
-        <div class="card" style="margin-bottom:14px">
-          <div id="ai-chat-messages" style="min-height:320px;max-height:560px;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:12px">
-            <div data-welcome style="text-align:center;color:var(--text-muted);font-size:13px;padding:50px 20px 40px">
-              <div style="font-size:32px;margin-bottom:10px">🤖</div>
-              <div style="font-weight:600;font-size:15px;color:#374151;margin-bottom:8px">AI 智能分析 Agent</div>
-              <div style="line-height:1.8">
-                我可以帮你 <b>分析活动数据</b>、<b>生成 PPT 大纲</b>、<b>撰写季报</b><br>
-                也可以 <b>解析你上传的 Excel / PDF 附件</b> 进行深度分析<br>
-                <span style="font-size:12px;color:#94a3b8">点击上方 Agent 能力卡片，或直接输入问题开始</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 输入区 -->
-        <div class="card" style="padding:14px 16px">
-          <!-- 待发附件预览 -->
-          <div id="ai-pending-files" style="display:none;margin-bottom:10px;padding:8px 10px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
-            <div style="font-size:12px;color:#0369a1;font-weight:600;margin-bottom:4px">📎 附件待分析：</div>
-            <div id="ai-pending-file-tags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-end">
-            <div style="flex:1;position:relative">
-              <textarea id="ai-input" class="form-control" rows="3"
-                placeholder="输入问题，或点击上方 Agent 能力卡片自动生成提示词…"
-                style="flex:1;resize:none;font-size:14px;width:100%;box-sizing:border-box;padding-right:40px"
-                onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){aiSendMessage()}"
-              ></textarea>
-              <button onclick="document.getElementById('ai-file-input').click()" title="上传附件" style="position:absolute;right:8px;bottom:10px;background:none;border:none;cursor:pointer;font-size:18px;color:#64748b;padding:4px">📎</button>
-            </div>
-            <button class="btn btn-primary" onclick="aiSendMessage()" id="ai-send-btn" style="padding:10px 22px;align-self:flex-end;min-height:70px">
-              发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>
-            </button>
-          </div>
-          <div id="ai-config-warning" style="display:none;margin-top:10px;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">
-            ⚠️ 尚未配置 Kimi API Key，请先前往 <a href="javascript:goto('settings')" style="color:var(--primary)">系统设置</a> 完成配置。
-          </div>
+          <select class="form-control" id="ai-data-scope" style="width:185px;font-size:13px">
+            <option value="fulldata">🌐 全量数据（推荐）</option>
+            <option value="all">📊 全部活动数据</option>
+            <option value="review">🔍 复盘活动数据</option>
+            <option value="budget">💰 预算与支出数据</option>
+            <option value="owner">👤 负责人绩效数据</option>
+            <option value="channels">🤝 渠道管理数据</option>
+            <option value="ops_channels">🏢 分销渠道库</option>
+            <option value="ops_biz">💼 商机跟进数据</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="aiClearChat()" style="font-size:12px">🗑️ 清空对话</button>
         </div>
       </div>
-    </div>
+
+      <!-- 主体：左侧工具面板 + 右侧聊天（撑满剩余高度） -->
+      <div style="flex:1;min-height:0;display:flex;gap:12px">
+
+        <!-- 左侧面板：Agent能力 + 快捷问题（固定宽度，可滚动） -->
+        <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto">
+
+          <!-- Agent 能力 -->
+          <div class="card" style="padding:12px">
+            <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span>⚡</span> Agent 能力</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+              <div onclick="aiAgentAction('ppt')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #e0e7ff;background:#f5f3ff;transition:all .15s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#eef2ff'" onmouseout="this.style.borderColor='#e0e7ff';this.style.background='#f5f3ff'">
+                <span style="font-size:18px">📊</span><div><div style="font-size:12px;font-weight:600;color:#4338ca">生成 PPT 文件</div><div style="font-size:11px;color:#6366f1">AI生成内容，直接下载.pptx</div></div>
+              </div>
+              <div onclick="aiAgentAction('report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #d1fae5;background:#f0fdf4;transition:all .15s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#d1fae5';this.style.background='#f0fdf4'">
+                <span style="font-size:18px">📝</span><div><div style="font-size:12px;font-weight:600;color:#15803d">生成季报</div><div style="font-size:11px;color:#16a34a">一键生成活动季度总结报告</div></div>
+              </div>
+              <div onclick="aiAgentAction('budget_report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #fef3c7;background:#fffbeb;transition:all .15s" onmouseover="this.style.borderColor='#f59e0b';this.style.background='#fef9c3'" onmouseout="this.style.borderColor='#fef3c7';this.style.background='#fffbeb'">
+                <span style="font-size:18px">💰</span><div><div style="font-size:12px;font-weight:600;color:#b45309">预算分析报告</div><div style="font-size:11px;color:#d97706">深度分析预算执行与超支情况</div></div>
+              </div>
+              <div onclick="document.getElementById('ai-file-input').click()" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px dashed #cbd5e1;background:#f8fafc;transition:all .15s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#f5f3ff'" onmouseout="this.style.borderColor='#cbd5e1';this.style.background='#f8fafc'">
+                <span style="font-size:18px">📎</span><div><div style="font-size:12px;font-weight:600;color:#475569">上传附件分析</div><div style="font-size:11px;color:#64748b">Excel/PDF/图片，AI提取分析</div></div>
+              </div>
+              <div onclick="aiAgentAction('owner_report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #fce7f3;background:#fdf4ff;transition:all .15s" onmouseover="this.style.borderColor='#ec4899';this.style.background='#fce7f3'" onmouseout="this.style.borderColor='#fce7f3';this.style.background='#fdf4ff'">
+                <span style="font-size:18px">👤</span><div><div style="font-size:12px;font-weight:600;color:#be185d">负责人绩效报告</div><div style="font-size:11px;color:#db2777">各负责人活动执行能力排名</div></div>
+              </div>
+              <div onclick="aiAgentAction('improve')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #e0f2fe;background:#f0f9ff;transition:all .15s" onmouseover="this.style.borderColor='#0ea5e9';this.style.background='#e0f2fe'" onmouseout="this.style.borderColor='#e0f2fe';this.style.background='#f0f9ff'">
+                <span style="font-size:18px">💡</span><div><div style="font-size:12px;font-weight:600;color:#0369a1">改进建议</div><div style="font-size:11px;color:#0284c7">AI给出下一步优化落地方案</div></div>
+              </div>
+              <div onclick="aiAgentAction('ops_channel_report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #dcfce7;background:#f0fdf4;transition:all .15s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#dcfce7';this.style.background='#f0fdf4'">
+                <span style="font-size:18px">🏢</span><div><div style="font-size:12px;font-weight:600;color:#15803d">分销渠道分析</div><div style="font-size:11px;color:#16a34a">渠道库画像、中标、优势单位分析</div></div>
+              </div>
+              <div onclick="aiAgentAction('biz_report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #fed7aa;background:#fff7ed;transition:all .15s" onmouseover="this.style.borderColor='#f97316';this.style.background='#ffedd5'" onmouseout="this.style.borderColor='#fed7aa';this.style.background='#fff7ed'">
+                <span style="font-size:18px">💼</span><div><div style="font-size:12px;font-weight:600;color:#c2410c">商机漏斗报告</div><div style="font-size:11px;color:#ea580c">商机转化率、丢单原因分析</div></div>
+              </div>
+            </div>
+            <!-- 文件上传input（隐藏） -->
+            <input type="file" id="ai-file-input" style="display:none" accept=".pdf,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg,.docx" onchange="aiHandleFileUpload(this)">
+            <!-- 已上传附件列表 -->
+            <div id="ai-file-list" style="margin-top:10px;display:none">
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">📎 已上传附件：</div>
+              <div id="ai-file-tags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+            </div>
+          </div>
+
+          <!-- 快捷提问 -->
+          <div class="card" style="padding:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">💬 快捷提问</div>
+            <div style="display:flex;flex-direction:column;gap:5px" id="ai-quick-btns">
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('summary')" style="font-size:12px;text-align:left;justify-content:flex-start">📋 活动整体总结</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('budget')" style="font-size:12px;text-align:left;justify-content:flex-start">💰 预算执行分析</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('owner')" style="font-size:12px;text-align:left;justify-content:flex-start">👤 负责人绩效对比</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('channel')" style="font-size:12px;text-align:left;justify-content:flex-start">🤝 渠道效果分析</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('ops_channel_status')" style="font-size:12px;text-align:left;justify-content:flex-start">🏢 分销渠道情况</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('biz_status')" style="font-size:12px;text-align:left;justify-content:flex-start">💼 商机跟进情况</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('risk')" style="font-size:12px;text-align:left;justify-content:flex-start">⚠️ 风险与问题识别</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('suggest')" style="font-size:12px;text-align:left;justify-content:flex-start">💡 优化建议</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('roi_rank')" style="font-size:12px;text-align:left;justify-content:flex-start">📈 ROI 排行</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('city')" style="font-size:12px;text-align:left;justify-content:flex-start">🗺️ 地市分布分析</button>
+            </div>
+          </div>
+
+        </div><!-- /左侧面板 -->
+
+        <!-- 右侧：聊天区（铺满剩余空间） -->
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0">
+
+          <!-- 对话消息区（撑满剩余高度） -->
+          <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column;padding:0;overflow:hidden">
+            <div id="ai-chat-messages" style="flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
+              <div data-welcome style="text-align:center;color:var(--text-muted);font-size:13px;padding:60px 20px 40px">
+                <div style="font-size:36px;margin-bottom:12px">🤖</div>
+                <div style="font-weight:700;font-size:16px;color:#374151;margin-bottom:10px">AI 智能分析 Agent</div>
+                <div style="line-height:2;color:#64748b">
+                  我可以帮你 <b style="color:#374151">分析活动数据</b>、<b style="color:#374151">生成 PPT 文件</b>、<b style="color:#374151">撰写季报</b><br>
+                  也可以 <b style="color:#374151">解析上传的 Excel / PDF 附件</b> 进行深度分析<br>
+                  <span style="font-size:12px;color:#94a3b8">点击左侧 Agent 能力卡片，或直接输入问题开始 →</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 输入区（固定在底部） -->
+            <div style="border-top:1px solid #e2e8f0;padding:12px 16px;flex-shrink:0">
+              <!-- 待发附件预览（新结构内的，原先的可保留空） -->
+              <div style="display:flex;gap:10px;align-items:flex-end">
+                <div style="flex:1;position:relative">
+                  <textarea id="ai-input" class="form-control" rows="3"
+                    placeholder="输入问题，或点击左侧 Agent 能力卡片自动生成提示词…"
+                    style="flex:1;resize:none;font-size:14px;width:100%;box-sizing:border-box;padding-right:40px"
+                    onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){aiSendMessage()}"
+                  ></textarea>
+                  <button onclick="document.getElementById('ai-file-input').click()" title="上传附件" style="position:absolute;right:8px;bottom:10px;background:none;border:none;cursor:pointer;font-size:18px;color:#64748b;padding:4px">📎</button>
+                </div>
+                <button class="btn btn-primary" onclick="aiSendMessage()" id="ai-send-btn" style="padding:10px 22px;align-self:flex-end;min-height:70px">
+                  发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>
+                </button>
+              </div>
+              <div id="ai-config-warning" style="display:none;margin-top:10px;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">
+                ⚠️ 尚未配置 Kimi API Key，请先前往 <a href="javascript:goto('settings')" style="color:var(--primary)">系统设置</a> 完成配置。
+              </div>
+            </div>
+          </div><!-- /右侧聊天区 -->
+
+        </div><!-- /主体两栏 -->
+    </div><!-- /page-ai -->
 
     <!-- ===== 负责人分析 ===== -->
     <div id="page-owner" class="page">
@@ -2647,7 +2639,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.08-02';
+const APP_VERSION = 'v2026.04.08-03';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -3428,26 +3420,9 @@ function renderDashboard() {
   // 动态计算预算数据
   updateBudgetStats();
 
-  // 活动列表
-  const list = document.getElementById('dashboard-activity-list');
-  list.innerHTML = activities.map(a => `
-    <div class="dashboard-phase" style="cursor:pointer" onclick="openDetail('${a.id}')">
-      <div class="phase-icon ${a.status==='策划中'?'plan':a.status==='执行中'?'exec':'review'}">
-        ${a.status==='策划中'?'📋':a.status==='执行中'?'⚡':a.status==='复盘中'?'🔍':'✅'}
-      </div>
-      <div style="flex:1;min-width:0">
-        <div class="flex-between">
-          <div class="fw-600" style="font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">${a.name}</div>
-          ${statusBadge(a.status)}
-        </div>
-        <div class="mt-8">
-          <div class="progress-wrap"><div class="progress-bar ${a.status==='执行中'?'progress-warning':a.progress===100?'progress-success':'progress-primary'}" style="width:${a.progress}%"></div></div>
-        </div>
-        <div class="text-sm color-text-muted mt-8" style="color:var(--text-muted)">${a.owner} · ${a.start} ~ ${a.end}</div>
-      </div>
-      <button class="btn-delete" onclick="event.stopPropagation();confirmDeleteActivity('${a.id}')" title="删除活动">🗑️</button>
-    </div>
-  `).join('');
+  // 活动流程概览 - 表格行模式
+  window._dashActivities = activities; // 供筛选使用
+  _renderDashActivityRows('all');
 
   // 日历
   renderCalendar();
@@ -3484,6 +3459,50 @@ function renderDashboard() {
         </div>
       </div>
     `}).join('');
+}
+
+// ===== 仪表盘活动流程概览 - 行渲染 =====
+function _renderDashActivityRows(filter) {
+  const list = document.getElementById('dashboard-activity-list');
+  if (!list) return;
+  const src = window._dashActivities || activities;
+  const filtered = filter === 'all' ? src : src.filter(a => a.status === filter);
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:30px;font-size:13px">暂无活动数据</div>';
+    return;
+  }
+  const statusColor = { '策划中':'#3b82f6','执行中':'#f59e0b','复盘中':'#8b5cf6','已完成':'#10b981','已归档':'#94a3b8' };
+  const statusDot   = { '策划中':'●','执行中':'▶','复盘中':'◈','已完成':'✓','已归档':'◌' };
+  list.innerHTML = filtered.map((a, i) => {
+    const progColor = a.status==='已完成' ? '#10b981' : a.status==='执行中' ? '#f59e0b' : '#3b82f6';
+    const budgetRate = (a.budget > 0) ? Math.round((a.spent||0) / a.budget * 100) : null;
+    const rateColor = budgetRate === null ? '#94a3b8' : budgetRate > 100 ? '#ef4444' : budgetRate > 85 ? '#f59e0b' : '#10b981';
+    return `
+    <div onclick="openDetail('${a.id}')" style="display:grid;grid-template-columns:2fr 1fr 80px 120px 70px 60px;gap:0;align-items:center;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background .12s;font-size:13px;${i%2===1?'background:#fafbfc':''}" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='${i%2===1?'#fafbfc':'transparent'}'">
+      <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px" title="${a.name}">${a.name}</div>
+      <div style="color:#64748b;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.owner||'—'} · ${a.city||'—'}</div>
+      <div><span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:${statusColor[a.status]||'#64748b'};background:${statusColor[a.status]||'#94a3b8'}18;padding:2px 7px;border-radius:20px">${statusDot[a.status]||'○'} ${a.status}</span></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden"><div style="height:100%;width:${a.progress||0}%;background:${progColor};border-radius:3px;transition:width .3s"></div></div>
+        <span style="font-size:11px;color:${progColor};font-weight:600;min-width:28px;text-align:right">${a.progress||0}%</span>
+      </div>
+      <div style="text-align:right;font-size:12px;font-weight:600;color:${rateColor}">${budgetRate !== null ? budgetRate+'%' : '—'}</div>
+      <div style="text-align:right"><button onclick="event.stopPropagation();confirmDeleteActivity('${a.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:#cbd5e1;padding:2px 4px;border-radius:4px" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'" title="删除">🗑</button></div>
+    </div>`;
+  }).join('');
+}
+
+function dashFlowFilter(status, btn) {
+  // 更新按钮高亮
+  document.querySelectorAll('.dash-flow-tab').forEach(b => {
+    b.style.background = '#fff';
+    b.style.color = '#374151';
+    b.style.borderColor = '#e2e8f0';
+  });
+  btn.style.background = '#3b82f6';
+  btn.style.color = '#fff';
+  btn.style.borderColor = '#3b82f6';
+  _renderDashActivityRows(status);
 }
 
 // ===== 策划页 =====
