@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.05-22</title>
+<title>市场活动全流程管理系统 v2026.04.08-01</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -883,6 +883,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
     setTimeout(() => window.dispatchEvent(new CustomEvent('cos-adapter-ready', { detail: { configured: isConfigured() } })), 100);
 })();
   </script>
+  <!-- PptxGenJS: 前端直接生成 .pptx 文件 -->
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 </head>
 <body>
 
@@ -1573,12 +1575,15 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
               <div style="font-weight:700;font-size:16px">AI 智能分析 Agent</div>
               <div style="font-size:12px;color:var(--text-muted)">支持数据分析、生成报告/PPT、上传附件解析</div>
             </div>
-            <select class="form-control" id="ai-data-scope" style="width:170px;font-size:13px">
+            <select class="form-control" id="ai-data-scope" style="width:185px;font-size:13px">
+              <option value="fulldata">🌐 全量数据（推荐）</option>
               <option value="all">📊 全部活动数据</option>
               <option value="review">🔍 复盘活动数据</option>
-              <option value="channels">🤝 渠道数据</option>
               <option value="budget">💰 预算与支出数据</option>
               <option value="owner">👤 负责人绩效数据</option>
+              <option value="channels">🤝 渠道管理数据</option>
+              <option value="ops_channels">🏢 分销渠道库</option>
+              <option value="ops_biz">💼 商机跟进数据</option>
             </select>
             <button class="btn btn-outline btn-sm" onclick="aiClearChat()" style="font-size:12px">🗑️ 清空对话</button>
           </div>
@@ -1593,8 +1598,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
             <!-- 生成PPT -->
             <div onclick="aiAgentAction('ppt')" style="cursor:pointer;border:1.5px solid #e0e7ff;border-radius:10px;padding:12px;background:#f5f3ff;transition:all .2s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#eef2ff'" onmouseout="this.style.borderColor='#e0e7ff';this.style.background='#f5f3ff'">
               <div style="font-size:22px;margin-bottom:6px">📊</div>
-              <div style="font-size:13px;font-weight:600;color:#4338ca">生成 PPT 大纲</div>
-              <div style="font-size:11px;color:#6366f1;margin-top:3px">自动生成可下载的活动复盘PPT</div>
+              <div style="font-size:13px;font-weight:600;color:#4338ca">生成 PPT 文件</div>
+              <div style="font-size:11px;color:#6366f1;margin-top:3px">AI生成内容，直接下载.pptx</div>
             </div>
             <!-- 生成季报 -->
             <div onclick="aiAgentAction('report')" style="cursor:pointer;border:1.5px solid #d1fae5;border-radius:10px;padding:12px;background:#f0fdf4;transition:all .2s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#d1fae5';this.style.background='#f0fdf4'">
@@ -1626,6 +1631,18 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
               <div style="font-size:13px;font-weight:600;color:#0369a1">改进建议</div>
               <div style="font-size:11px;color:#0284c7;margin-top:3px">AI给出下一步优化落地方案</div>
             </div>
+            <!-- 分销渠道分析 -->
+            <div onclick="aiAgentAction('ops_channel_report')" style="cursor:pointer;border:1.5px solid #dcfce7;border-radius:10px;padding:12px;background:#f0fdf4;transition:all .2s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#dcfce7';this.style.background='#f0fdf4'">
+              <div style="font-size:22px;margin-bottom:6px">🏢</div>
+              <div style="font-size:13px;font-weight:600;color:#15803d">分销渠道分析</div>
+              <div style="font-size:11px;color:#16a34a;margin-top:3px">渠道库画像、中标、优势单位分析</div>
+            </div>
+            <!-- 商机报告 -->
+            <div onclick="aiAgentAction('biz_report')" style="cursor:pointer;border:1.5px solid #fed7aa;border-radius:10px;padding:12px;background:#fff7ed;transition:all .2s" onmouseover="this.style.borderColor='#f97316';this.style.background='#ffedd5'" onmouseout="this.style.borderColor='#fed7aa';this.style.background='#fff7ed'">
+              <div style="font-size:22px;margin-bottom:6px">💼</div>
+              <div style="font-size:13px;font-weight:600;color:#c2410c">商机漏斗报告</div>
+              <div style="font-size:11px;color:#ea580c;margin-top:3px">商机转化率、丢单原因分析</div>
+            </div>
           </div>
           <!-- 文件上传input（隐藏） -->
           <input type="file" id="ai-file-input" style="display:none" accept=".pdf,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg,.docx"
@@ -1645,6 +1662,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('budget')" style="font-size:12px">💰 预算执行分析</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('owner')" style="font-size:12px">👤 负责人绩效对比</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('channel')" style="font-size:12px">🤝 渠道效果分析</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('ops_channel_status')" style="font-size:12px">🏢 分销渠道情况</button>
+            <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('biz_status')" style="font-size:12px">💼 商机跟进情况</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('risk')" style="font-size:12px">⚠️ 风险与问题识别</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('suggest')" style="font-size:12px">💡 优化建议</button>
             <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('roi_rank')" style="font-size:12px">📈 ROI 排行</button>
@@ -2628,7 +2647,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.05-22';
+const APP_VERSION = 'v2026.04.08-01';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -9550,14 +9569,86 @@ function renderAiPage() {
 }
 
 function aiGetDataContext(scope) {
+  // 确保渠道运营数据已加载
+  if (typeof loadOpsData === 'function') loadOpsData();
+
+  // ── 分销渠道库 ──
+  if (scope === 'ops_channels') {
+    const chs = (opsChannelsData||[]).map(c => ({
+      公司名称: c.name, 关系: c.relation||'', 区域: c.region||'', 地市: c.city||'', 区县: c.district||'',
+      规模: c.scale||'', 标签: (c.tags||[]).join('、'), 分层: c.tier||'',
+      联系人: c.contact||'', 职务: c.position||'', 联系方式: c.phone||'', 负责销售: c.sales||'',
+      经营业务: (c.bizTypes||[]).join('、'), 公司背景: c.background||'',
+      优势单位: c.advantageUnit||'',
+      历史中标个数: c.historyWinCount !== undefined && c.historyWinCount !== '' ? c.historyWinCount : (c.winRecords||[]).length,
+      运维记录数: (c.maintRecords||[]).length,
+      过往中标数: (c.winRecords||[]).length
+    }));
+    return `分销渠道库（共 ${chs.length} 家）：\n${JSON.stringify(chs, null, 2)}`;
+  }
+
+  // ── 商机跟进 ──
+  if (scope === 'ops_biz') {
+    const biz = (opsBizData||[]).map(b => ({
+      商机名称: b.name||'', 关联渠道: b.channelName||'', 客户单位: b.customer||'',
+      状态: b.status||'', 金额万元: b.amount||'', 负责销售: b.sales||'',
+      预计中标时间: b.expectedDate||'', 备注: b.note||''
+    }));
+    return `商机跟进数据（共 ${biz.length} 条）：\n${JSON.stringify(biz, null, 2)}`;
+  }
+
+  // ── 全量数据模式 ──
+  if (scope === 'fulldata') {
+    // 活动数据
+    const actList = (activities||[]).map(a => ({
+      名称: a.name, 类型: a.type, 地市: a.city, 负责人: a.owner, 状态: a.status,
+      预算: Number(a.budget)||0, 实际支出: Number(a.spent)||0,
+      开始时间: a.startDate, 结束时间: a.endDate,
+      ROI: a.roi||'', 复盘总结: a.reviewSummary||'',
+      KPIs: a.kpis?.map(k=>`${k.name}(目标${k.target},实际${k.actual})`).join('，')||''
+    }));
+    // 渠道管理（channels 变量）
+    const chList = (typeof channels !== 'undefined' ? channels : []).map(c => ({
+      名称: c.name, 层级: c.tier, 地市: c.city, 区县: c.district,
+      负责销售: c.sales, 联系人: c.contact, 历史记录数: Array.isArray(c.history) ? c.history.length : 0
+    }));
+    // 分销渠道库
+    const opsChs = (opsChannelsData||[]).map(c => ({
+      公司名称: c.name, 关系: c.relation||'', 地市: c.city||'', 规模: c.scale||'',
+      分层: c.tier||'', 经营业务: (c.bizTypes||[]).join('、'),
+      优势单位: c.advantageUnit||'', 负责销售: c.sales||'',
+      历史中标个数: c.historyWinCount !== undefined && c.historyWinCount !== '' ? c.historyWinCount : (c.winRecords||[]).length,
+      运维记录数: (c.maintRecords||[]).length
+    }));
+    // 商机
+    const bizList = (opsBizData||[]).map(b => ({
+      商机名称: b.name||'', 关联渠道: b.channelName||'', 客户单位: b.customer||'',
+      状态: b.status||'', 金额万元: b.amount||'', 负责销售: b.sales||''
+    }));
+    return `【系统全量数据上下文】
+
+■ 活动数据（共 ${actList.length} 条）：
+${JSON.stringify(actList, null, 2)}
+
+■ 渠道管理数据（共 ${chList.length} 条）：
+${JSON.stringify(chList, null, 2)}
+
+■ 分销渠道库（共 ${opsChs.length} 家）：
+${JSON.stringify(opsChs, null, 2)}
+
+■ 商机跟进（共 ${bizList.length} 条）：
+${JSON.stringify(bizList, null, 2)}`;
+  }
+
+  // ── 原有各范围 ──
   const scopeMap = {
     all: activities,
-    review: activities.filter(a => a.status === '已完成' || a.status === '复盘中'),
+    review: (activities||[]).filter(a => a.status === '已完成' || a.status === '复盘中'),
     budget: activities,
     owner: activities,
     channels: null
   };
-  const list = scopeMap[scope] ?? activities;
+  const list = scopeMap[scope] ?? (activities||[]);
 
   if (scope === 'channels') {
     const chs = (typeof channels !== 'undefined' ? channels : []).map(c => ({
@@ -9678,6 +9769,20 @@ async function aiSendMessage(agentType) {
       const reply = data.choices[0].message.content;
       // 富文本渲染（Markdown）
       loadingBubble.innerHTML = _mdToHtml(reply);
+      // ── PPT 自动生成 ──
+      const pptMatch = reply.match(/```ppt-data\s*([\s\S]*?)```/);
+      if (pptMatch) {
+        try {
+          const slides = JSON.parse(pptMatch[1].trim());
+          // 添加下载按钮到气泡下方
+          const dlBtn = document.createElement('div');
+          dlBtn.style.cssText = 'margin-top:12px;text-align:center';
+          dlBtn.innerHTML = `<button onclick="aiDownloadPptx(this)" data-slides='${JSON.stringify(slides).replace(/'/g,"&#39;")}' style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px">📥 下载 PPT 文件 (.pptx)</button><div style="font-size:11px;color:#94a3b8;margin-top:6px">由 PptxGenJS 在浏览器内生成，无需上传到任何服务器</div>`;
+          loadingBubble.appendChild(dlBtn);
+        } catch(e) {
+          console.warn('PPT 数据解析失败，跳过自动生成:', e);
+        }
+      }
       _aiChatHistory.push({ role: 'user', content: question });
       _aiChatHistory.push({ role: 'assistant', content: reply });
       if (_aiChatHistory.length > 24) _aiChatHistory = _aiChatHistory.slice(-24);
@@ -9699,6 +9804,8 @@ const _aiQuickPrompts = {
   budget: '请分析所有活动的预算执行情况：哪些活动预算超支？哪些活动节余较多？整体预算利用率如何？',
   owner: '请对比分析各负责人的绩效：活动数量、完成率、预算控制能力、KPI达成情况，给出排名和建议。',
   channel: '请分析渠道数据，包括渠道层级分布、各地市覆盖情况，以及与活动的关联情况（如有）。',
+  ops_channel_status: '请分析分销渠道库的整体情况，包括：渠道总数、分层分布、各地市覆盖、规模结构、历史中标情况汇总、优势单位集中在哪些领域，以及需要重点运营的渠道有哪些。',
+  biz_status: '请分析商机跟进数据：商机总数、各阶段分布（线索/跟进中/方案中/已中标/已丢单）、中标率、主要丢单原因（如有备注）、金额最大的商机，以及下一步跟进建议。',
   risk: '请识别当前活动中存在的风险和问题：哪些活动进度滞后？预算风险？KPI达成风险？',
   suggest: '基于以上所有数据，请给出3-5条具体可落地的优化建议，帮助提升活动效果和执行效率。',
   roi_rank: '请列出所有有ROI数据的活动排行榜，分析高ROI和低ROI活动的共同特征，给出提升建议。',
@@ -9729,21 +9836,24 @@ let _aiPendingFiles = []; // 待随本次消息发送的文件内容 [{name, tex
 
 // Agent 动作分发
 const _agentPrompts = {
-  ppt: `请根据当前所有活动数据，生成一份《市场活动季度复盘PPT大纲》。
-要求：
-1. 用 Markdown 格式输出，使用 ## 作为每张幻灯片标题
-2. 包含：封面页、目录、活动概览、重点活动复盘（ROI/KPI）、预算执行分析、渠道效果、经验总结与建议、下季度计划
-3. 每张幻灯片内容要点用 - 列举，关键数字必须引用真实数据
-4. 最后附上 JSON 数据块（用 \`\`\`ppt-data 包裹），包含每张幻灯片的 title 和 points 数组，供系统生成可下载PPT
+  ppt: `请根据当前数据，生成一份《市场活动季度复盘报告》PPT内容。
 
-示例格式：
-## 封面
-- 市场活动季度复盘报告
-- 时间：2026年Q1
+严格按以下格式输出，不要添加额外说明文字，只输出JSON：
 
 \`\`\`ppt-data
-[{"title":"封面","points":["市场活动季度复盘报告","时间：2026年Q1"]},...]
-\`\`\``,
+[
+  {"title":"封面","subtitle":"市场活动季度复盘报告","points":[]},
+  {"title":"目录","points":["活动概览","重点活动复盘","预算执行","渠道效果","总结与建议"]},
+  {"title":"活动概览","points":["活动总数：X场","完成率：X%","总预算：¥X万","总支出：¥X万"]},
+  {"title":"重点活动复盘","points":["活动名称 | ROI | KPI达成率 | 亮点"]},
+  {"title":"预算执行分析","points":["整体执行率：X%","超支活动：X场","节余活动：X场"]},
+  {"title":"渠道合作效果","points":["渠道覆盖：X家","重点渠道贡献"]},
+  {"title":"经验总结","points":["亮点1","亮点2","不足1","不足2"]},
+  {"title":"下季度建议","points":["建议1","建议2","建议3"]}
+]
+\`\`\`
+
+注意：points数组中每条文字不超过50字，数字必须引用真实数据，幻灯片不少于8张。`,
 
   report: `请根据当前所有活动数据，生成一份正式的《市场活动季度总结报告》。
 要求：
@@ -9773,14 +9883,42 @@ const _agentPrompts = {
 3. 渠道协同（渠道开发/维护策略）
 4. KPI设置（目标合理性/追踪机制）
 5. 执行效率（流程优化/人员配置）
-每条建议需包含：现状问题 → 改进措施 → 预期效果`
+每条建议需包含：现状问题 → 改进措施 → 预期效果`,
+
+  ops_channel_report: `请分析分销渠道库的数据，生成《分销渠道运营情况分析报告》。
+要求：
+1. **渠道总览**：渠道总数、分层分布（核心/重点/一般/待开发/敌对）、各地市数量分布
+2. **规模结构**：大中小企业比例分析
+3. **中标情况**：历史中标个数TOP渠道列表，中标总量汇总
+4. **优势单位分析**：优势单位集中在哪些行业/领域（教育、医院、政府等）
+5. **运营活跃度**：运维记录数量分布，哪些渠道长期未维护（运维记录为0）
+6. **销售覆盖**：各销售负责渠道数量分布
+7. **建议**：重点运营方向、待激活渠道名单`,
+
+  biz_report: `请分析商机跟进数据，生成《商机漏斗分析报告》。
+要求：
+1. **漏斗概览**：各阶段商机数量（线索→跟进中→方案中→已中标/已丢单）
+2. **转化率分析**：从线索到中标的转化率
+3. **金额分析**：已中标总金额、在途商机总金额
+4. **TOP商机**：金额最大的5条商机详情
+5. **丢单分析**：已丢单的主要原因（如有备注）
+6. **渠道商机贡献**：哪些渠道贡献商机最多
+7. **跟进建议**：需要重点推进的商机列表`
 };
 
 async function aiAgentAction(type) {
   const prompt = _agentPrompts[type];
   if (!prompt) return;
   const input = document.getElementById('ai-input');
+  const scopeEl = document.getElementById('ai-data-scope');
   if (input) input.value = prompt;
+  // 自动切换数据范围
+  if (scopeEl) {
+    if (type === 'ops_channel_report') scopeEl.value = 'ops_channels';
+    else if (type === 'biz_report') scopeEl.value = 'ops_biz';
+    else if (type === 'ppt' || type === 'report') scopeEl.value = 'fulldata';
+    else scopeEl.value = 'fulldata';
+  }
   // 自动触发发送
   await aiSendMessage(type);
 }
@@ -9959,6 +10097,152 @@ function _addPendingFileTag(id, name, status) {
 function _updatePendingFileTag(id, name, status) {
   const el = document.getElementById(id);
   if (el) { el.textContent = `📄 ${name} ${status}`; el.style.background = status.includes('✅') ? '#dcfce7' : '#fee2e2'; el.style.color = status.includes('✅') ? '#166534' : '#991b1b'; }
+}
+
+// ===== 生成并下载 PPTX =====
+async function aiDownloadPptx(btn) {
+  let slides;
+  try {
+    slides = JSON.parse(btn.getAttribute('data-slides').replace(/&#39;/g, "'"));
+  } catch(e) { alert('PPT 数据解析失败：' + e.message); return; }
+
+  if (typeof PptxGenJS === 'undefined') {
+    alert('PPT 生成库尚未加载，请检查网络连接后刷新页面重试。');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中…';
+
+  try {
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE'; // 16:9
+
+    const THEME = {
+      bg: '1E293B',        // 深蓝黑
+      accent: '6366F1',    // 靛紫
+      accent2: '22D3EE',   // 青
+      white: 'FFFFFF',
+      light: 'E2E8F0',
+      gray: '94A3B8',
+      titleFont: 24,
+      bodyFont: 16,
+      smallFont: 13,
+    };
+
+    slides.forEach((slideData, idx) => {
+      const slide = pptx.addSlide();
+
+      // 背景
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: '100%', fill: { color: THEME.bg } });
+
+      // 顶部色条
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.08, fill: { color: THEME.accent } });
+
+      // 封面特殊处理
+      if (idx === 0) {
+        // 大标题
+        slide.addText(slideData.title || '市场活动季度复盘', {
+          x: 0.5, y: 1.6, w: 9, h: 1.2,
+          fontSize: 36, bold: true, color: THEME.white, align: 'center', fontFace: 'Microsoft YaHei'
+        });
+        // 副标题
+        if (slideData.subtitle) {
+          slide.addText(slideData.subtitle, {
+            x: 0.5, y: 3.0, w: 9, h: 0.7,
+            fontSize: 22, color: THEME.accent2, align: 'center', fontFace: 'Microsoft YaHei'
+          });
+        }
+        // 日期
+        const now = new Date();
+        slide.addText(`${now.getFullYear()}年${now.getMonth()+1}月`, {
+          x: 0.5, y: 4.0, w: 9, h: 0.5,
+          fontSize: 16, color: THEME.gray, align: 'center', fontFace: 'Microsoft YaHei'
+        });
+        // 底部装饰线
+        slide.addShape(pptx.ShapeType.rect, { x: 3.5, y: 4.7, w: 3, h: 0.06, fill: { color: THEME.accent } });
+        return;
+      }
+
+      // 标题背景条
+      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0.08, w: '100%', h: 1.1, fill: { color: '263147' } });
+
+      // 标题左侧竖线装饰
+      slide.addShape(pptx.ShapeType.rect, { x: 0.3, y: 0.18, w: 0.07, h: 0.8, fill: { color: THEME.accent } });
+
+      // 幻灯片标题
+      slide.addText(slideData.title || '', {
+        x: 0.5, y: 0.18, w: 8.5, h: 0.9,
+        fontSize: THEME.titleFont, bold: true, color: THEME.white, valign: 'middle', fontFace: 'Microsoft YaHei'
+      });
+
+      // 内容要点
+      const points = slideData.points || [];
+      if (points.length > 0) {
+        const rows = points.map((p, i) => {
+          // 检测是否是表头行（含 | 分隔）
+          if (p.includes('|')) {
+            const cells = p.split('|').map(s => s.trim()).filter(Boolean);
+            return { isTable: true, cells };
+          }
+          return { isTable: false, text: p, idx: i };
+        });
+
+        // 简单模式：全部用 bullet list
+        const bulletRows = rows.filter(r => !r.isTable);
+        if (bulletRows.length > 0) {
+          const textRows = bulletRows.map(r => ({
+            text: r.text,
+            options: {
+              bullet: { type: 'number', indent: 15 },
+              fontSize: THEME.bodyFont,
+              color: THEME.light,
+              fontFace: 'Microsoft YaHei',
+              paraSpaceBefore: 6
+            }
+          }));
+          slide.addText(textRows, {
+            x: 0.5, y: 1.4, w: 9, h: 3.8,
+            valign: 'top', wrap: true
+          });
+        }
+
+        // 如果有表格行，叠加在底部
+        const tableRows = rows.filter(r => r.isTable);
+        if (tableRows.length > 0) {
+          const tableData = tableRows.map(r => r.cells.map(cell => ({
+            text: cell,
+            options: { fontSize: 12, color: THEME.light, fontFace: 'Microsoft YaHei', align: 'center' }
+          })));
+          slide.addTable(tableData, {
+            x: 0.5, y: bulletRows.length > 0 ? 3.6 : 1.4,
+            w: 9,
+            fill: { color: '1E293B' },
+            border: { type: 'solid', pt: 1, color: '334155' },
+            rowH: 0.4
+          });
+        }
+      }
+
+      // 页码
+      slide.addText(`${idx + 1} / ${slides.length}`, {
+        x: 8.5, y: 5.2, w: 1.2, h: 0.3,
+        fontSize: 11, color: THEME.gray, align: 'right', fontFace: 'Microsoft YaHei'
+      });
+    });
+
+    const now = new Date();
+    const fileName = `市场活动复盘_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.pptx`;
+    await pptx.writeFile({ fileName });
+
+    btn.disabled = false;
+    btn.innerHTML = '✅ 已下载！再次下载';
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '❌ 生成失败，点击重试';
+    console.error('PPT生成失败:', e);
+    alert('PPT 生成失败：' + e.message);
+  }
 }
 
 function aiClearChat() {
