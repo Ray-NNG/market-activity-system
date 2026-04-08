@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.08-03</title>
+<title>市场活动全流程管理系统 v2026.04.08-05</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1843,8 +1843,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       </div>
       <!-- Excel导入结果提示 -->
       <div id="channel-import-result" style="display:none;margin-bottom:12px;padding:12px 16px;border-radius:10px;font-size:13px"></div>
-      <!-- 渠道列表 -->
-      <div id="channel-list-container"></div>
+      <!-- 渠道列表 - 横向滚动卡片模式 -->
+      <div id="channel-list-container" style="overflow-x:auto;padding-bottom:8px;"></div>
     </div>
 
     <!-- ===== 渠道运营中心（仅授权用户可见） ===== -->
@@ -2639,7 +2639,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.08-04';
+const APP_VERSION = 'v2026.04.08-05';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -8452,6 +8452,10 @@ function renderChannelList() {
   const checkboxCol = canEdit ? `<th style="width:36px;padding:8px 6px 8px 14px"><input type="checkbox" id="channel-select-all" onchange="channelSelectAll(this)" style="cursor:pointer;width:15px;height:15px"></th>` : '';
   const checkboxCell = (id) => canEdit ? `<td style="padding:8px 6px 8px 14px"><input type="checkbox" class="channel-row-check" data-id="${id}" onchange="channelRowCheck()" style="cursor:pointer;width:15px;height:15px"></td>` : '';
 
+  // 横向滚动卡片模式
+  const cardWidth = 320; // 卡片固定宽度
+  const gap = 12;
+  
   container.innerHTML = `
     <!-- 批量操作浮动栏 -->
     <div id="channel-batch-bar" style="display:none;position:sticky;top:56px;z-index:50;background:#1e1b4b;color:#fff;border-radius:10px;padding:10px 18px;margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 16px rgba(0,0,0,.2)">
@@ -8466,38 +8470,67 @@ function renderChannelList() {
       <button class="btn btn-sm" style="background:#ef4444;color:#fff;border:none" onclick="channelBatchDelete()">🗑️ 批量删除</button>
       <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:none" onclick="channelClearSelect()">✕ 取消选择</button>
     </div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <div class="table-wrap">
-        <table>
-          <thead><tr>
-            ${checkboxCol}
-            <th>渠道名称</th><th>分层</th><th>地市/区县</th><th>负责销售</th>
-            <th>关键联系人</th><th>联系方式</th><th>渠道背景</th>
-            <th>市场活动</th><th>历史推广记录</th><th>操作</th>
-          </tr></thead>
-          <tbody>
-            ${filtered.map(c => `
-              <tr id="channel-row-${c.id}">
-                ${checkboxCell(c.id)}
-                <td class="fw-600" data-label="渠道名称">${c.name}</td>
-                <td data-label="分层"><span style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
-                <td class="text-sm" data-label="地市/区县">${[c.city, c.district].filter(Boolean).join(' / ')||'-'}</td>
-                <td data-label="负责销售">${c.sales||'-'}</td>
-                <td data-label="关键联系人">${c.contact||'-'}</td>
-                <td data-label="联系方式">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary)">${c.phone}</a>` : '-'}</td>
-                <td class="text-sm" style="max-width:200px;white-space:normal;word-break:break-all;color:var(--text-muted)" data-label="渠道背景">${(c.background||'-').substring(0,80)}${(c.background||'').length>80?'…':''}</td>
-                <td class="text-sm" data-label="关联活动">${getChannelActivityCount(c.id)}</td>
-                <td class="text-sm" style="max-width:220px" data-label="历史推广">${renderChannelHistory(c)}</td>
-                <td>
-                  ${canEdit ? `<button class="btn btn-outline btn-sm" onclick="openEditChannelModal('${c.id}')">编辑</button>
-                  <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;margin-left:4px" onclick="deleteChannel('${c.id}')">删除</button>` : ''}
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+    
+    <!-- 横向滚动卡片容器 -->
+    <div style="display:flex;gap:${gap}px;overflow-x:auto;padding:4px 4px 12px 4px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch">
+      ${filtered.map(c => `
+        <div id="channel-card-${c.id}" style="flex:0 0 ${cardWidth}px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
+          
+          <!-- 顶部：选择框 + 分层标签 -->
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            ${canEdit ? `<input type="checkbox" class="channel-row-check" data-id="${c.id}" onchange="channelRowCheck()" style="cursor:pointer;width:16px;height:16px">` : ''}
+            <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'未分类'}</span>
+          </div>
+          
+          <!-- 渠道名称 -->
+          <div style="font-weight:700;font-size:15px;color:var(--text);line-height:1.4;word-break:break-all">${c.name}</div>
+          
+          <!-- 地市/区县 + 负责销售 -->
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:3px">📍 ${[c.city, c.district].filter(Boolean).join('·')||'未设置'}</span>
+            <span style="color:#cbd5e1">|</span>
+            <span style="display:flex;align-items:center;gap:3px">👤 ${c.sales||'无负责人'}</span>
+          </div>
+          
+          <!-- 联系人信息 -->
+          <div style="background:#f8fafc;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+              <span style="color:#94a3b8;width:40px">联系人</span>
+              <span style="font-weight:500">${c.contact||'-'}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+              <span style="color:#94a3b8;width:40px">电话</span>
+              ${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary);font-weight:500">${c.phone}</a>` : '<span style="color:#cbd5e1">-</span>'}
+            </div>
+          </div>
+          
+          <!-- 渠道背景 -->
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.6;flex:1;min-height:40px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${c.background||'暂无背景信息'}</div>
+          
+          <!-- 关联活动数 -->
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#64748b">
+            <span>📊 关联活动</span>
+            <span style="font-weight:600;color:var(--primary)">${getChannelActivityCount(c.id)}</span>
+          </div>
+          
+          <!-- 历史推广记录 -->
+          <div style="font-size:11px;color:#94a3b8;background:#fafafa;border-radius:6px;padding:8px;max-height:60px;overflow:hidden">
+            ${renderChannelHistory(c)}
+          </div>
+          
+          <!-- 操作按钮 -->
+          ${canEdit ? `
+          <div style="display:flex;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid #f1f5f9">
+            <button class="btn btn-outline btn-sm" style="flex:1;font-size:12px" onclick="openEditChannelModal('${c.id}')">✏️ 编辑</button>
+            <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;font-size:12px" onclick="deleteChannel('${c.id}')">🗑️ 删除</button>
+          </div>` : ''}
+        </div>
+      `).join('')}
+    </div>
+    
+    <!-- 滚动提示 -->
+    ${filtered.length > 3 ? `<div style="text-align:center;padding:8px;font-size:12px;color:#94a3b8">← 左右滑动查看更多渠道 →</div>` : ''}
+  `;
 }
 
 // ===== 渠道批量操作 =====
