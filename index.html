@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.08-01</title>
+<title>市场活动全流程管理系统 v2026.04.08-02</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -2647,7 +2647,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.08-01';
+const APP_VERSION = 'v2026.04.08-02';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -9707,6 +9707,7 @@ async function aiSendMessage(agentType) {
   const sendBtn = document.getElementById('ai-send-btn');
   const question = input?.value?.trim();
   if (!question) return;
+  _aiLastQuestion = question; // 记录，供重试使用
 
   const apiKey = _kimiKey();
   if (!apiKey) {
@@ -9758,13 +9759,31 @@ async function aiSendMessage(agentType) {
 
   const loadingBubble = aiAppendMessage('assistant', '', true);
 
-  try {
+  // ── 带自动重试的请求函数 ──
+  async function _doRequest(retryLeft = 2) {
     const res = await fetch('https://api.moonshot.cn/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: agentType ? 4000 : 2000 })
     });
     const data = await res.json();
+    // 服务端过载（rate limit / overloaded）→ 等待后重试
+    if (data.error) {
+      const errMsg = data.error.message || '';
+      const isOverload = /overloaded|rate.?limit|too.?many|capacity|503/i.test(errMsg) || res.status === 503 || res.status === 429;
+      if (isOverload && retryLeft > 0) {
+        const waitSec = retryLeft === 2 ? 5 : 12;
+        loadingBubble.innerHTML = `<span style="color:#d97706">⏳ Kimi 服务繁忙，${waitSec}秒后自动重试（剩余重试${retryLeft}次）…</span>`;
+        await new Promise(r => setTimeout(r, waitSec * 1000));
+        return _doRequest(retryLeft - 1);
+      }
+      throw new Error(errMsg || `HTTP ${res.status}`);
+    }
+    return data;
+  }
+
+  try {
+    const data = await _doRequest();
     if (data.choices?.[0]?.message?.content) {
       const reply = data.choices[0].message.content;
       // 富文本渲染（Markdown）
@@ -9792,7 +9811,18 @@ async function aiSendMessage(agentType) {
   } catch(e) {
     loadingBubble.style.background = '#fee2e2';
     loadingBubble.style.color = '#991b1b';
-    loadingBubble.textContent = `❌ 请求失败：${e.message}\n请检查 API Key 是否有效，或网络是否正常。`;
+    const errMsg = e.message || '';
+    let tip = '';
+    if (/overloaded|rate.?limit|too.?many|capacity|503|429/i.test(errMsg)) {
+      tip = '⏳ Kimi 服务当前过载（已重试3次），请稍等几分钟后再发送。';
+    } else if (/401|invalid.*key|api.*key|unauthorized/i.test(errMsg)) {
+      tip = '🔑 API Key 无效或已过期，请在设置中重新填写正确的 Key。';
+    } else if (/fetch|network|ERR_|timeout/i.test(errMsg)) {
+      tip = '🌐 网络连接失败，请检查网络是否正常后重试。';
+    } else {
+      tip = `❌ 请求失败：${errMsg}`;
+    }
+    loadingBubble.innerHTML = `<div style="line-height:1.8">${tip}<br><button onclick="this.closest('.ai-bubble').remove()" style="margin-top:8px;background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 14px;cursor:pointer;font-size:12px">关闭</button><button onclick="aiRetryLast()" style="margin-top:8px;margin-left:8px;background:#6366f1;color:#fff;border:none;border-radius:6px;padding:4px 14px;cursor:pointer;font-size:12px">🔄 重新发送</button></div>`;
   } finally {
     sendBtn.disabled = false;
     sendBtn.innerHTML = '发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>';
@@ -9833,6 +9863,14 @@ function aiQuickAsk(type) {
 // 已上传附件（已通过Kimi文件API处理的）
 let _aiUploadedFiles = []; // [{name, fileId, content_summary}]
 let _aiPendingFiles = []; // 待随本次消息发送的文件内容 [{name, text}]
+let _aiLastQuestion = ''; // 记录上一次发送的问题，用于重试
+
+function aiRetryLast() {
+  if (!_aiLastQuestion) return;
+  const input = document.getElementById('ai-input');
+  if (input) { input.value = _aiLastQuestion; }
+  aiSendMessage();
+}
 
 // Agent 动作分发
 const _agentPrompts = {
