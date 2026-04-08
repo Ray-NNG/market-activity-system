@@ -1120,6 +1120,9 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('owner')">
         <span class="icon">👤</span> 负责人分析
       </div>
+      <div class="nav-item" onclick="goto('ai')">
+        <span class="icon">🤖</span> AI 分析助手
+      </div>
     </div>
     <div class="nav-section" id="nav-section-channel">
       <div class="nav-section-title">渠道管理</div>
@@ -1139,9 +1142,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('channelOps')">
         <span class="icon">🏢</span> 分销渠道运营中心
       </div>
-    </div>
-    <div class="nav-item" onclick="goto('ai')">
-      <span class="icon">🤖</span> AI 分析助手
     </div>
     <div class="nav-section" id="nav-admin-section">
       <div class="nav-section-title">系统管理</div>
@@ -1279,8 +1279,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         </div>
 
         <div class="card">
-          <div class="card-header"><div class="card-title">📊 各活动进度</div></div>
-          <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-top:4px;padding-right:4px;" id="progress-chart"></div>
+          <div class="card-header"><div class="card-title">📅 即将开始的活动</div></div>
+          <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-top:4px;padding-right:4px;" id="upcoming-activities"></div>
         </div>
       </div>
     </div>
@@ -2639,7 +2639,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.08-03';
+const APP_VERSION = 'v2026.04.08-04';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -3427,35 +3427,41 @@ function renderDashboard() {
   // 日历
   renderCalendar();
 
-  // 进度横向条状图
-  const chart = document.getElementById('progress-chart');
-  // 使用基于状态的统一颜色方案，避免花哨
-  const getProgressColor = (progress, status) => {
-    // 按进度区间分配更专业的颜色
-    if (status === '已完成') return '#10b981'; // 绿色 - 已完成
-    if (status === '执行中') return '#f59e0b'; // 橙色 - 执行中
-    if (status === '策划中') return '#3b82f6'; // 蓝色 - 策划中
-    
-    // 根据进度值分配渐变色：低进度用蓝色，高进度用绿色
-    if (progress >= 90) return '#10b981'; // 深绿色 - 接近完成
-    if (progress >= 70) return '#22c55e'; // 绿色 - 进展良好
-    if (progress >= 50) return '#3b82f6'; // 蓝色 - 中等进度
-    if (progress >= 30) return '#6366f1'; // 靛蓝 - 初期进展
-    return '#8b5cf6'; // 紫色 - 刚开始
-  };
+  // 即将开始的活动（未来7天内开始）
+  const upcomingContainer = document.getElementById('upcoming-activities');
+  const now = new Date();
+  const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
   
-  chart.innerHTML = activities.length === 0
-    ? '<div class="text-muted" style="text-align:center;padding:20px">暂无活动数据</div>'
-    : activities.map((a,i) => {
-      const color = getProgressColor(a.progress, a.status);
+  const upcoming = activities
+    .filter(a => {
+      if (!a.startDate) return false;
+      const start = new Date(a.startDate);
+      return start >= now && start <= sevenDaysLater;
+    })
+    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+    .slice(0, 8); // 最多显示8条
+  
+  const statusColor = { '策划中':'#3b82f6','执行中':'#f59e0b','复盘中':'#8b5cf6','已完成':'#10b981','已归档':'#94a3b8' };
+  
+  upcomingContainer.innerHTML = upcoming.length === 0
+    ? '<div class="text-muted" style="text-align:center;padding:30px;font-size:13px">未来7天内暂无即将开始的活动</div>'
+    : upcoming.map((a, i) => {
+      const daysLeft = Math.ceil((new Date(a.startDate) - now) / (1000 * 60 * 60 * 24));
+      const daysText = daysLeft === 0 ? '今天' : daysLeft === 1 ? '明天' : `${daysLeft}天后`;
+      const daysColor = daysLeft === 0 ? '#ef4444' : daysLeft === 1 ? '#f59e0b' : '#64748b';
       return `
-      <div>
-        <div class="flex-between text-sm" style="margin-bottom:4px">
-          <span style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</span>
-          <span style="color:${color};font-weight:600">${a.progress}%</span>
+      <div onclick="openDetail('${a.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .12s;font-size:13px;${i%2===1?'background:#fafbfc':''}" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='${i%2===1?'#fafbfc':'transparent'}'">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px" title="${a.name}">${a.name}</div>
+          <div style="font-size:11px;color:#64748b;display:flex;align-items:center;gap:6px">
+            <span style="color:${statusColor[a.status]||'#64748b'};font-weight:500">● ${a.status}</span>
+            <span>·</span>
+            <span>${a.owner||'—'} · ${a.city||'—'}</span>
+          </div>
         </div>
-        <div class="progress-wrap">
-          <div class="progress-bar" style="background:${color};width:${a.progress}%"></div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:12px;font-weight:600;color:${daysColor}">${daysText}</div>
+          <div style="font-size:11px;color:#94a3b8">${a.startDate}</div>
         </div>
       </div>
     `}).join('');
