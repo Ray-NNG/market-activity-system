@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.09-02</title>
+<title>市场活动全流程管理系统 v2026.04.09-04</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1718,37 +1718,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <!-- 悬浮球 -->
 <div id="ai-fab" onclick="toggleAiPanel()" title="AI 分析助手">
-  <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="52" height="52">
-    <defs>
-      <!-- 大 A 的蓝色渐变 -->
-      <linearGradient id="gradA" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style="stop-color:#3b82f6"/>
-        <stop offset="100%" style="stop-color:#93c5fd"/>
-      </linearGradient>
-      <!-- i 的蓝紫渐变 -->
-      <linearGradient id="gradI" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style="stop-color:#60a5fa"/>
-        <stop offset="100%" style="stop-color:#c4b5fd"/>
-      </linearGradient>
-      <!-- 星星的绿色渐变 -->
-      <linearGradient id="gradStar" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#22d3ee"/>
-        <stop offset="100%" style="stop-color:#4ade80"/>
-      </linearGradient>
-    </defs>
-    <!-- 大 A：实心三角，底部镂空缺口 -->
-    <path d="M30,145 L85,30 Q88,24 95,24 Q102,24 105,30 L160,145 Q163,152 158,156 Q153,160 145,158 L115,152 Q108,150 105,145 L95,118 L85,145 Q82,150 75,152 L45,158 Q37,160 32,156 Q27,152 30,145Z" fill="url(#gradA)"/>
-    <!-- 大 A 底部镂空缺口 -->
-    <path d="M75,152 L85,145 L95,118 L105,145 L115,152 Q108,150 105,145 L95,118 L85,145 Q82,150 75,152Z" fill="#fff" opacity="0"/>
-    <!-- 重新绘制镂空：用遮罩方式 -->
-    <path d="M30,145 L85,30 Q88,24 95,24 Q102,24 105,30 L160,145 Q163,152 158,156 Q153,160 145,158 L115,152 Q108,150 105,145 L95,118 L85,145 Q82,150 75,152 L45,158 Q37,160 32,156 Q27,152 30,145Z M75,145 L85,118 L95,118 L105,118 L115,145 L95,135 L75,145Z" fill="url(#gradA)" fill-rule="evenodd"/>
-    <!-- i：矩形，圆角 -->
-    <rect x="128" y="82" width="32" height="76" rx="8" fill="url(#gradI)"/>
-    <!-- 大四角星 -->
-    <path d="M148,32 Q152,20 156,32 Q168,36 156,40 Q152,52 148,40 Q136,36 148,32Z" fill="url(#gradStar)"/>
-    <!-- 小四角星 -->
-    <path d="M172,18 Q174,12 176,18 Q182,20 176,22 Q174,28 172,22 Q166,20 172,18Z" fill="url(#gradStar)" opacity="0.85"/>
-  </svg>
+  <img src="images/ai-logo.png" alt="AI" style="width:48px;height:48px;border-radius:50%;object-fit:cover">
   <span id="ai-fab-badge" style="display:none"></span>
 </div>
 
@@ -1760,30 +1730,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   <!-- 弹窗头部 -->
   <div id="ai-panel-header">
     <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
-      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="flex-shrink:0">
-        <defs>
-          <linearGradient id="gradA2" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#93c5fd"/>
-            <stop offset="100%" style="stop-color:#bfdbfe"/>
-          </linearGradient>
-          <linearGradient id="gradI2" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#93c5fd"/>
-            <stop offset="100%" style="stop-color:#ddd6fe"/>
-          </linearGradient>
-          <linearGradient id="gradStar2" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#67e8f9"/>
-            <stop offset="100%" style="stop-color:#86efac"/>
-          </linearGradient>
-        </defs>
-        <!-- 大 A -->
-        <path d="M30,145 L85,30 Q88,24 95,24 Q102,24 105,30 L160,145 Q163,152 158,156 Q153,160 145,158 L115,152 Q108,150 105,145 L95,118 L85,145 Q82,150 75,152 L45,158 Q37,160 32,156 Q27,152 30,145Z M75,145 L85,118 L95,118 L105,118 L115,145 L95,135 L75,145Z" fill="url(#gradA2)" fill-rule="evenodd"/>
-        <!-- i -->
-        <rect x="128" y="82" width="32" height="76" rx="8" fill="url(#gradI2)"/>
-        <!-- 大四角星 -->
-        <path d="M148,32 Q152,20 156,32 Q168,36 156,40 Q152,52 148,40 Q136,36 148,32Z" fill="url(#gradStar2)"/>
-        <!-- 小四角星 -->
-        <path d="M172,18 Q174,12 176,18 Q182,20 176,22 Q174,28 172,22 Q166,20 172,18Z" fill="url(#gradStar2)" opacity="0.85"/>
-      </svg>
+      <img src="images/ai-logo.png" alt="AI" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">
       <div>
         <div style="font-weight:700;font-size:15px;color:#fff">AI 智能分析 Agent</div>
         <div style="font-size:11px;color:rgba(255,255,255,.7)">由 Kimi 驱动 · 数据分析 / 报告生成</div>
@@ -1872,30 +1819,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <!-- 消息区 -->
       <div id="ai-chat-messages" style="flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;background:#f8fafc;border-radius:12px 12px 0 0">
         <div data-welcome style="text-align:center;color:var(--text-muted);font-size:13px;padding:50px 20px 30px">
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="64" height="64" style="margin-bottom:14px">
-            <defs>
-              <linearGradient id="gAw" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#3b82f6"/>
-                <stop offset="100%" style="stop-color:#93c5fd"/>
-              </linearGradient>
-              <linearGradient id="gIw" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color:#60a5fa"/>
-                <stop offset="100%" style="stop-color:#c4b5fd"/>
-              </linearGradient>
-              <linearGradient id="gSw" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#22d3ee"/>
-                <stop offset="100%" style="stop-color:#4ade80"/>
-              </linearGradient>
-            </defs>
-            <!-- 大 A -->
-            <path d="M30,145 L85,30 Q88,24 95,24 Q102,24 105,30 L160,145 Q163,152 158,156 Q153,160 145,158 L115,152 Q108,150 105,145 L95,118 L85,145 Q82,150 75,152 L45,158 Q37,160 32,156 Q27,152 30,145Z M75,145 L85,118 L95,118 L105,118 L115,145 L95,135 L75,145Z" fill="url(#gAw)" fill-rule="evenodd"/>
-            <!-- i -->
-            <rect x="128" y="82" width="32" height="76" rx="8" fill="url(#gIw)"/>
-            <!-- 大四角星 -->
-            <path d="M148,32 Q152,20 156,32 Q168,36 156,40 Q152,52 148,40 Q136,36 148,32Z" fill="url(#gSw)"/>
-            <!-- 小四角星 -->
-            <path d="M172,18 Q174,12 176,18 Q182,20 176,22 Q174,28 172,22 Q166,20 172,18Z" fill="url(#gSw)" opacity="0.85"/>
-          </svg>
+          <img src="images/ai-logo.png" alt="AI" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:14px">
           <div style="font-weight:700;font-size:16px;color:#374151;margin-bottom:10px">AI 智能分析 Agent</div>
           <div style="line-height:2;color:#64748b">
             我可以帮你 <b style="color:#374151">分析活动数据</b>、<b style="color:#374151">生成 PPT 文件</b>、<b style="color:#374151">撰写季报</b><br>
@@ -2871,7 +2795,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.09-03';
+const APP_VERSION = 'v2026.04.09-04';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
