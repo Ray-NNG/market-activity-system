@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.08-05</title>
+<title>市场活动全流程管理系统 v2026.04.05-22</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -63,7 +63,7 @@
   .nav-item .icon { width: 18px; text-align: center; font-size: 16px; }
 
   /* ===== MAIN ===== */
-  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
   .topbar { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
   .topbar-left h2 { font-size: 18px; font-weight: 700; }
   .topbar-left p { font-size: 12px; color: var(--text-muted); }
@@ -78,7 +78,7 @@
   .btn-danger { background: var(--danger); color: #fff; }
   .btn-sm { padding: 5px 10px; font-size: 12px; }
 
-  .content { padding: 28px; flex: 1; }
+  .content { padding: 28px; flex: 1; overflow-x: hidden; }
 
   /* ===== CARDS ===== */
   .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); }
@@ -190,10 +190,9 @@
   .color-danger { color: var(--danger); }
   .color-primary { color: var(--primary); }
 
-  .page { display: none; }
-  .page.active { display: block; }
-  /* AI 页面需要 flex 布局才能铺满高度 */
-  #page-ai.active { display: flex; }
+  .page { display: none !important; }
+  .page.active { display: block !important; }
+  .page.active[style*="flex"] { display: flex !important; }
 
   /* 活动卡片 */
   .activity-card {
@@ -885,8 +884,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
     setTimeout(() => window.dispatchEvent(new CustomEvent('cos-adapter-ready', { detail: { configured: isConfigured() } })), 100);
 })();
   </script>
-  <!-- PptxGenJS: 前端直接生成 .pptx 文件 -->
-  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 </head>
 <body>
 
@@ -1120,9 +1117,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('owner')">
         <span class="icon">👤</span> 负责人分析
       </div>
-      <div class="nav-item" onclick="goto('ai')">
-        <span class="icon">🤖</span> AI 分析助手
-      </div>
     </div>
     <div class="nav-section" id="nav-section-channel">
       <div class="nav-section-title">渠道管理</div>
@@ -1143,6 +1137,9 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         <span class="icon">🏢</span> 分销渠道运营中心
       </div>
     </div>
+    <div class="nav-item" onclick="goto('ai')">
+      <span class="icon">🤖</span> AI 分析助手
+    </div>
     <div class="nav-section" id="nav-admin-section">
       <div class="nav-section-title">系统管理</div>
       <div class="nav-item" id="nav-settings" onclick="goto('settings')">
@@ -1155,7 +1152,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   </nav>
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
-    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.04.08-05</div>
+    <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-20</div>
     <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
   </div>
 </aside>
@@ -1222,23 +1219,26 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         </div>
       </div>
 
-      <div class="section-gap">
-        <div class="card" style="display:flex;flex-direction:column;">
-          <div class="card-header">
-            <div class="card-title">🗂 活动流程概览</div>
-            <div style="display:flex;gap:8px;align-items:center" id="dash-flow-filters">
-              <button onclick="dashFlowFilter('all',this)" class="dash-flow-tab active" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#3b82f6;color:#fff;cursor:pointer;transition:all .15s">全部</button>
-              <button onclick="dashFlowFilter('策划中',this)" class="dash-flow-tab" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;color:#374151;cursor:pointer;transition:all .15s">策划中</button>
-              <button onclick="dashFlowFilter('执行中',this)" class="dash-flow-tab" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;color:#374151;cursor:pointer;transition:all .15s">执行中</button>
-              <button onclick="dashFlowFilter('复盘中',this)" class="dash-flow-tab" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;color:#374151;cursor:pointer;transition:all .15s">复盘中</button>
-              <button onclick="dashFlowFilter('已完成',this)" class="dash-flow-tab" style="font-size:12px;padding:3px 10px;border:1px solid #e2e8f0;border-radius:20px;background:#fff;color:#374151;cursor:pointer;transition:all .15s">已完成</button>
-            </div>
+      <!-- 活动状态总览 + 最近动态 -->
+      <div class="grid-2 section-gap">
+        <!-- 左：活动状态分布 -->
+        <div class="card" style="padding:16px 20px">
+          <div class="card-header" style="margin-bottom:12px">
+            <div class="card-title">🗂 活动状态分布</div>
           </div>
-          <!-- 表头 -->
-          <div style="display:grid;grid-template-columns:2fr 1fr 80px 120px 70px 60px;gap:0;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:2px;font-size:12px;color:#94a3b8;font-weight:600;letter-spacing:.03em">
-            <span>活动名称</span><span>负责人 · 地市</span><span>状态</span><span>进度</span><span style="text-align:right">预算利用</span><span style="text-align:right">操作</span>
+          <div id="dashboard-status-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"></div>
+          <div style="border-top:1px solid var(--border);padding-top:12px">
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:8px">📌 最近更新</div>
+            <div id="dashboard-recent-list" style="display:flex;flex-direction:column;gap:6px"></div>
           </div>
-          <div style="max-height:280px;overflow-y:auto;" id="dashboard-activity-list"></div>
+        </div>
+        <!-- 右：本月数据快报 -->
+        <div class="card" style="padding:16px 20px">
+          <div class="card-header" style="margin-bottom:12px">
+            <div class="card-title">📈 本月数据快报</div>
+            <span id="dashboard-month-label" style="font-size:12px;color:var(--text-muted)"></span>
+          </div>
+          <div id="dashboard-month-stats" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
       </div>
 
@@ -1251,6 +1251,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         </div>
       </div>
 
+      <!-- 费用支出 + 即将开始的活动 -->
       <div class="grid-2 section-gap">
         <div class="card">
           <div class="card-header"><div class="card-title">💰 费用支出概况</div></div>
@@ -1279,8 +1280,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
         </div>
 
         <div class="card">
-          <div class="card-header"><div class="card-title">📅 即将开始的活动</div></div>
-          <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-top:4px;padding-right:4px;" id="upcoming-activities"></div>
+          <div class="card-header"><div class="card-title">⏰ 近期待关注</div></div>
+          <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-top:4px;padding-right:4px;" id="progress-chart"></div>
         </div>
       </div>
     </div>
@@ -1587,52 +1588,56 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
             <div style="font-size:12px;color:var(--text-muted)">支持数据分析、生成报告/PPT、上传附件解析</div>
           </div>
           <select class="form-control" id="ai-data-scope" style="width:185px;font-size:13px">
-            <option value="fulldata">🌐 全量数据（推荐）</option>
             <option value="all">📊 全部活动数据</option>
             <option value="review">🔍 复盘活动数据</option>
+            <option value="channels">🤝 渠道数据</option>
             <option value="budget">💰 预算与支出数据</option>
             <option value="owner">👤 负责人绩效数据</option>
-            <option value="channels">🤝 渠道管理数据</option>
-            <option value="ops_channels">🏢 分销渠道库</option>
-            <option value="ops_biz">💼 商机跟进数据</option>
           </select>
           <button class="btn btn-outline btn-sm" onclick="aiClearChat()" style="font-size:12px">🗑️ 清空对话</button>
         </div>
       </div>
 
-      <!-- 主体：左侧工具面板 + 右侧聊天（撑满剩余高度） -->
-      <div style="flex:1;min-height:0;display:flex;gap:12px">
+      <!-- 主体两栏：左侧能力面板 + 右侧聊天区 -->
+      <div style="flex:1;min-height:0;display:flex;gap:14px;overflow:hidden">
 
-        <!-- 左侧面板：Agent能力 + 快捷问题（固定宽度，可滚动） -->
-        <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;overflow-y:auto">
-
+        <!-- 左侧：Agent 能力面板（固定宽度，可滚动） -->
+        <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:12px;overflow-y:auto;padding-right:4px">
           <!-- Agent 能力 -->
-          <div class="card" style="padding:12px">
-            <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px;display:flex;align-items:center;gap:5px"><span>⚡</span> Agent 能力</div>
-            <div style="display:flex;flex-direction:column;gap:7px">
-              <div onclick="aiAgentAction('ppt')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #e0e7ff;background:#f5f3ff;transition:all .15s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#eef2ff'" onmouseout="this.style.borderColor='#e0e7ff';this.style.background='#f5f3ff'">
-                <span style="font-size:18px">📊</span><div><div style="font-size:12px;font-weight:600;color:#4338ca">生成 PPT 文件</div><div style="font-size:11px;color:#6366f1">AI生成内容，直接下载.pptx</div></div>
+          <div class="card" style="padding:14px 16px">
+            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+              <span>⚡</span> Agent 能力
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div onclick="aiAgentAction('ppt')" style="cursor:pointer;border:1.5px solid #e0e7ff;border-radius:10px;padding:10px 12px;background:#f5f3ff;transition:all .2s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#eef2ff'" onmouseout="this.style.borderColor='#e0e7ff';this.style.background='#f5f3ff'">
+                <div style="font-size:18px;margin-bottom:4px">📊</div>
+                <div style="font-size:13px;font-weight:600;color:#4338ca">生成 PPT 大纲</div>
+                <div style="font-size:11px;color:#6366f1;margin-top:2px">自动生成可下载的活动复盘PPT</div>
               </div>
-              <div onclick="aiAgentAction('report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #d1fae5;background:#f0fdf4;transition:all .15s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#d1fae5';this.style.background='#f0fdf4'">
-                <span style="font-size:18px">📝</span><div><div style="font-size:12px;font-weight:600;color:#15803d">生成季报</div><div style="font-size:11px;color:#16a34a">一键生成活动季度总结报告</div></div>
+              <div onclick="aiAgentAction('report')" style="cursor:pointer;border:1.5px solid #d1fae5;border-radius:10px;padding:10px 12px;background:#f0fdf4;transition:all .2s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#d1fae5';this.style.background='#f0fdf4'">
+                <div style="font-size:18px;margin-bottom:4px">📝</div>
+                <div style="font-size:13px;font-weight:600;color:#15803d">生成季报</div>
+                <div style="font-size:11px;color:#16a34a;margin-top:2px">一键生成活动季度总结报告</div>
               </div>
-              <div onclick="aiAgentAction('budget_report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #fef3c7;background:#fffbeb;transition:all .15s" onmouseover="this.style.borderColor='#f59e0b';this.style.background='#fef9c3'" onmouseout="this.style.borderColor='#fef3c7';this.style.background='#fffbeb'">
-                <span style="font-size:18px">💰</span><div><div style="font-size:12px;font-weight:600;color:#b45309">预算分析报告</div><div style="font-size:11px;color:#d97706">深度分析预算执行与超支情况</div></div>
+              <div onclick="aiAgentAction('budget_report')" style="cursor:pointer;border:1.5px solid #fef3c7;border-radius:10px;padding:10px 12px;background:#fffbeb;transition:all .2s" onmouseover="this.style.borderColor='#f59e0b';this.style.background='#fef9c3'" onmouseout="this.style.borderColor='#fef3c7';this.style.background='#fffbeb'">
+                <div style="font-size:18px;margin-bottom:4px">💰</div>
+                <div style="font-size:13px;font-weight:600;color:#b45309">预算分析报告</div>
+                <div style="font-size:11px;color:#d97706;margin-top:2px">深度分析预算执行与超支情况</div>
               </div>
-              <div onclick="document.getElementById('ai-file-input').click()" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px dashed #cbd5e1;background:#f8fafc;transition:all .15s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#f5f3ff'" onmouseout="this.style.borderColor='#cbd5e1';this.style.background='#f8fafc'">
-                <span style="font-size:18px">📎</span><div><div style="font-size:12px;font-weight:600;color:#475569">上传附件分析</div><div style="font-size:11px;color:#64748b">Excel/PDF/图片，AI提取分析</div></div>
+              <div onclick="document.getElementById('ai-file-input').click()" style="cursor:pointer;border:1.5px dashed #cbd5e1;border-radius:10px;padding:10px 12px;background:#f8fafc;transition:all .2s" onmouseover="this.style.borderColor='#6366f1';this.style.background='#f5f3ff'" onmouseout="this.style.borderColor='#cbd5e1';this.style.background='#f8fafc'">
+                <div style="font-size:18px;margin-bottom:4px">📎</div>
+                <div style="font-size:13px;font-weight:600;color:#475569">上传附件分析</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px">Excel / PDF / 图片，AI提取内容分析</div>
               </div>
-              <div onclick="aiAgentAction('owner_report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #fce7f3;background:#fdf4ff;transition:all .15s" onmouseover="this.style.borderColor='#ec4899';this.style.background='#fce7f3'" onmouseout="this.style.borderColor='#fce7f3';this.style.background='#fdf4ff'">
-                <span style="font-size:18px">👤</span><div><div style="font-size:12px;font-weight:600;color:#be185d">负责人绩效报告</div><div style="font-size:11px;color:#db2777">各负责人活动执行能力排名</div></div>
+              <div onclick="aiAgentAction('owner_report')" style="cursor:pointer;border:1.5px solid #fce7f3;border-radius:10px;padding:10px 12px;background:#fdf4ff;transition:all .2s" onmouseover="this.style.borderColor='#ec4899';this.style.background='#fce7f3'" onmouseout="this.style.borderColor='#fce7f3';this.style.background='#fdf4ff'">
+                <div style="font-size:18px;margin-bottom:4px">👤</div>
+                <div style="font-size:13px;font-weight:600;color:#be185d">负责人绩效报告</div>
+                <div style="font-size:11px;color:#db2777;margin-top:2px">各负责人活动执行能力排名</div>
               </div>
-              <div onclick="aiAgentAction('improve')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #e0f2fe;background:#f0f9ff;transition:all .15s" onmouseover="this.style.borderColor='#0ea5e9';this.style.background='#e0f2fe'" onmouseout="this.style.borderColor='#e0f2fe';this.style.background='#f0f9ff'">
-                <span style="font-size:18px">💡</span><div><div style="font-size:12px;font-weight:600;color:#0369a1">改进建议</div><div style="font-size:11px;color:#0284c7">AI给出下一步优化落地方案</div></div>
-              </div>
-              <div onclick="aiAgentAction('ops_channel_report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #dcfce7;background:#f0fdf4;transition:all .15s" onmouseover="this.style.borderColor='#22c55e';this.style.background='#dcfce7'" onmouseout="this.style.borderColor='#dcfce7';this.style.background='#f0fdf4'">
-                <span style="font-size:18px">🏢</span><div><div style="font-size:12px;font-weight:600;color:#15803d">分销渠道分析</div><div style="font-size:11px;color:#16a34a">渠道库画像、中标、优势单位分析</div></div>
-              </div>
-              <div onclick="aiAgentAction('biz_report')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid #fed7aa;background:#fff7ed;transition:all .15s" onmouseover="this.style.borderColor='#f97316';this.style.background='#ffedd5'" onmouseout="this.style.borderColor='#fed7aa';this.style.background='#fff7ed'">
-                <span style="font-size:18px">💼</span><div><div style="font-size:12px;font-weight:600;color:#c2410c">商机漏斗报告</div><div style="font-size:11px;color:#ea580c">商机转化率、丢单原因分析</div></div>
+              <div onclick="aiAgentAction('improve')" style="cursor:pointer;border:1.5px solid #e0f2fe;border-radius:10px;padding:10px 12px;background:#f0f9ff;transition:all .2s" onmouseover="this.style.borderColor='#0ea5e9';this.style.background='#e0f2fe'" onmouseout="this.style.borderColor='#e0f2fe';this.style.background='#f0f9ff'">
+                <div style="font-size:18px;margin-bottom:4px">💡</div>
+                <div style="font-size:13px;font-weight:600;color:#0369a1">改进建议</div>
+                <div style="font-size:11px;color:#0284c7;margin-top:2px">AI给出下一步优化落地方案</div>
               </div>
             </div>
             <!-- 文件上传input（隐藏） -->
@@ -1645,23 +1650,20 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
           </div>
 
           <!-- 快捷提问 -->
-          <div class="card" style="padding:12px">
+          <div class="card" style="padding:12px 16px">
             <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">💬 快捷提问</div>
-            <div style="display:flex;flex-direction:column;gap:5px" id="ai-quick-btns">
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('summary')" style="font-size:12px;text-align:left;justify-content:flex-start">📋 活动整体总结</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('budget')" style="font-size:12px;text-align:left;justify-content:flex-start">💰 预算执行分析</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('owner')" style="font-size:12px;text-align:left;justify-content:flex-start">👤 负责人绩效对比</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('channel')" style="font-size:12px;text-align:left;justify-content:flex-start">🤝 渠道效果分析</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('ops_channel_status')" style="font-size:12px;text-align:left;justify-content:flex-start">🏢 分销渠道情况</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('biz_status')" style="font-size:12px;text-align:left;justify-content:flex-start">💼 商机跟进情况</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('risk')" style="font-size:12px;text-align:left;justify-content:flex-start">⚠️ 风险与问题识别</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('suggest')" style="font-size:12px;text-align:left;justify-content:flex-start">💡 优化建议</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('roi_rank')" style="font-size:12px;text-align:left;justify-content:flex-start">📈 ROI 排行</button>
-              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('city')" style="font-size:12px;text-align:left;justify-content:flex-start">🗺️ 地市分布分析</button>
+            <div style="display:flex;flex-direction:column;gap:6px" id="ai-quick-btns">
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('summary')" style="font-size:12px;text-align:left">📋 活动整体总结</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('budget')" style="font-size:12px;text-align:left">💰 预算执行分析</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('owner')" style="font-size:12px;text-align:left">👤 负责人绩效对比</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('channel')" style="font-size:12px;text-align:left">🤝 渠道效果分析</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('risk')" style="font-size:12px;text-align:left">⚠️ 风险与问题识别</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('suggest')" style="font-size:12px;text-align:left">💡 优化建议</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('roi_rank')" style="font-size:12px;text-align:left">📈 ROI 排行</button>
+              <button class="btn btn-outline btn-sm" onclick="aiQuickAsk('city')" style="font-size:12px;text-align:left">🗺️ 地市分布分析</button>
             </div>
           </div>
-
-        </div><!-- /左侧面板 -->
+        </div><!-- /左侧能力面板 -->
 
         <!-- 右侧：聊天区（铺满剩余空间） -->
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:0">
@@ -1674,35 +1676,37 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
                 <div style="font-weight:700;font-size:16px;color:#374151;margin-bottom:10px">AI 智能分析 Agent</div>
                 <div style="line-height:2;color:#64748b">
                   我可以帮你 <b style="color:#374151">分析活动数据</b>、<b style="color:#374151">生成 PPT 文件</b>、<b style="color:#374151">撰写季报</b><br>
-                  也可以 <b style="color:#374151">解析上传的 Excel / PDF 附件</b> 进行深度分析<br>
-                  <span style="font-size:12px;color:#94a3b8">点击左侧 Agent 能力卡片，或直接输入问题开始 →</span>
+                  也可以 <b style="color:#374151">解析你上传的 Excel / PDF 附件</b> 进行深度分析<br>
+                  <span style="font-size:12px;color:#94a3b8">点击左侧 Agent 能力卡片，或直接输入问题开始</span>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- 输入区（固定在底部） -->
-            <div style="border-top:1px solid #e2e8f0;padding:12px 16px;flex-shrink:0">
-              <!-- 待发附件预览（新结构内的，原先的可保留空） -->
-              <div style="display:flex;gap:10px;align-items:flex-end">
-                <div style="flex:1;position:relative">
-                  <textarea id="ai-input" class="form-control" rows="3"
-                    placeholder="输入问题，或点击左侧 Agent 能力卡片自动生成提示词…"
-                    style="flex:1;resize:none;font-size:14px;width:100%;box-sizing:border-box;padding-right:40px"
-                    onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){aiSendMessage()}"
-                  ></textarea>
-                  <button onclick="document.getElementById('ai-file-input').click()" title="上传附件" style="position:absolute;right:8px;bottom:10px;background:none;border:none;cursor:pointer;font-size:18px;color:#64748b;padding:4px">📎</button>
-                </div>
-                <button class="btn btn-primary" onclick="aiSendMessage()" id="ai-send-btn" style="padding:10px 22px;align-self:flex-end;min-height:70px">
-                  发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>
-                </button>
-              </div>
-              <div id="ai-config-warning" style="display:none;margin-top:10px;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">
-                ⚠️ 尚未配置 Kimi API Key，请先前往 <a href="javascript:goto('settings')" style="color:var(--primary)">系统设置</a> 完成配置。
-              </div>
+          <!-- 输入区（固定在底部） -->
+          <div class="card" style="margin-top:12px;padding:14px 16px;flex-shrink:0">
+            <!-- 待发附件预览 -->
+            <div id="ai-pending-files" style="display:none;margin-bottom:10px;padding:8px 10px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd">
+              <div style="font-size:12px;color:#0369a1;font-weight:600;margin-bottom:4px">📎 附件待分析：</div>
+              <div id="ai-pending-file-tags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
             </div>
-          </div><!-- /右侧聊天区 -->
+            <div style="display:flex;gap:10px;align-items:flex-end">
+              <div style="flex:1;position:relative">
+                <textarea id="ai-input" class="form-control" rows="3" placeholder="输入问题，或点击左侧 Agent 能力卡片自动生成提示词…" style="flex:1;resize:none;font-size:14px;width:100%;box-sizing:border-box;padding-right:40px" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){aiSendMessage()}"></textarea>
+                <button onclick="document.getElementById('ai-file-input').click()" title="上传附件" style="position:absolute;right:8px;bottom:10px;background:none;border:none;cursor:pointer;font-size:18px;color:#64748b;padding:4px">📎</button>
+              </div>
+              <button class="btn btn-primary" onclick="aiSendMessage()" id="ai-send-btn" style="padding:10px 22px;align-self:flex-end;min-height:70px">
+                发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>
+              </button>
+            </div>
+            <div id="ai-config-warning" style="display:none;margin-top:10px;padding:10px 14px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">
+              ⚠️ 尚未配置 Kimi API Key，请先前往 <a href="javascript:goto('settings')" style="color:var(--primary)">系统设置</a> 完成配置。
+            </div>
+          </div>
 
-        </div><!-- /主体两栏 -->
+        </div><!-- /右侧聊天区 -->
+
+      </div><!-- /主体两栏 -->
     </div><!-- /page-ai -->
 
     <!-- ===== 负责人分析 ===== -->
@@ -1843,8 +1847,10 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       </div>
       <!-- Excel导入结果提示 -->
       <div id="channel-import-result" style="display:none;margin-bottom:12px;padding:12px 16px;border-radius:10px;font-size:13px"></div>
-      <!-- 渠道列表 - 横向滚动卡片模式 -->
-      <div id="channel-list-container" style="overflow-x:auto;padding-bottom:8px;"></div>
+      <!-- 渠道列表 - 表格区域横向滚动 -->
+      <div class="card" style="padding:0;overflow-x:auto">
+        <div id="channel-list-container" style="min-width:1200px"></div>
+      </div>
     </div>
 
     <!-- ===== 渠道运营中心（仅授权用户可见） ===== -->
@@ -1862,13 +1868,13 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
       <!-- Tab1: 渠道库管理 -->
       <div id="ops-panel-lib" style="display:block">
-        <!-- 搜索筛选行 -->
-        <div class="card" style="padding:12px 20px;margin-bottom:12px">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <input class="form-control" id="ops-lib-search" placeholder="🔍 搜索公司名称、联系人…" style="width:220px" oninput="renderOpsLibTable()">
-            <select class="form-control" id="ops-lib-filter-region" onchange="renderOpsLibTable()" style="width:120px"><option value="">全部区域</option><option value="广西">广西</option><option value="海南">海南</option></select>
-            <select class="form-control" id="ops-lib-filter-city" onchange="renderOpsLibTable()" style="width:120px"><option value="">全部地市</option></select>
-            <select class="form-control" id="ops-lib-filter-scale" onchange="renderOpsLibTable()" style="width:130px">
+        <!-- 搜索筛选行 - 横向滚动，不换行 -->
+        <div class="card" style="padding:10px 16px;margin-bottom:12px;overflow-x:auto">
+          <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;min-width:max-content">
+            <input class="form-control" id="ops-lib-search" placeholder="🔍 搜索公司名称、联系人…" style="width:200px;flex-shrink:0" oninput="renderOpsLibTable()">
+            <select class="form-control" id="ops-lib-filter-region" onchange="renderOpsLibTable()" style="width:110px;flex-shrink:0"><option value="">全部区域</option><option value="广西">广西</option><option value="海南">海南</option></select>
+            <select class="form-control" id="ops-lib-filter-city" onchange="renderOpsLibTable()" style="width:110px;flex-shrink:0"><option value="">全部地市</option></select>
+            <select class="form-control" id="ops-lib-filter-scale" onchange="renderOpsLibTable()" style="width:120px;flex-shrink:0">
               <option value="">全部规模</option>
               <option value="0-5人">0-5人</option>
               <option value="5-10人">5-10人</option>
@@ -1877,8 +1883,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
               <option value="20-30人">20-30人</option>
               <option value="30人以上">30人以上</option>
             </select>
-            <select class="form-control" id="ops-lib-filter-tag" onchange="renderOpsLibTable()" style="width:130px"><option value="">全部标签</option></select>
-            <select class="form-control" id="ops-lib-filter-relation" onchange="renderOpsLibTable()" style="width:120px">
+            <select class="form-control" id="ops-lib-filter-tag" onchange="renderOpsLibTable()" style="width:120px;flex-shrink:0"><option value="">全部标签</option></select>
+            <select class="form-control" id="ops-lib-filter-relation" onchange="renderOpsLibTable()" style="width:110px;flex-shrink:0">
               <option value="">全部关系</option>
               <option value="核心渠道">核心渠道</option>
               <option value="机会渠道">机会渠道</option>
@@ -1887,25 +1893,29 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
             </select>
           </div>
         </div>
-        <!-- 操作按钮行 -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;padding:0 4px">
-          <button class="btn btn-primary btn-sm" onclick="openOpsAddChannelModal()">＋ 手动添加</button>
-          <button class="btn btn-outline btn-sm" onclick="exportOpsLibCsv()">📤 导出CSV</button>
-          <button class="btn btn-outline btn-sm" onclick="downloadOpsLibTemplate()">📥 下载模板</button>
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('ops-lib-import-file').click()">📄 导入Excel</button>
-          <input type="file" id="ops-lib-import-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importOpsLibExcel(event)">
-          <div style="flex:1"></div>
-          <!-- 批量操作区 -->
-          <div id="ops-batch-bar" style="display:none;align-items:center;gap:8px">
-            <span style="font-size:12px;color:var(--primary);font-weight:600" id="ops-batch-count">已选 0 项</span>
-            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="openOpsBatchTierModal()">🏷️ 批量分层</button>
-            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="openOpsBatchRelationModal()">🔄 批量修改关系</button>
-            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="openOpsBatchSalesModal()">👤 批量分配销售</button>
-            <button class="btn btn-outline btn-sm" style="font-size:11px;color:#ef4444;border-color:#fecaca" onclick="batchDeleteOpsChannels()">🗑️ 批量删除</button>
-            <button class="btn btn-outline btn-sm" style="font-size:11px" onclick="clearOpsBatchSelection()">取消选择</button>
+        <!-- 操作按钮行 - 横向滚动，不换行 -->
+        <div style="overflow-x:auto;margin-bottom:12px;padding:0 4px">
+          <div style="display:flex;align-items:center;gap:8px;white-space:nowrap;min-width:max-content">
+            <button class="btn btn-primary btn-sm" onclick="openOpsAddChannelModal()" style="flex-shrink:0">＋ 手动添加</button>
+            <button class="btn btn-outline btn-sm" onclick="exportOpsLibCsv()" style="flex-shrink:0">📤 导出CSV</button>
+            <button class="btn btn-outline btn-sm" onclick="downloadOpsLibTemplate()" style="flex-shrink:0">📥 下载模板</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('ops-lib-import-file').click()" style="flex-shrink:0">📄 导入Excel</button>
+            <input type="file" id="ops-lib-import-file" accept=".csv,.xlsx,.xls" style="display:none" onchange="importOpsLibExcel(event)">
+            <!-- 批量操作区 -->
+            <div id="ops-batch-bar" style="display:none;align-items:center;gap:8px">
+              <span style="font-size:12px;color:var(--primary);font-weight:600" id="ops-batch-count">已选 0 项</span>
+              <button class="btn btn-outline btn-sm" style="font-size:11px;flex-shrink:0" onclick="openOpsBatchTierModal()">🏷️ 批量分层</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px;flex-shrink:0" onclick="openOpsBatchRelationModal()">🔄 批量修改关系</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px;flex-shrink:0" onclick="openOpsBatchSalesModal()">👤 批量分配销售</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px;color:#ef4444;border-color:#fecaca;flex-shrink:0" onclick="batchDeleteOpsChannels()">🗑️ 批量删除</button>
+              <button class="btn btn-outline btn-sm" style="font-size:11px;flex-shrink:0" onclick="clearOpsBatchSelection()">取消选择</button>
+            </div>
           </div>
         </div>
-        <div id="ops-lib-container" class="card" style="padding:0;overflow:hidden"></div>
+        <!-- 表格区域 - 横向滚动 -->
+        <div class="card" style="padding:0;overflow-x:auto">
+          <div id="ops-lib-container" style="min-width:1400px"></div>
+        </div>
       </div>
     </div><!-- /page-channelOps -->
 
@@ -2639,7 +2649,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.08-05';
+const APP_VERSION = 'v2026.04.09-01';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -3420,95 +3430,116 @@ function renderDashboard() {
   // 动态计算预算数据
   updateBudgetStats();
 
-  // 活动流程概览 - 表格行模式
-  window._dashActivities = activities; // 供筛选使用
-  _renderDashActivityRows('all');
+  // ===== 活动状态分布卡片 =====
+  const statusConfig = [
+    { key:'策划中', icon:'📋', bg:'#eff6ff', c:'#2563eb', border:'#bfdbfe' },
+    { key:'执行中', icon:'⚡', bg:'#fffbeb', c:'#d97706', border:'#fde68a' },
+    { key:'复盘中', icon:'🔍', bg:'#f0fdf4', c:'#059669', border:'#bbf7d0' },
+    { key:'已完成', icon:'✅', bg:'#f5f3ff', c:'#7c3aed', border:'#ddd6fe' },
+  ];
+  const statusCards = document.getElementById('dashboard-status-cards');
+  if (statusCards) {
+    statusCards.innerHTML = statusConfig.map(s => {
+      const cnt = activities.filter(a => a.status === s.key).length;
+      return `<div style="background:${s.bg};border:1px solid ${s.border};border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="goto('plan')">
+        <span style="font-size:22px">${s.icon}</span>
+        <div>
+          <div style="font-size:22px;font-weight:700;color:${s.c};line-height:1">${cnt}</div>
+          <div style="font-size:11px;color:${s.c};opacity:.8;margin-top:2px">${s.key}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ===== 最近更新（按修改时间倒序，取5条） =====
+  const recentEl = document.getElementById('dashboard-recent-list');
+  if (recentEl) {
+    const sorted = [...activities].sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||'')).slice(0,5);
+    if (!sorted.length) {
+      recentEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px">暂无活动</div>';
+    } else {
+      recentEl.innerHTML = sorted.map(a => {
+        const dot = a.status==='执行中'?'#f59e0b':a.status==='策划中'?'#3b82f6':a.status==='复盘中'?'#10b981':'#8b5cf6';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;border-bottom:1px solid #f1f5f9" onclick="openDetail('${a.id}')">
+          <span style="width:7px;height:7px;border-radius:50%;background:${dot};flex-shrink:0"></span>
+          <span style="flex:1;font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</span>
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap">${a.owner}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ===== 本月数据快报 =====
+  const now = new Date();
+  const monthStr = `${now.getFullYear()}年${now.getMonth()+1}月`;
+  const monthLabelEl = document.getElementById('dashboard-month-label');
+  if (monthLabelEl) monthLabelEl.textContent = monthStr;
+  const thisMonthActs = activities.filter(a => {
+    const s = a.start || ''; const e = a.end || '';
+    const mo = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    return s.startsWith(mo) || e.startsWith(mo);
+  });
+  const monthStats = document.getElementById('dashboard-month-stats');
+  if (monthStats) {
+    const mPart = activities.reduce((s,a)=>s+(a.kpis.find(k=>k.name.includes('参与'))?.actual||0),0);
+    const mCov  = activities.reduce((s,a)=>s+(a.kpis.find(k=>k.name.includes('覆盖'))?.actual||0),0);
+    const mLead = activities.reduce((s,a)=>s+(a.kpis.find(k=>k.name.includes('商机'))?.actual||0),0);
+    const totalBudget = activities.reduce((s,a)=>s+(a.budget||0),0);
+    const totalSpent  = activities.reduce((s,a)=>s+(a.spent||0),0);
+    const execRate = totalBudget > 0 ? Math.round(totalSpent/totalBudget*100) : 0;
+    const rows = [
+      { label:'本月涉及活动', val: thisMonthActs.length + ' 个', icon:'📅', c:'#2563eb' },
+      { label:'线下参与累计', val: mPart.toLocaleString() + ' 人', icon:'👥', c:'#059669' },
+      { label:'线上覆盖累计', val: mCov.toLocaleString() + ' 人', icon:'🌐', c:'#0ea5e9' },
+      { label:'累计商机数量', val: mLead + ' 个', icon:'💼', c:'#d97706' },
+      { label:'预算执行率', val: execRate + '%', icon:'💰', c: execRate>90?'#dc2626':execRate>70?'#d97706':'#059669' },
+    ];
+    monthStats.innerHTML = rows.map(r => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f8fafc;border-radius:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:15px">${r.icon}</span>
+          <span style="font-size:13px;color:var(--text-muted)">${r.label}</span>
+        </div>
+        <span style="font-size:14px;font-weight:700;color:${r.c}">${r.val}</span>
+      </div>`).join('');
+  }
 
   // 日历
   renderCalendar();
 
-  // 即将开始的活动（未来7天内开始）
-  const upcomingContainer = document.getElementById('upcoming-activities');
-  const now = new Date();
-  const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  
-  const upcoming = activities
-    .filter(a => {
-      if (!a.startDate) return false;
-      const start = new Date(a.startDate);
-      return start >= now && start <= sevenDaysLater;
-    })
-    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-    .slice(0, 8); // 最多显示8条
-  
-  const statusColor = { '策划中':'#3b82f6','执行中':'#f59e0b','复盘中':'#8b5cf6','已完成':'#10b981','已归档':'#94a3b8' };
-  
-  upcomingContainer.innerHTML = upcoming.length === 0
-    ? '<div class="text-muted" style="text-align:center;padding:30px;font-size:13px">未来7天内暂无即将开始的活动</div>'
-    : upcoming.map((a, i) => {
-      const daysLeft = Math.ceil((new Date(a.startDate) - now) / (1000 * 60 * 60 * 24));
-      const daysText = daysLeft === 0 ? '今天' : daysLeft === 1 ? '明天' : `${daysLeft}天后`;
-      const daysColor = daysLeft === 0 ? '#ef4444' : daysLeft === 1 ? '#f59e0b' : '#64748b';
-      return `
-      <div onclick="openDetail('${a.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background .12s;font-size:13px;${i%2===1?'background:#fafbfc':''}" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='${i%2===1?'#fafbfc':'transparent'}'">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px" title="${a.name}">${a.name}</div>
-          <div style="font-size:11px;color:#64748b;display:flex;align-items:center;gap:6px">
-            <span style="color:${statusColor[a.status]||'#64748b'};font-weight:500">● ${a.status}</span>
-            <span>·</span>
-            <span>${a.owner||'—'} · ${a.city||'—'}</span>
+  // ===== 近期待关注（执行中 + 即将到期 + 待复盘） =====
+  const chart = document.getElementById('progress-chart');
+  if (chart) {
+    const today = new Date();
+    const urgent = activities.filter(a => {
+      if (a.status === '已完成') return false;
+      const endDate = a.end ? new Date(a.end) : null;
+      const daysLeft = endDate ? Math.ceil((endDate - today) / 86400000) : null;
+      return a.status === '执行中' || a.status === '复盘中' || (daysLeft !== null && daysLeft <= 14 && daysLeft >= 0);
+    }).sort((a,b) => (a.end||'').localeCompare(b.end||'')).slice(0,8);
+
+    if (!urgent.length) {
+      chart.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--text-muted);font-size:13px">🎉 暂无待关注事项</div>';
+    } else {
+      chart.innerHTML = urgent.map(a => {
+        const endDate = a.end ? new Date(a.end) : null;
+        const daysLeft = endDate ? Math.ceil((endDate - today) / 86400000) : null;
+        let tagHtml = '', tagBg = '', tagC = '';
+        if (a.status === '复盘中') { tagBg='#f0fdf4'; tagC='#059669'; tagHtml='待复盘'; }
+        else if (daysLeft !== null && daysLeft <= 3) { tagBg='#fef2f2'; tagC='#dc2626'; tagHtml=daysLeft<=0?'已到期':`${daysLeft}天后结束`; }
+        else if (daysLeft !== null && daysLeft <= 7) { tagBg='#fffbeb'; tagC='#d97706'; tagHtml=`${daysLeft}天后结束`; }
+        else if (a.status === '执行中') { tagBg='#fffbeb'; tagC='#d97706'; tagHtml='执行中'; }
+        else { tagBg='#eff6ff'; tagC='#2563eb'; tagHtml='策划中'; }
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:#f8fafc;cursor:pointer;transition:background .15s" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'" onclick="openDetail('${a.id}')">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${a.owner} · ${a.end||'无截止日期'}</div>
           </div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:12px;font-weight:600;color:${daysColor}">${daysText}</div>
-          <div style="font-size:11px;color:#94a3b8">${a.startDate}</div>
-        </div>
-      </div>
-    `}).join('');
-}
-
-// ===== 仪表盘活动流程概览 - 行渲染 =====
-function _renderDashActivityRows(filter) {
-  const list = document.getElementById('dashboard-activity-list');
-  if (!list) return;
-  const src = window._dashActivities || activities;
-  const filtered = filter === 'all' ? src : src.filter(a => a.status === filter);
-  if (filtered.length === 0) {
-    list.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:30px;font-size:13px">暂无活动数据</div>';
-    return;
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:${tagBg};color:${tagC};white-space:nowrap">${tagHtml}</span>
+        </div>`;
+      }).join('');
+    }
   }
-  const statusColor = { '策划中':'#3b82f6','执行中':'#f59e0b','复盘中':'#8b5cf6','已完成':'#10b981','已归档':'#94a3b8' };
-  const statusDot   = { '策划中':'●','执行中':'▶','复盘中':'◈','已完成':'✓','已归档':'◌' };
-  list.innerHTML = filtered.map((a, i) => {
-    const progColor = a.status==='已完成' ? '#10b981' : a.status==='执行中' ? '#f59e0b' : '#3b82f6';
-    const budgetRate = (a.budget > 0) ? Math.round((a.spent||0) / a.budget * 100) : null;
-    const rateColor = budgetRate === null ? '#94a3b8' : budgetRate > 100 ? '#ef4444' : budgetRate > 85 ? '#f59e0b' : '#10b981';
-    return `
-    <div onclick="openDetail('${a.id}')" style="display:grid;grid-template-columns:2fr 1fr 80px 120px 70px 60px;gap:0;align-items:center;padding:9px 12px;border-radius:7px;cursor:pointer;transition:background .12s;font-size:13px;${i%2===1?'background:#fafbfc':''}" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='${i%2===1?'#fafbfc':'transparent'}'">
-      <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px" title="${a.name}">${a.name}</div>
-      <div style="color:#64748b;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.owner||'—'} · ${a.city||'—'}</div>
-      <div><span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:${statusColor[a.status]||'#64748b'};background:${statusColor[a.status]||'#94a3b8'}18;padding:2px 7px;border-radius:20px">${statusDot[a.status]||'○'} ${a.status}</span></div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div style="flex:1;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden"><div style="height:100%;width:${a.progress||0}%;background:${progColor};border-radius:3px;transition:width .3s"></div></div>
-        <span style="font-size:11px;color:${progColor};font-weight:600;min-width:28px;text-align:right">${a.progress||0}%</span>
-      </div>
-      <div style="text-align:right;font-size:12px;font-weight:600;color:${rateColor}">${budgetRate !== null ? budgetRate+'%' : '—'}</div>
-      <div style="text-align:right"><button onclick="event.stopPropagation();confirmDeleteActivity('${a.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:#cbd5e1;padding:2px 4px;border-radius:4px" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'" title="删除">🗑</button></div>
-    </div>`;
-  }).join('');
-}
-
-function dashFlowFilter(status, btn) {
-  // 更新按钮高亮
-  document.querySelectorAll('.dash-flow-tab').forEach(b => {
-    b.style.background = '#fff';
-    b.style.color = '#374151';
-    b.style.borderColor = '#e2e8f0';
-  });
-  btn.style.background = '#3b82f6';
-  btn.style.color = '#fff';
-  btn.style.borderColor = '#3b82f6';
-  _renderDashActivityRows(status);
 }
 
 // ===== 策划页 =====
@@ -8452,10 +8483,6 @@ function renderChannelList() {
   const checkboxCol = canEdit ? `<th style="width:36px;padding:8px 6px 8px 14px"><input type="checkbox" id="channel-select-all" onchange="channelSelectAll(this)" style="cursor:pointer;width:15px;height:15px"></th>` : '';
   const checkboxCell = (id) => canEdit ? `<td style="padding:8px 6px 8px 14px"><input type="checkbox" class="channel-row-check" data-id="${id}" onchange="channelRowCheck()" style="cursor:pointer;width:15px;height:15px"></td>` : '';
 
-  // 横向滚动卡片模式
-  const cardWidth = 320; // 卡片固定宽度
-  const gap = 12;
-  
   container.innerHTML = `
     <!-- 批量操作浮动栏 -->
     <div id="channel-batch-bar" style="display:none;position:sticky;top:56px;z-index:50;background:#1e1b4b;color:#fff;border-radius:10px;padding:10px 18px;margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 16px rgba(0,0,0,.2)">
@@ -8470,67 +8497,38 @@ function renderChannelList() {
       <button class="btn btn-sm" style="background:#ef4444;color:#fff;border:none" onclick="channelBatchDelete()">🗑️ 批量删除</button>
       <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:none" onclick="channelClearSelect()">✕ 取消选择</button>
     </div>
-    
-    <!-- 横向滚动卡片容器 -->
-    <div style="display:flex;gap:${gap}px;overflow-x:auto;padding:4px 4px 12px 4px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch">
-      ${filtered.map(c => `
-        <div id="channel-card-${c.id}" style="flex:0 0 ${cardWidth}px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;position:relative;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.08)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
-          
-          <!-- 顶部：选择框 + 分层标签 -->
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            ${canEdit ? `<input type="checkbox" class="channel-row-check" data-id="${c.id}" onchange="channelRowCheck()" style="cursor:pointer;width:16px;height:16px">` : ''}
-            <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'未分类'}</span>
-          </div>
-          
-          <!-- 渠道名称 -->
-          <div style="font-weight:700;font-size:15px;color:var(--text);line-height:1.4;word-break:break-all">${c.name}</div>
-          
-          <!-- 地市/区县 + 负责销售 -->
-          <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);flex-wrap:wrap">
-            <span style="display:flex;align-items:center;gap:3px">📍 ${[c.city, c.district].filter(Boolean).join('·')||'未设置'}</span>
-            <span style="color:#cbd5e1">|</span>
-            <span style="display:flex;align-items:center;gap:3px">👤 ${c.sales||'无负责人'}</span>
-          </div>
-          
-          <!-- 联系人信息 -->
-          <div style="background:#f8fafc;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px">
-            <div style="display:flex;align-items:center;gap:6px;font-size:13px">
-              <span style="color:#94a3b8;width:40px">联系人</span>
-              <span style="font-weight:500">${c.contact||'-'}</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:13px">
-              <span style="color:#94a3b8;width:40px">电话</span>
-              ${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary);font-weight:500">${c.phone}</a>` : '<span style="color:#cbd5e1">-</span>'}
-            </div>
-          </div>
-          
-          <!-- 渠道背景 -->
-          <div style="font-size:12px;color:var(--text-muted);line-height:1.6;flex:1;min-height:40px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">${c.background||'暂无背景信息'}</div>
-          
-          <!-- 关联活动数 -->
-          <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#64748b">
-            <span>📊 关联活动</span>
-            <span style="font-weight:600;color:var(--primary)">${getChannelActivityCount(c.id)}</span>
-          </div>
-          
-          <!-- 历史推广记录 -->
-          <div style="font-size:11px;color:#94a3b8;background:#fafafa;border-radius:6px;padding:8px;max-height:60px;overflow:hidden">
-            ${renderChannelHistory(c)}
-          </div>
-          
-          <!-- 操作按钮 -->
-          ${canEdit ? `
-          <div style="display:flex;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid #f1f5f9">
-            <button class="btn btn-outline btn-sm" style="flex:1;font-size:12px" onclick="openEditChannelModal('${c.id}')">✏️ 编辑</button>
-            <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;font-size:12px" onclick="deleteChannel('${c.id}')">🗑️ 删除</button>
-          </div>` : ''}
-        </div>
-      `).join('')}
-    </div>
-    
-    <!-- 滚动提示 -->
-    ${filtered.length > 3 ? `<div style="text-align:center;padding:8px;font-size:12px;color:#94a3b8">← 左右滑动查看更多渠道 →</div>` : ''}
-  `;
+    <div class="card" style="padding:0;overflow-x:auto">
+      <div class="table-wrap" style="min-width:900px">
+        <table>
+          <thead><tr>
+            ${checkboxCol}
+            <th style="min-width:160px;max-width:220px">渠道名称</th><th style="min-width:80px">分层</th><th style="min-width:90px">地市/区县</th><th style="min-width:70px">负责销售</th>
+            <th style="min-width:70px">关键联系人</th><th style="min-width:100px">联系方式</th><th style="min-width:150px;max-width:200px">渠道背景</th>
+            <th style="min-width:60px">市场活动</th><th style="min-width:160px">历史推广记录</th><th style="min-width:80px">操作</th>
+          </tr></thead>
+          <tbody>
+            ${filtered.map(c => `
+              <tr id="channel-row-${c.id}">
+                ${checkboxCell(c.id)}
+                <td class="fw-600" data-label="渠道名称" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.name}">${c.name}</td>
+                <td data-label="分层"><span style="padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600;background:${tierBg(c.tier)};color:${tierColor(c.tier)}">${c.tier||'-'}</span></td>
+                <td class="text-sm" data-label="地市/区县">${[c.city, c.district].filter(Boolean).join(' / ')||'-'}</td>
+                <td data-label="负责销售">${c.sales||'-'}</td>
+                <td data-label="关键联系人">${c.contact||'-'}</td>
+                <td data-label="联系方式">${c.phone ? `<a href="tel:${c.phone}" style="color:var(--primary)">${c.phone}</a>` : '-'}</td>
+                <td class="text-sm" style="max-width:200px;white-space:normal;word-break:break-all;color:var(--text-muted)" data-label="渠道背景">${(c.background||'-').substring(0,80)}${(c.background||'').length>80?'…':''}</td>
+                <td class="text-sm" data-label="关联活动">${getChannelActivityCount(c.id)}</td>
+                <td class="text-sm" style="max-width:220px" data-label="历史推广">${renderChannelHistory(c)}</td>
+                <td>
+                  ${canEdit ? `<button class="btn btn-outline btn-sm" onclick="openEditChannelModal('${c.id}')">编辑</button>
+                  <button class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;margin-left:4px" onclick="deleteChannel('${c.id}')">删除</button>` : ''}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 // ===== 渠道批量操作 =====
@@ -9627,86 +9625,14 @@ function renderAiPage() {
 }
 
 function aiGetDataContext(scope) {
-  // 确保渠道运营数据已加载
-  if (typeof loadOpsData === 'function') loadOpsData();
-
-  // ── 分销渠道库 ──
-  if (scope === 'ops_channels') {
-    const chs = (opsChannelsData||[]).map(c => ({
-      公司名称: c.name, 关系: c.relation||'', 区域: c.region||'', 地市: c.city||'', 区县: c.district||'',
-      规模: c.scale||'', 标签: (c.tags||[]).join('、'), 分层: c.tier||'',
-      联系人: c.contact||'', 职务: c.position||'', 联系方式: c.phone||'', 负责销售: c.sales||'',
-      经营业务: (c.bizTypes||[]).join('、'), 公司背景: c.background||'',
-      优势单位: c.advantageUnit||'',
-      历史中标个数: c.historyWinCount !== undefined && c.historyWinCount !== '' ? c.historyWinCount : (c.winRecords||[]).length,
-      运维记录数: (c.maintRecords||[]).length,
-      过往中标数: (c.winRecords||[]).length
-    }));
-    return `分销渠道库（共 ${chs.length} 家）：\n${JSON.stringify(chs, null, 2)}`;
-  }
-
-  // ── 商机跟进 ──
-  if (scope === 'ops_biz') {
-    const biz = (opsBizData||[]).map(b => ({
-      商机名称: b.name||'', 关联渠道: b.channelName||'', 客户单位: b.customer||'',
-      状态: b.status||'', 金额万元: b.amount||'', 负责销售: b.sales||'',
-      预计中标时间: b.expectedDate||'', 备注: b.note||''
-    }));
-    return `商机跟进数据（共 ${biz.length} 条）：\n${JSON.stringify(biz, null, 2)}`;
-  }
-
-  // ── 全量数据模式 ──
-  if (scope === 'fulldata') {
-    // 活动数据
-    const actList = (activities||[]).map(a => ({
-      名称: a.name, 类型: a.type, 地市: a.city, 负责人: a.owner, 状态: a.status,
-      预算: Number(a.budget)||0, 实际支出: Number(a.spent)||0,
-      开始时间: a.startDate, 结束时间: a.endDate,
-      ROI: a.roi||'', 复盘总结: a.reviewSummary||'',
-      KPIs: a.kpis?.map(k=>`${k.name}(目标${k.target},实际${k.actual})`).join('，')||''
-    }));
-    // 渠道管理（channels 变量）
-    const chList = (typeof channels !== 'undefined' ? channels : []).map(c => ({
-      名称: c.name, 层级: c.tier, 地市: c.city, 区县: c.district,
-      负责销售: c.sales, 联系人: c.contact, 历史记录数: Array.isArray(c.history) ? c.history.length : 0
-    }));
-    // 分销渠道库
-    const opsChs = (opsChannelsData||[]).map(c => ({
-      公司名称: c.name, 关系: c.relation||'', 地市: c.city||'', 规模: c.scale||'',
-      分层: c.tier||'', 经营业务: (c.bizTypes||[]).join('、'),
-      优势单位: c.advantageUnit||'', 负责销售: c.sales||'',
-      历史中标个数: c.historyWinCount !== undefined && c.historyWinCount !== '' ? c.historyWinCount : (c.winRecords||[]).length,
-      运维记录数: (c.maintRecords||[]).length
-    }));
-    // 商机
-    const bizList = (opsBizData||[]).map(b => ({
-      商机名称: b.name||'', 关联渠道: b.channelName||'', 客户单位: b.customer||'',
-      状态: b.status||'', 金额万元: b.amount||'', 负责销售: b.sales||''
-    }));
-    return `【系统全量数据上下文】
-
-■ 活动数据（共 ${actList.length} 条）：
-${JSON.stringify(actList, null, 2)}
-
-■ 渠道管理数据（共 ${chList.length} 条）：
-${JSON.stringify(chList, null, 2)}
-
-■ 分销渠道库（共 ${opsChs.length} 家）：
-${JSON.stringify(opsChs, null, 2)}
-
-■ 商机跟进（共 ${bizList.length} 条）：
-${JSON.stringify(bizList, null, 2)}`;
-  }
-
-  // ── 原有各范围 ──
   const scopeMap = {
     all: activities,
-    review: (activities||[]).filter(a => a.status === '已完成' || a.status === '复盘中'),
+    review: activities.filter(a => a.status === '已完成' || a.status === '复盘中'),
     budget: activities,
     owner: activities,
     channels: null
   };
-  const list = scopeMap[scope] ?? (activities||[]);
+  const list = scopeMap[scope] ?? activities;
 
   if (scope === 'channels') {
     const chs = (typeof channels !== 'undefined' ? channels : []).map(c => ({
@@ -9765,7 +9691,6 @@ async function aiSendMessage(agentType) {
   const sendBtn = document.getElementById('ai-send-btn');
   const question = input?.value?.trim();
   if (!question) return;
-  _aiLastQuestion = question; // 记录，供重试使用
 
   const apiKey = _kimiKey();
   if (!apiKey) {
@@ -9817,49 +9742,17 @@ async function aiSendMessage(agentType) {
 
   const loadingBubble = aiAppendMessage('assistant', '', true);
 
-  // ── 带自动重试的请求函数 ──
-  async function _doRequest(retryLeft = 2) {
+  try {
     const res = await fetch('https://api.moonshot.cn/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: agentType ? 4000 : 2000 })
     });
     const data = await res.json();
-    // 服务端过载（rate limit / overloaded）→ 等待后重试
-    if (data.error) {
-      const errMsg = data.error.message || '';
-      const isOverload = /overloaded|rate.?limit|too.?many|capacity|503/i.test(errMsg) || res.status === 503 || res.status === 429;
-      if (isOverload && retryLeft > 0) {
-        const waitSec = retryLeft === 2 ? 5 : 12;
-        loadingBubble.innerHTML = `<span style="color:#d97706">⏳ Kimi 服务繁忙，${waitSec}秒后自动重试（剩余重试${retryLeft}次）…</span>`;
-        await new Promise(r => setTimeout(r, waitSec * 1000));
-        return _doRequest(retryLeft - 1);
-      }
-      throw new Error(errMsg || `HTTP ${res.status}`);
-    }
-    return data;
-  }
-
-  try {
-    const data = await _doRequest();
     if (data.choices?.[0]?.message?.content) {
       const reply = data.choices[0].message.content;
       // 富文本渲染（Markdown）
       loadingBubble.innerHTML = _mdToHtml(reply);
-      // ── PPT 自动生成 ──
-      const pptMatch = reply.match(/```ppt-data\s*([\s\S]*?)```/);
-      if (pptMatch) {
-        try {
-          const slides = JSON.parse(pptMatch[1].trim());
-          // 添加下载按钮到气泡下方
-          const dlBtn = document.createElement('div');
-          dlBtn.style.cssText = 'margin-top:12px;text-align:center';
-          dlBtn.innerHTML = `<button onclick="aiDownloadPptx(this)" data-slides='${JSON.stringify(slides).replace(/'/g,"&#39;")}' style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px">📥 下载 PPT 文件 (.pptx)</button><div style="font-size:11px;color:#94a3b8;margin-top:6px">由 PptxGenJS 在浏览器内生成，无需上传到任何服务器</div>`;
-          loadingBubble.appendChild(dlBtn);
-        } catch(e) {
-          console.warn('PPT 数据解析失败，跳过自动生成:', e);
-        }
-      }
       _aiChatHistory.push({ role: 'user', content: question });
       _aiChatHistory.push({ role: 'assistant', content: reply });
       if (_aiChatHistory.length > 24) _aiChatHistory = _aiChatHistory.slice(-24);
@@ -9869,18 +9762,7 @@ async function aiSendMessage(agentType) {
   } catch(e) {
     loadingBubble.style.background = '#fee2e2';
     loadingBubble.style.color = '#991b1b';
-    const errMsg = e.message || '';
-    let tip = '';
-    if (/overloaded|rate.?limit|too.?many|capacity|503|429/i.test(errMsg)) {
-      tip = '⏳ Kimi 服务当前过载（已重试3次），请稍等几分钟后再发送。';
-    } else if (/401|invalid.*key|api.*key|unauthorized/i.test(errMsg)) {
-      tip = '🔑 API Key 无效或已过期，请在设置中重新填写正确的 Key。';
-    } else if (/fetch|network|ERR_|timeout/i.test(errMsg)) {
-      tip = '🌐 网络连接失败，请检查网络是否正常后重试。';
-    } else {
-      tip = `❌ 请求失败：${errMsg}`;
-    }
-    loadingBubble.innerHTML = `<div style="line-height:1.8">${tip}<br><button onclick="this.closest('.ai-bubble').remove()" style="margin-top:8px;background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 14px;cursor:pointer;font-size:12px">关闭</button><button onclick="aiRetryLast()" style="margin-top:8px;margin-left:8px;background:#6366f1;color:#fff;border:none;border-radius:6px;padding:4px 14px;cursor:pointer;font-size:12px">🔄 重新发送</button></div>`;
+    loadingBubble.textContent = `❌ 请求失败：${e.message}\n请检查 API Key 是否有效，或网络是否正常。`;
   } finally {
     sendBtn.disabled = false;
     sendBtn.innerHTML = '发送<br><span style="font-size:11px;opacity:0.8">Ctrl+↵</span>';
@@ -9892,8 +9774,6 @@ const _aiQuickPrompts = {
   budget: '请分析所有活动的预算执行情况：哪些活动预算超支？哪些活动节余较多？整体预算利用率如何？',
   owner: '请对比分析各负责人的绩效：活动数量、完成率、预算控制能力、KPI达成情况，给出排名和建议。',
   channel: '请分析渠道数据，包括渠道层级分布、各地市覆盖情况，以及与活动的关联情况（如有）。',
-  ops_channel_status: '请分析分销渠道库的整体情况，包括：渠道总数、分层分布、各地市覆盖、规模结构、历史中标情况汇总、优势单位集中在哪些领域，以及需要重点运营的渠道有哪些。',
-  biz_status: '请分析商机跟进数据：商机总数、各阶段分布（线索/跟进中/方案中/已中标/已丢单）、中标率、主要丢单原因（如有备注）、金额最大的商机，以及下一步跟进建议。',
   risk: '请识别当前活动中存在的风险和问题：哪些活动进度滞后？预算风险？KPI达成风险？',
   suggest: '基于以上所有数据，请给出3-5条具体可落地的优化建议，帮助提升活动效果和执行效率。',
   roi_rank: '请列出所有有ROI数据的活动排行榜，分析高ROI和低ROI活动的共同特征，给出提升建议。',
@@ -9921,35 +9801,24 @@ function aiQuickAsk(type) {
 // 已上传附件（已通过Kimi文件API处理的）
 let _aiUploadedFiles = []; // [{name, fileId, content_summary}]
 let _aiPendingFiles = []; // 待随本次消息发送的文件内容 [{name, text}]
-let _aiLastQuestion = ''; // 记录上一次发送的问题，用于重试
-
-function aiRetryLast() {
-  if (!_aiLastQuestion) return;
-  const input = document.getElementById('ai-input');
-  if (input) { input.value = _aiLastQuestion; }
-  aiSendMessage();
-}
 
 // Agent 动作分发
 const _agentPrompts = {
-  ppt: `请根据当前数据，生成一份《市场活动季度复盘报告》PPT内容。
+  ppt: `请根据当前所有活动数据，生成一份《市场活动季度复盘PPT大纲》。
+要求：
+1. 用 Markdown 格式输出，使用 ## 作为每张幻灯片标题
+2. 包含：封面页、目录、活动概览、重点活动复盘（ROI/KPI）、预算执行分析、渠道效果、经验总结与建议、下季度计划
+3. 每张幻灯片内容要点用 - 列举，关键数字必须引用真实数据
+4. 最后附上 JSON 数据块（用 \`\`\`ppt-data 包裹），包含每张幻灯片的 title 和 points 数组，供系统生成可下载PPT
 
-严格按以下格式输出，不要添加额外说明文字，只输出JSON：
+示例格式：
+## 封面
+- 市场活动季度复盘报告
+- 时间：2026年Q1
 
 \`\`\`ppt-data
-[
-  {"title":"封面","subtitle":"市场活动季度复盘报告","points":[]},
-  {"title":"目录","points":["活动概览","重点活动复盘","预算执行","渠道效果","总结与建议"]},
-  {"title":"活动概览","points":["活动总数：X场","完成率：X%","总预算：¥X万","总支出：¥X万"]},
-  {"title":"重点活动复盘","points":["活动名称 | ROI | KPI达成率 | 亮点"]},
-  {"title":"预算执行分析","points":["整体执行率：X%","超支活动：X场","节余活动：X场"]},
-  {"title":"渠道合作效果","points":["渠道覆盖：X家","重点渠道贡献"]},
-  {"title":"经验总结","points":["亮点1","亮点2","不足1","不足2"]},
-  {"title":"下季度建议","points":["建议1","建议2","建议3"]}
-]
-\`\`\`
-
-注意：points数组中每条文字不超过50字，数字必须引用真实数据，幻灯片不少于8张。`,
+[{"title":"封面","points":["市场活动季度复盘报告","时间：2026年Q1"]},...]
+\`\`\``,
 
   report: `请根据当前所有活动数据，生成一份正式的《市场活动季度总结报告》。
 要求：
@@ -9979,42 +9848,14 @@ const _agentPrompts = {
 3. 渠道协同（渠道开发/维护策略）
 4. KPI设置（目标合理性/追踪机制）
 5. 执行效率（流程优化/人员配置）
-每条建议需包含：现状问题 → 改进措施 → 预期效果`,
-
-  ops_channel_report: `请分析分销渠道库的数据，生成《分销渠道运营情况分析报告》。
-要求：
-1. **渠道总览**：渠道总数、分层分布（核心/重点/一般/待开发/敌对）、各地市数量分布
-2. **规模结构**：大中小企业比例分析
-3. **中标情况**：历史中标个数TOP渠道列表，中标总量汇总
-4. **优势单位分析**：优势单位集中在哪些行业/领域（教育、医院、政府等）
-5. **运营活跃度**：运维记录数量分布，哪些渠道长期未维护（运维记录为0）
-6. **销售覆盖**：各销售负责渠道数量分布
-7. **建议**：重点运营方向、待激活渠道名单`,
-
-  biz_report: `请分析商机跟进数据，生成《商机漏斗分析报告》。
-要求：
-1. **漏斗概览**：各阶段商机数量（线索→跟进中→方案中→已中标/已丢单）
-2. **转化率分析**：从线索到中标的转化率
-3. **金额分析**：已中标总金额、在途商机总金额
-4. **TOP商机**：金额最大的5条商机详情
-5. **丢单分析**：已丢单的主要原因（如有备注）
-6. **渠道商机贡献**：哪些渠道贡献商机最多
-7. **跟进建议**：需要重点推进的商机列表`
+每条建议需包含：现状问题 → 改进措施 → 预期效果`
 };
 
 async function aiAgentAction(type) {
   const prompt = _agentPrompts[type];
   if (!prompt) return;
   const input = document.getElementById('ai-input');
-  const scopeEl = document.getElementById('ai-data-scope');
   if (input) input.value = prompt;
-  // 自动切换数据范围
-  if (scopeEl) {
-    if (type === 'ops_channel_report') scopeEl.value = 'ops_channels';
-    else if (type === 'biz_report') scopeEl.value = 'ops_biz';
-    else if (type === 'ppt' || type === 'report') scopeEl.value = 'fulldata';
-    else scopeEl.value = 'fulldata';
-  }
   // 自动触发发送
   await aiSendMessage(type);
 }
@@ -10103,7 +9944,6 @@ function aiDownloadPPT(btn) {
   <a href="javascript:window.print()" style="color:#6366f1;font-size:13px;text-decoration:none">🖨️ 打印/另存PDF</a>
 </div>
 ${slideHtml}
-<!-- cache-bust-1775653485 -->
 </body></html>`;
 
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
@@ -10194,152 +10034,6 @@ function _addPendingFileTag(id, name, status) {
 function _updatePendingFileTag(id, name, status) {
   const el = document.getElementById(id);
   if (el) { el.textContent = `📄 ${name} ${status}`; el.style.background = status.includes('✅') ? '#dcfce7' : '#fee2e2'; el.style.color = status.includes('✅') ? '#166534' : '#991b1b'; }
-}
-
-// ===== 生成并下载 PPTX =====
-async function aiDownloadPptx(btn) {
-  let slides;
-  try {
-    slides = JSON.parse(btn.getAttribute('data-slides').replace(/&#39;/g, "'"));
-  } catch(e) { alert('PPT 数据解析失败：' + e.message); return; }
-
-  if (typeof PptxGenJS === 'undefined') {
-    alert('PPT 生成库尚未加载，请检查网络连接后刷新页面重试。');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ 生成中…';
-
-  try {
-    const pptx = new PptxGenJS();
-    pptx.layout = 'LAYOUT_WIDE'; // 16:9
-
-    const THEME = {
-      bg: '1E293B',        // 深蓝黑
-      accent: '6366F1',    // 靛紫
-      accent2: '22D3EE',   // 青
-      white: 'FFFFFF',
-      light: 'E2E8F0',
-      gray: '94A3B8',
-      titleFont: 24,
-      bodyFont: 16,
-      smallFont: 13,
-    };
-
-    slides.forEach((slideData, idx) => {
-      const slide = pptx.addSlide();
-
-      // 背景
-      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: '100%', fill: { color: THEME.bg } });
-
-      // 顶部色条
-      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: '100%', h: 0.08, fill: { color: THEME.accent } });
-
-      // 封面特殊处理
-      if (idx === 0) {
-        // 大标题
-        slide.addText(slideData.title || '市场活动季度复盘', {
-          x: 0.5, y: 1.6, w: 9, h: 1.2,
-          fontSize: 36, bold: true, color: THEME.white, align: 'center', fontFace: 'Microsoft YaHei'
-        });
-        // 副标题
-        if (slideData.subtitle) {
-          slide.addText(slideData.subtitle, {
-            x: 0.5, y: 3.0, w: 9, h: 0.7,
-            fontSize: 22, color: THEME.accent2, align: 'center', fontFace: 'Microsoft YaHei'
-          });
-        }
-        // 日期
-        const now = new Date();
-        slide.addText(`${now.getFullYear()}年${now.getMonth()+1}月`, {
-          x: 0.5, y: 4.0, w: 9, h: 0.5,
-          fontSize: 16, color: THEME.gray, align: 'center', fontFace: 'Microsoft YaHei'
-        });
-        // 底部装饰线
-        slide.addShape(pptx.ShapeType.rect, { x: 3.5, y: 4.7, w: 3, h: 0.06, fill: { color: THEME.accent } });
-        return;
-      }
-
-      // 标题背景条
-      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0.08, w: '100%', h: 1.1, fill: { color: '263147' } });
-
-      // 标题左侧竖线装饰
-      slide.addShape(pptx.ShapeType.rect, { x: 0.3, y: 0.18, w: 0.07, h: 0.8, fill: { color: THEME.accent } });
-
-      // 幻灯片标题
-      slide.addText(slideData.title || '', {
-        x: 0.5, y: 0.18, w: 8.5, h: 0.9,
-        fontSize: THEME.titleFont, bold: true, color: THEME.white, valign: 'middle', fontFace: 'Microsoft YaHei'
-      });
-
-      // 内容要点
-      const points = slideData.points || [];
-      if (points.length > 0) {
-        const rows = points.map((p, i) => {
-          // 检测是否是表头行（含 | 分隔）
-          if (p.includes('|')) {
-            const cells = p.split('|').map(s => s.trim()).filter(Boolean);
-            return { isTable: true, cells };
-          }
-          return { isTable: false, text: p, idx: i };
-        });
-
-        // 简单模式：全部用 bullet list
-        const bulletRows = rows.filter(r => !r.isTable);
-        if (bulletRows.length > 0) {
-          const textRows = bulletRows.map(r => ({
-            text: r.text,
-            options: {
-              bullet: { type: 'number', indent: 15 },
-              fontSize: THEME.bodyFont,
-              color: THEME.light,
-              fontFace: 'Microsoft YaHei',
-              paraSpaceBefore: 6
-            }
-          }));
-          slide.addText(textRows, {
-            x: 0.5, y: 1.4, w: 9, h: 3.8,
-            valign: 'top', wrap: true
-          });
-        }
-
-        // 如果有表格行，叠加在底部
-        const tableRows = rows.filter(r => r.isTable);
-        if (tableRows.length > 0) {
-          const tableData = tableRows.map(r => r.cells.map(cell => ({
-            text: cell,
-            options: { fontSize: 12, color: THEME.light, fontFace: 'Microsoft YaHei', align: 'center' }
-          })));
-          slide.addTable(tableData, {
-            x: 0.5, y: bulletRows.length > 0 ? 3.6 : 1.4,
-            w: 9,
-            fill: { color: '1E293B' },
-            border: { type: 'solid', pt: 1, color: '334155' },
-            rowH: 0.4
-          });
-        }
-      }
-
-      // 页码
-      slide.addText(`${idx + 1} / ${slides.length}`, {
-        x: 8.5, y: 5.2, w: 1.2, h: 0.3,
-        fontSize: 11, color: THEME.gray, align: 'right', fontFace: 'Microsoft YaHei'
-      });
-    });
-
-    const now = new Date();
-    const fileName = `市场活动复盘_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.pptx`;
-    await pptx.writeFile({ fileName });
-
-    btn.disabled = false;
-    btn.innerHTML = '✅ 已下载！再次下载';
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = '❌ 生成失败，点击重试';
-    console.error('PPT生成失败:', e);
-    alert('PPT 生成失败：' + e.message);
-  }
 }
 
 function aiClearChat() {
@@ -11981,6 +11675,5 @@ document.querySelector('.main')?.addEventListener('click', (e) => {
   <!-- CORS 配置检查脚本（开发和调试用） -->
   <!-- <script src="check-cors-config.js"></script> -->
 
-<!-- cache-bust-1775653485 -->
 </body>
 </html>
