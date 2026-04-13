@@ -1663,10 +1663,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('channels')">
         <span class="icon">🤝</span> 渠道名单
       </div>
-      <div class="nav-item" id="nav-inbox" onclick="goto('inbox')" style="position:relative">
-        <span class="icon">📬</span> 信息接收站
-        <span id="inbox-badge" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);background:#ef4444;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center;line-height:16px"></span>
-      </div>
       <div class="nav-item" onclick="goto('feedback')">
         <span class="icon">💬</span> 渠道反馈汇总
       </div>
@@ -3194,7 +3190,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.13-01';
+const APP_VERSION = 'v2026.04.13-02';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
