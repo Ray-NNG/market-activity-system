@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.13-03</title>
+<title>桂琼营销中心管理系统 v2026.04.13-06</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1306,6 +1306,25 @@
     .resize-handle:hover {
       background: #3b82f6;
     }
+
+    /* 售前讲师运营表格：列宽拖拽手柄 */
+    #ps-thead th { position: relative; }
+    #ps-thead .ps-resize-handle {
+      position: absolute;
+      right: -1px;
+      top: 8px;
+      bottom: 8px;
+      width: 1px;
+      cursor: col-resize;
+      background: #9ca3af;
+      border-radius: 0;
+      transition: all 0.15s;
+      z-index: 10;
+    }
+    #ps-thead .ps-resize-handle:hover {
+      background: #2563eb;
+      width: 2px;
+    }
     .resize-handle.resizing {
       background: #2563eb;
     }
@@ -1609,7 +1628,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
     <div class="login-card" style="width:100%;margin:0">
       <div class="login-logo">
         <div style="font-size:40px;margin-bottom:8px">🎯</div>
-        <h1>市场活动管理系统</h1>
+        <h1>桂琼营销中心</h1>
         <p>请输入账号和密码登录</p>
       </div>
       <div class="login-form">
@@ -1794,8 +1813,8 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   <div class="sidebar-logo">
     <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
       <div style="flex:1">
-        <h1>📊 活动管理系统</h1>
-        <span>Market Campaign Manager</span>
+        <h1>📊 桂琼营销中心</h1>
+        <span>GuiQiong Marketing Center</span>
       </div>
       <button id="mobile-sidebar-toggle" onclick="toggleMobileSidebar()" style="display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;padding:0;margin-left:8px">☰</button>
     </div>
@@ -1844,6 +1863,9 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('feedback')">
         <span class="icon">💬</span> 渠道反馈汇总
       </div>
+      <div class="nav-item" onclick="goto('presales')">
+        <span class="icon">👨‍🏫</span> 售前讲师运营
+      </div>
     </div>
     <div class="nav-section" id="nav-section-channelOps" style="display:none">
       <div class="nav-section-title">渠道运营</div>
@@ -1864,7 +1886,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   <!-- 版本号 -->
   <div style="padding:10px 20px 14px;border-top:1px solid #312e81;flex-shrink:0">
     <div style="font-size:11px;color:#6366f1;font-weight:600;letter-spacing:.5px" id="app-version-label">v2026.03.30-20</div>
-    <div style="font-size:10px;color:#4338ca;margin-top:2px">Market Campaign Manager</div>
+    <div style="font-size:10px;color:#4338ca;margin-top:2px">GuiQiong Marketing Center</div>
   </div>
 </aside>
 
@@ -2635,6 +2657,95 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       </div>
     </div><!-- /page-channelOps -->
 
+    <!-- ===== 售前讲师运营系统 ===== -->
+    <div id="page-presales" class="page">
+      <!-- 筛选栏 -->
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">类型</label>
+            <select id="ps-filter-type" class="form-control" onchange="renderPresalesList()">
+              <option value="">全部类型</option>
+              <option>城市展厅</option><option>展厅接待</option><option>常规拜访</option>
+              <option>产品培训</option><option>标书支持</option><option>项目对接</option><option>学校演示</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">层级</label>
+            <select id="ps-filter-tier" class="form-control" onchange="renderPresalesList()">
+              <option value="">全部层级</option>
+              <option>核心</option><option>重要</option><option>一般</option>
+              <option>零散</option><option>竞品渠道</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">商机</label>
+            <select id="ps-filter-opportunity" class="form-control" onchange="renderPresalesList()">
+              <option value="">全部</option>
+              <option value="有商机">有商机</option><option value="无商机">无商机</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">关键词</label>
+            <input type="text" id="ps-filter-keyword" class="form-control" placeholder="搜索公司/内容..." oninput="renderPresalesList()" style="width:180px">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">销售</label>
+            <select id="ps-filter-sales" class="form-control" onchange="renderPresalesList()" style="min-width:110px">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--text-muted);font-weight:600">售前</label>
+            <select id="ps-filter-teacher" class="form-control" onchange="renderPresalesList()" style="min-width:110px">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;gap:8px;flex-wrap:nowrap">
+            <button class="btn btn-outline" onclick="downloadPresalesTemplate()" title="下载售前讲师导入模板">📋 下载模板</button>
+            <label class="btn btn-primary" style="cursor:pointer">
+              📥 导入Excel
+              <input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="importPresalesExcel(this)">
+            </label>
+            <button class="btn btn-outline" onclick="exportPresalesCsv()">📤 导出</button>
+            <button class="btn btn-primary" onclick="addPsNewRow()">+ 新增记录</button>
+          </div>
+        </div>
+      </div>
+      <!-- 统计栏 -->
+      <div id="ps-stats" style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap"></div>
+      <!-- 批量操作栏 -->
+      <div id="ps-batch-bar" style="display:none;position:sticky;top:56px;z-index:50;background:#1e1b4b;color:#fff;border-radius:10px;padding:10px 18px;margin-bottom:12px;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 16px rgba(0,0,0,.2)">
+        <span id="ps-batch-count" style="font-size:13px;font-weight:600">已选 0 条</span>
+        <div style="flex:1"></div>
+        <select id="ps-batch-type-select" class="form-control" style="width:130px;font-size:13px;height:32px;padding:0 8px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)">
+          <option value="">批量改类型…</option>
+          <option>城市展厅</option><option>展厅接待</option><option>常规拜访</option><option>产品培训</option><option>标书支持</option><option>项目对接</option><option>学校演示</option>
+        </select>
+        <button class="btn btn-sm" style="background:#4f46e5;color:#fff;border:none;font-size:12px" onclick="psBatchChangeType()">✔ 类型</button>
+        <select id="ps-batch-tier-select" class="form-control" style="width:130px;font-size:13px;height:32px;padding:0 8px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)">
+          <option value="">批量改层级…</option>
+          <option>核心</option><option>重要</option><option>一般</option><option>零散</option><option>竞品渠道</option>
+        </select>
+        <button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;font-size:12px" onclick="psBatchChangeTier()">✔ 层级</button>
+        <button class="btn btn-sm" style="background:#059669;color:#fff;border:none;font-size:12px" onclick="psBatchExport()">📤 导出所选</button>
+        <button class="btn btn-sm" style="background:#ef4444;color:#fff;border:none;font-size:12px" onclick="psBatchDelete()">🗑️ 批量删除</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:none;font-size:12px" onclick="psClearSelect()">✕ 取消选择</button>
+      </div>
+      <!-- 表格容器 -->
+      <div class="card" id="ps-table-card" style="overflow-x:auto;max-width:100%">
+        <table class="data-table" id="ps-table" style="table-layout:fixed;min-width:1300px;border-collapse:separate;border-spacing:0">
+          <thead id="ps-thead"></thead>
+          <tbody id="ps-tbody"></tbody>
+        </table>
+        <div id="ps-empty-tip" style="padding:50px;text-align:center;color:var(--text-muted);display:none">
+          <div style="font-size:48px;margin-bottom:12px">👨‍🏫</div>
+          <div>暂无售前讲师运营记录，点击「新增记录」或导入Excel开始添加</div>
+          <div style="margin-top:10px;font-size:13px;color:var(--text-muted)">双击单元格可直接编辑，按 Enter 或点击其他位置自动保存</div>
+        </div>
+      </div>
+    </div>
     <!-- 渠道运营弹窗：批量分层 -->
     <div class="modal-overlay" id="modal-ops-batch-tier" style="display:none">
       <div class="modal" style="max-width:400px">
@@ -3365,11 +3476,11 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.13-03';
+const APP_VERSION = 'v2026.04.13-06';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
-  document.title = `市场活动全流程管理系统 ${APP_VERSION}`;
+  document.title = `桂琼营销中心管理系统 ${APP_VERSION}`;
 
   // 加载销售账号列表
   loadSalesAccounts();
@@ -4111,7 +4222,8 @@ const pageTitles = {
   usermgmt: ['账户权限','管理各角色登录密码'],
   ai: ['AI 分析助手','由 Kimi 驱动的智能数据分析'],
   feedback: ['渠道反馈汇总','所有活动的渠道跟进反馈一览'],
-  channelOps: ['分销渠道运营中心','渠道库管理、商机跟进']
+  channelOps: ['分销渠道运营中心','渠道库管理、商机跟进'],
+  presales: ['售前讲师运营系统','售前讲师工作记录与渠道运营管理']
 };
 
 function goto(page) {
@@ -4140,6 +4252,7 @@ function renderPage(page) {
   if(page === 'activities') renderActivities();
   if(page === 'channels') renderChannelsPage();
   if(page === 'channelOps') renderChannelOpsPage();
+  if(page === 'presales') renderPresalesPage();
   if(page === 'inbox') renderInboxPage();
   if(page === 'feedback') initFeedbackPage();
   if(page === 'settings') { renderSettings(); loadKimiConfigToForm(); }
@@ -9241,6 +9354,827 @@ function renderChannelList() {
   }, 0);
 }
 
+// ===== 售前讲师运营系统 =====
+let presalesRecords = [];
+
+function loadPresalesRecords() {
+  try {
+    const raw = localStorage.getItem('mcm_presales_records');
+    presalesRecords = raw ? JSON.parse(raw) : [];
+  } catch(e) { presalesRecords = []; }
+  // 兼容COS数据
+  if (typeof opsData !== 'undefined' && opsData && opsData.presales_records) {
+    const cosIds = new Set(presalesRecords.map(r=>r.id));
+    opsData.presales_records.forEach(r => {
+      if (!cosIds.has(r.id)) presalesRecords.push(r);
+    });
+  }
+}
+
+function savePresalesToStorage() {
+  localStorage.setItem('mcm_presales_records', JSON.stringify(presalesRecords));
+}
+
+function renderPresalesPage() {
+  loadPresalesRecords();
+  renderPresalesList();
+}
+
+function getFilteredPresales() {
+  const type = document.getElementById('ps-filter-type').value;
+  const tier = document.getElementById('ps-filter-tier').value;
+  const opp = document.getElementById('ps-filter-opportunity').value;
+  const kw = document.getElementById('ps-filter-keyword').value.toLowerCase().trim();
+  const salesFilter = (document.getElementById('ps-filter-sales') || {}).value || '';
+  const teacherFilter = (document.getElementById('ps-filter-teacher') || {}).value || '';
+
+  return presalesRecords.filter(r => {
+    if (type && r.type !== type) return false;
+    if (tier && r.tier !== tier) return false;
+    if (opp && r.opportunity !== opp) return false;
+    if (salesFilter && (r.sales||'') !== salesFilter) return false;
+    if (teacherFilter && (r.teacher||'') !== teacherFilter) return false;
+    if (kw) {
+      const text = [r.company, r.region, r.content, r.teacher, r.result].join(' ').toLowerCase();
+      if (!text.includes(kw)) return false;
+    }
+    return true;
+  });
+}
+
+// 初始化销售/售前筛选下拉（从数据中提取去重列表，保留当前选中值）
+function initPsFilterDropdowns() {
+  const _e = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  const salesSet = new Set();
+  const teacherSet = new Set();
+  presalesRecords.forEach(r => { if(r.sales) salesSet.add(r.sales); if(r.teacher) teacherSet.add(r.teacher); });
+
+  // 销售下拉
+  const selSales = document.getElementById('ps-filter-sales');
+  if (selSales && !selSales.dataset.inited) {
+    const curSales = selSales.value;
+    const salesList = Array.from(salesSet).sort((a,b)=>a.localeCompare(b,'zh-CN'));
+    selSales.innerHTML = '<option value="">全部</option>' + salesList.map(s=>`<option value="${_e(s)}">${_e(s)}</option>`).join('');
+    selSales.value = curSales;
+    selSales.dataset.inited = '1';
+  }
+
+  // 售前下拉
+  const selTeacher = document.getElementById('ps-filter-teacher');
+  if (selTeacher && !selTeacher.dataset.inited) {
+    const curTeacher = selTeacher.value;
+    const teacherList = Array.from(teacherSet).sort((a,b)=>a.localeCompare(b,'zh-CN'));
+    selTeacher.innerHTML = '<option value="">全部</option>' + teacherList.map(t=>`<option value="${_e(t)}">${_e(t)}</option>`).join('');
+    selTeacher.value = curTeacher;
+    selTeacher.dataset.inited = '1';
+  }
+}
+
+function psTypeColor(type) {
+  // 类型：城市展厅、展厅接待、常规拜访、产品培训、标书支持、项目对接、学校演示
+  const map = {'城市展厅':['#dbeafe','#1d4ed8'],'展厅接待':['#fef3c7','#b45309'],'常规拜访':['#f0fdf4','#15803d'],
+    '产品培训':['#ede9fe','#7c3aed'],'标书支持':['#fce7f3','#db2777'],'项目对接':['#fff7ed','#c2410c'],'学校演示':['#f0f9ff','#0369a1']};
+  return map[type] || ['#f3f4f6','#6b7280'];
+}
+
+function psTierBg(tier) {
+  // 层级：核心、重要、一般、零散、竞品渠道
+  const map = {'核心':'#fee2e2','重要':'#fef3c7','一般':'#e0e7ff',
+    '零散':'#f1f5f9','竞品渠道':'#fecaca'};
+  return map[tier] || '#f9fafb';
+}
+function psTierColor(tier) {
+  const map = {'核心':'#dc2626','重要':'#d97706','一般':'#4338ca',
+    '零散':'#64748b','竞品渠道':'#ef4444'};
+  return map[tier] || '#374151';
+}
+
+function renderPresalesList() {
+  // 初始化销售/售前下拉选项
+  initPsFilterDropdowns();
+
+  const filtered = getFilteredPresales();
+  const thead = document.getElementById('ps-thead');
+  const tbody = document.getElementById('ps-tbody');
+  const statsEl = document.getElementById('ps-stats');
+  const emptyTip = document.getElementById('ps-empty-tip');
+  const tableEl = document.getElementById('ps-table');
+
+  // 统计
+  const oppCount = { '有商机': 0, '无商机': 0 };
+  presalesRecords.forEach(r => {
+    oppCount[r.opportunity || '无商机'] = (oppCount[r.opportunity || '无商机'] || 0) + 1;
+  });
+  statsEl.innerHTML =
+    `<span style="font-size:13px;color:var(--text-muted)">共 <strong>${presalesRecords.length}</strong> 条记录</span>` +
+    `<span style="padding:3px 10px;border-radius:20px;background:#dcfce7;color:#16a34a;font-size:12px;font-weight:600">有商机 ${oppCount['有商机']||0}</span>` +
+    `<span style="padding:3px 10px;border-radius:20px;background:#f1f5f9;color:#94a3b8;font-size:12px;font-weight:600">无商机 ${oppCount['无商机']||0}</span>`;
+
+  // 表头（按用户Excel列顺序）
+  const role = getCurrentRole();
+  const canEdit = role !== 'viewer';
+  // 左侧锁定列的 sticky 样式
+  const stickyBase = 'position:sticky;left:0;background:inherit;z-index:2;';
+  const stickyCols = {
+    checkbox: stickyBase + 'left:0;min-width:34px;width:34px;',
+    date: stickyBase + 'left:34px;min-width:90px;width:90px;',
+    region: stickyBase + 'left:124px;min-width:70px;width:70px;',
+    sales: stickyBase + 'left:194px;min-width:65px;width:65px;',
+    company: stickyBase + 'left:259px;min-width:130px;width:130px;',
+    contact: stickyBase + 'left:389px;min-width:65px;width:65px;',
+    type: stickyBase + 'left:454px;min-width:75px;width:75px;'
+  };
+  const checkboxCol = canEdit ? '<th style="' + stickyCols.checkbox + 'text-align:center"><input type="checkbox" id="ps-select-all" onchange="psSelectAll(this)" style="cursor:pointer;width:15px;height:15px"></th>' : '';
+  const checkboxCell = (id) => canEdit ? '<td style="' + stickyCols.checkbox + 'text-align:center"><input type="checkbox" class="ps-row-check" data-id="' + id + '" onchange="psRowCheck()" style="cursor:pointer;width:15px;height:15px"></td>' : '';
+  thead.innerHTML = '<tr>' + checkboxCol +
+    '<th style="' + stickyCols.date + '" class="ps-resizable">始出日期</th>' +
+    '<th style="' + stickyCols.region + '" class="ps-resizable">地市</th>' +
+    '<th style="' + stickyCols.sales + '" class="ps-resizable">销售</th>' +
+    '<th style="' + stickyCols.company + '" class="ps-resizable">公司</th>' +
+    '<th style="' + stickyCols.contact + '" class="ps-resizable">对接人</th>' +
+    '<th style="' + stickyCols.type + '" class="ps-resizable">类型</th>' +
+    '<th class="ps-resizable">层级</th>' +
+    '<th class="ps-resizable">售前</th>' +
+    '<th class="ps-resizable" style="width:50px">商机</th>' +
+    '<th style="min-width:150px;max-width:250px" class="ps-resizable">商机信息补充</th>' +
+    '<th style="width:85px">落地金额</th>' +
+    '<th style="width:80px">入校渠道</th>' +
+    '<th style="min-width:120px;max-width:200px" class="ps-resizable">特别备注</th>' +
+    (canEdit ? '<th style="width:50px">操作</th>' : '') + '</tr>';
+
+  // 应用保存的列宽
+  if (window.applyPsSavedWidths) applyPsSavedWidths();
+
+  // 为售前讲师表格添加拖拽手柄
+  const psThead = document.getElementById('ps-thead');
+  if (psThead) {
+    psThead.querySelectorAll('th.ps-resizable').forEach(th => {
+      if (th.querySelector('.ps-resize-handle')) return;
+      const handle = document.createElement('div');
+      handle.className = 'ps-resize-handle';
+      th.appendChild(handle);
+    });
+  }
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    tableEl.style.display = 'none';
+    emptyTip.style.display = '';
+    return;
+  }
+  tableEl.style.display = '';
+  emptyTip.style.display = 'none';
+
+  let html = '';
+  filtered.forEach((r, idx) => {
+    const [tBg, tC] = psTypeColor(r.type) || ['#e0e2ff','#4338ca'];
+    // 行级sticky样式（与表头对齐）
+    const sBase = 'background:inherit;';
+    const sCheckbox = stickyCols.checkbox + sBase;
+    const sDate = stickyCols.date + sBase;
+    const sRegion = stickyCols.region + sBase;
+    const sSales = stickyCols.sales + sBase;
+    const sCompany = stickyCols.company + sBase + 'font-weight:600;';
+    const sContact = stickyCols.contact + sBase;
+    const sType = stickyCols.type + sBase + 'color:#374151;font-weight:600;';
+
+    html += '<tr id="ps-row-' + r.id + '">' + checkboxCell(r.id) +
+      makePsEditableCellStyled(r.id, 'date', (r.date||'').split(' ')[0], 'date', sDate) +
+      makePsEditableCellStyled(r.id, 'region', r.region||'-', 'select-region', sRegion) +
+      makePsEditableCellStyled(r.id, 'sales', r.sales||'-', 'text', sSales, true) +
+      makePsEditableCellStyled(r.id, 'company', r.company||'-', 'text', sCompany, false, true) +
+      makePsEditableCellStyled(r.id, 'contact', r.contact||'-', 'text', sContact, true) +
+      makePsEditableCellStyled(r.id, 'type', r.type||'-', 'select-type', sType) +
+      makePsEditableCell(r.id, 'tier', r.tier||'-', 'select-tier') +
+      makePsEditableCell(r.id, 'teacher', r.teacher||'-', 'text', true) +
+      `<td data-field="opportunity" data-id="${r.id}">${psOpTagHtml(r.opportunity)}</td>` +
+      makePsEditableCell(r.id, 'opptyInfo', r.opptyInfo||'', 'text', false) +
+      makePsEditableCell(r.id, 'amount', r.amount ? Number(r.amount).toLocaleString() : '', 'text', true, false, 'right') +
+      makePsEditableCell(r.id, 'channelIn', r.channelIn||'-', 'text', true) +
+      makePsEditableCell(r.id, 'note', r.note||'', 'text', false) +
+      (canEdit ? `<td><button class="btn btn-sm" onclick="deletePsRecord('${r.id}')" title="删除此行" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;padding:3px 8px;font-size:11px">×</button></td>` : '') +
+      '</tr>';
+  });
+  tbody.innerHTML = html;
+
+  // 绑定商机单元格点击切换事件
+  if (canEdit) {
+    tbody.querySelectorAll('td[data-field="opportunity"]').forEach(td => {
+      td.style.cursor = 'pointer';
+      td.onclick = function() {
+        const rid = this.dataset.id;
+        const r = presalesRecords.find(x => x.id === rid);
+        if (!r) return;
+        r.opportunity = (r.opportunity === '无商机') ? '有商机' : '无商机';
+        savePresalesData();
+        this.innerHTML = psOpTagHtml(r.opportunity);
+      };
+    });
+  }
+
+  updatePsDatalists();
+}
+
+// ===== 行内编辑辅助函数 =====
+
+function psOpTagHtml(val) {
+  return val === '无商机'
+    ? '<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#f1f5f9;color:#94a3b8;white-space:nowrap">— 无</span>'
+    : '<span style="padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#dcfce7;color:#16a34a;white-space:nowrap">✓ 有</span>';
+}
+
+// 生成可编辑单元格
+function makePsEditableCell(rowId, field, value, type, isCompact, isBold, textAlign) {
+  const s = String(value === undefined || value === null ? '' : value);
+  const safeVal = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return `<td ondblclick="startPsEdit(this,'${rowId}','${field}','${type}')"
+    class="${isCompact ? '' : 'ps-editable-cell'}"
+    style="${isBold ? 'font-weight:600;' : ''}${textAlign ? 'text-align:' + textAlign + ';' : ''}"
+    data-field="${field}" data-id="${rowId}" data-value="${safeVal}">${value || '-'}</td>`;
+}
+
+// 生成带自定义样式的可编辑单元格（用于sticky列）
+function makePsEditableCellStyled(rowId, field, value, type, extraStyle, isCompact, isBold, textAlign) {
+  const s = String(value === undefined || value === null ? '' : value);
+  const safeVal = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const baseStyle = (isBold ? 'font-weight:600;' : '') + (textAlign ? 'text-align:' + textAlign + ';' : '');
+  return `<td ondblclick="startPsEdit(this,'${rowId}','${field}','${type}')"
+    class="${isCompact ? '' : 'ps-editable-cell'}"
+    style="${baseStyle}${extraStyle}"
+    data-field="${field}" data-id="${rowId}" data-value="${safeVal}">${value || '-'}</td>`;
+}
+
+function startPsEdit(td, rowId, field, type) {
+  const currentRole = getCurrentRole();
+  if (currentRole === 'viewer') return;
+  
+  const oldValue = td.dataset.value || td.textContent.trim();
+  const currentValue = oldValue === '-' ? '' : oldValue;
+
+  if (type === 'select-type') {
+    // 类型：城市展厅、展厅接待、常规拜访、产品培训、标书支持、项目对接、学校演示
+    const options = ['城市展厅','展厅接待','常规拜访','产品培训','标书支持','项目对接','学校演示'];
+    const sel = document.createElement('select');
+    sel.className = 'form-control';
+    sel.style.cssText = 'width:100%;height:26px;font-size:12px;padding:0 6px;margin:-4px -8px;border:2px solid var(--primary);border-radius:4px;';
+    options.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.textContent = o; opt.selected = (o === currentValue); sel.appendChild(opt); });
+    sel.focus();
+    const finish = () => { const nv = sel.value; td.textContent = nv || '-'; td.dataset.value = nv; updatePsField(rowId, field, nv); };
+    sel.onchange = finish;
+    sel.onblur = finish;
+    sel.onkeydown = e => { if(e.key==='Enter'){e.preventDefault();finish();sel.blur();}if(e.key==='Escape'){td.textContent=currentValue||'-';td.dataset.value=currentValue;sel.blur();} };
+    td.textContent = ''; td.appendChild(sel);
+    setTimeout(() => sel.focus(), 0);
+
+  } else if (type === 'select-tier') {
+    // 层级：核心、重要、一般、零散、竞品渠道
+    const options = ['核心','重要','一般','零散','竞品渠道'];
+    const sel = document.createElement('select');
+    sel.className = 'form-control';
+    sel.style.cssText = 'width:100%;height:26px;font-size:12px;padding:0 6px;margin:-4px -8px;border:2px solid var(--primary);border-radius:4px;';
+    options.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.textContent = o; opt.selected = (o === currentValue); sel.appendChild(opt); });
+    const finish = () => { const nv = sel.value; td.textContent = nv || '-'; td.dataset.value = nv; updatePsField(rowId, field, nv); };
+    sel.onchange = finish;
+    sel.onblur = finish;
+    sel.onkeydown = e => { if(e.key==='Enter'){e.preventDefault();finish();sel.blur();}if(e.key==='Escape'){td.textContent=currentValue||'-';td.dataset.value=currentValue;sel.blur();} };
+    td.textContent = ''; td.appendChild(sel);
+    setTimeout(() => sel.focus(), 0);
+
+  } else if (type === 'date') {
+    const inp = document.createElement('input');
+    inp.type = 'date';
+    inp.className = 'form-control';
+    inp.style.cssText = 'width:110px;height:26px;font-size:12px;padding:2px 6px;margin:-4px -8px;border:2px solid var(--primary);border-radius:4px;';
+    inp.value = currentValue;
+    const finish = () => { const nv = inp.value; td.textContent = nv.split(' ')[0] || '-'; td.dataset.value = nv; updatePsField(rowId, field, nv); };
+    inp.onblur = finish;
+    inp.onkeydown = e => { if(e.key==='Enter'){e.preventDefault();finish();inp.blur();}if(e.key==='Escape'){td.textContent=(currentValue||'-');td.dataset.value=currentValue;inp.blur();} };
+    td.textContent = ''; td.appendChild(inp);
+    setTimeout(() => inp.focus(), 0);
+
+  } else if (type === 'select-region') {
+    // 地市下拉（广西14个地市）
+    const options = ['南宁','柳州','桂林','梧州','北海','防城港','钦州','贵港','玉林','百色','贺州','河池','来宾','崇左'];
+    const sel = document.createElement('select');
+    sel.className = 'form-control';
+    sel.style.cssText = 'width:100%;height:26px;font-size:12px;padding:0 6px;margin:-4px -8px;border:2px solid var(--primary);border-radius:4px;';
+    options.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.textContent = o; opt.selected = (o === currentValue); sel.appendChild(opt); });
+    const finish = () => { const nv = sel.value; td.textContent = nv || '-'; td.dataset.value = nv; updatePsField(rowId, field, nv); };
+    sel.onchange = finish;
+    sel.onblur = finish;
+    sel.onkeydown = e => { if(e.key==='Enter'){e.preventDefault();finish();sel.blur();}if(e.key==='Escape'){td.textContent=currentValue||'-';td.dataset.value=currentValue;sel.blur();} };
+    td.textContent = ''; td.appendChild(sel);
+    setTimeout(() => sel.focus(), 0);
+
+  } else if (type === 'select-opp') {
+    // 商机下拉
+    const options = ['有商机','无商机'];
+    const sel = document.createElement('select');
+    sel.className = 'form-control';
+    sel.style.cssText = 'width:100%;height:26px;font-size:12px;padding:0 6px;margin:-4px -8px;border:2px solid var(--primary);border-radius:4px;';
+    options.forEach(o => { const opt = document.createElement('option'); opt.value = o; opt.textContent = o; opt.selected = (o === currentValue); sel.appendChild(opt); });
+    const finish = () => { const nv = sel.value; td.textContent = nv || '-'; td.dataset.value = nv; updatePsField(rowId, field, nv); };
+    sel.onchange = finish;
+    sel.onblur = finish;
+    sel.onkeydown = e => { if(e.key==='Enter'){e.preventDefault();finish();sel.blur();}if(e.key==='Escape'){td.textContent=currentValue||'-';td.dataset.value=currentValue;sel.blur();} };
+    td.textContent = ''; td.appendChild(sel);
+    setTimeout(() => sel.focus(), 0);
+
+  } else {
+    // 文本输入
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'form-control';
+    inp.style.cssText = 'width:100%;height:26px;font-size:12px;padding:2px 6px;margin:-4px -8px;border:2px solid var(--primary);border-radius:4px;box-sizing:border-box;';
+    inp.value = currentValue;
+    const finish = () => { const nv = inp.value.trim(); td.textContent = nv || '-'; td.dataset.value = nv; updatePsField(rowId, field, nv); };
+    inp.onblur = finish;
+    inp.onkeydown = e => { if(e.key==='Enter'){e.preventDefault();finish();inp.blur();}if(e.key==='Escape'){td.textContent=(currentValue||'-');td.dataset.value=currentValue;inp.blur();} };
+    td.textContent = ''; td.appendChild(inp);
+    inp.focus();
+    inp.select();
+  }
+}
+
+// 更新单个字段并保存
+function updatePsField(rowId, field, value) {
+  const r = presalesRecords.find(x => x.id === rowId);
+  if (!r) return;
+
+  // 特殊字段处理
+  if (field === 'type' && value) {
+    const validTypes = ['城市展厅','展厅接待','常规拜访','产品培训','标书支持','项目对接','学校演示'];
+    if (!validTypes.includes(value)) return;
+  }
+
+  if (field === 'tier' && value) {
+    const validTiers = ['核心','重要','一般','零散','竞品渠道'];
+    if (!validTiers.includes(value)) return;
+  }
+
+  if (field === 'amount') {
+    value = value.replace(/[^0-9.]/g, '');
+  }
+
+  r[field] = value;
+  r.updatedAt = new Date().toISOString();
+  savePresalesData();
+
+  // 刷新统计（不重新渲染整个表格）
+  const statsEl = document.getElementById('ps-stats');
+  if (statsEl) {
+    const oppCount = { '有商机': 0, '无商机': 0 };
+    presalesRecords.forEach(rr => { oppCount[rr.opportunity || '无商机'] = (oppCount[rr.opportunity || '无商机'] || 0) + 1; });
+  }
+}
+
+// ===== 批量操作函数 =====
+function psGetSelectedIds() {
+  return [...document.querySelectorAll('.ps-row-check:checked')].map(cb => cb.dataset.id);
+}
+
+function psSelectAll(el) {
+  document.querySelectorAll('.ps-row-check').forEach(cb => cb.checked = el.checked);
+  psUpdateBatchBar();
+}
+
+function psRowCheck() { psUpdateBatchBar(); }
+
+function psClearSelect() {
+  document.querySelectorAll('.ps-row-check').forEach(cb => cb.checked = false);
+  const allCb = document.getElementById('ps-select-all');
+  if (allCb) allCb.checked = false;
+  psUpdateBatchBar();
+}
+
+function psUpdateBatchBar() {
+  const ids = psGetSelectedIds();
+  const bar = document.getElementById('ps-batch-bar');
+  if (!bar) return;
+  bar.style.display = ids.length ? '' : 'none';
+  document.getElementById('ps-batch-count').textContent = `已选 ${ids.length} 条`;
+}
+
+function psBatchChangeType() {
+  const val = document.getElementById('ps-batch-type-select').value;
+  if (!val) return alert('请选择类型');
+  const ids = psGetSelectedIds();
+  if (!ids.length) return alert('请先勾选记录');
+  presalesRecords.forEach(r => { if (ids.includes(r.id)) r.type = val; });
+  savePresalesData(); renderPresalesList(); psUpdateBatchBar();
+}
+
+function psBatchChangeTier() {
+  const val = document.getElementById('ps-batch-tier-select').value;
+  if (!val) return alert('请选择层级');
+  const ids = psGetSelectedIds();
+  if (!ids.length) return alert('请先勾选记录');
+  presalesRecords.forEach(r => { if (ids.includes(r.id)) r.tier = val; });
+  savePresalesData(); renderPresalesList(); psUpdateBatchBar();
+}
+
+function psBatchDelete() {
+  const ids = psGetSelectedIds();
+  if (!ids.length) return alert('请先勾选记录');
+  if (!confirm(`确定要删除所选的 ${ids.length} 条记录吗？`)) return;
+  presalesRecords = presalesRecords.filter(r => !ids.includes(r.id));
+  savePresalesData(); renderPresalesList(); psUpdateBatchBar();
+}
+
+function psBatchExport() {
+  const ids = psGetSelectedIds();
+  if (!ids.length) return alert('请先勾选记录');
+  const rows = presalesRecords.filter(r => ids.includes(r.id));
+  const headers = ['始出日期','地市','销售','公司','对接人','类型','层级','售前','商机','商机信息补充','落地金额','入校渠道','特别备注'];
+  const escape = v => { const s=String(v??''); return s.includes(',')||s.includes('"')||s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; };
+  const csv = '\uFEFF' + [headers.join(','), ...rows.map(r=>[r.date,r.region,r.sales,r.company,r.contact,r.type,r.tier,r.teacher,r.opportunity,r.opptyInfo,r.amount,r.channelIn,r.note].map(escape).join(','))].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='售前讲师_已选'+ids.length+'条.csv';a.click();URL.revokeObjectURL(a.href);
+}
+
+// ====== 列宽拖拽调整 ======
+(function() {
+  let resizingCol = null, startX = 0, startWidth = 0;
+
+  document.addEventListener('mousedown', function(e) {
+    const th = e.target.closest('th.ps-resizable');
+    if (!th) return;
+    const rect = th.getBoundingClientRect();
+    // 右边缘6px内触发
+    if (e.clientX >= rect.right - 6 && e.clientX <= rect.right + 2) {
+      e.preventDefault();
+      resizingCol = th;
+      startX = e.clientX;
+      startWidth = rect.width;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!resizingCol) return;
+    const diff = e.clientX - startX;
+    const newW = Math.max(40, startWidth + diff);
+    resizingCol.style.width = newW + 'px';
+    resizingCol.style.minWidth = newW + 'px';
+
+    // 同步body中对应列
+    const idx = Array.from(resizingCol.parentNode.children).indexOf(resizingCol);
+    const tbody = document.getElementById('ps-table-body');
+    if (tbody) {
+      for (const tr of tbody.children) {
+        if (tr.children[idx]) tr.children[idx].style.width = newW + 'px';
+      }
+    }
+
+    // 更新sticky偏移
+    updatePsStickyOffsets();
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (resizingCol) {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      savePsColumnWidths();
+      resizingCol = null;
+    }
+  });
+
+  function savePsColumnWidths() {
+    const widths = {};
+    const ths = document.querySelectorAll('#ps-table-head th.ps-resizable');
+    ths.forEach(th => {
+      const text = th.textContent.trim();
+      if (text && th.offsetWidth > 0) widths[text] = Math.round(th.offsetWidth);
+    });
+    localStorage.setItem('ps_col_widths', JSON.stringify(widths));
+  }
+
+  window.applyPsSavedWidths = function() {
+    try {
+      const w = JSON.parse(localStorage.getItem('ps_col_widths') || '{}');
+      if (!Object.keys(w).length) return;
+      const ths = document.querySelectorAll('#ps-thead th.ps-resizable');
+      ths.forEach(th => {
+        const text = th.textContent.trim();
+        if (w[text]) {
+          th.style.width = w[text] + 'px';
+          th.style.minWidth = w[text] + 'px';
+        }
+      });
+    } catch {}
+  };
+
+  // 根据实际th宽度重新计算sticky左偏移
+  window.updatePsStickyOffsets = function() {
+    const thead = document.getElementById('ps-thead');
+    if (!thead) return;
+    const ths = thead.querySelectorAll('th');
+    let left = 0;
+    // checkbox
+    const cb = ths[0];
+    if (cb && cb.textContent.trim().indexOf('全选') < 0) {
+      left = cb.offsetWidth || 34;
+      cb.style.left = '0';
+      for (let i = 1; i < Math.min(ths.length, 7); i++) {
+        const th = ths[i];
+        th.style.position = 'sticky';
+        th.style.zIndex = '2';
+        th.style.left = left + 'px';
+        left += (th.offsetWidth || parseInt(th.style.minWidth) || 80);
+
+        // 同步body列
+        const tbody = document.getElementById('ps-tbody');
+        if (tbody) {
+          for (const tr of tbody.children) {
+            if (tr.children[i]) {
+              tr.children[i].style.position = 'sticky';
+              tr.children[i].style.zIndex = '1';
+              tr.children[i].style.left = th.style.left;
+            }
+          }
+        }
+      }
+    }
+  };
+})();
+
+// 新增空行（插入到第一行，继承当前筛选条件）
+function addPsNewRow() {
+  // 获取当前筛选条件，新行自动继承这些值
+  const currentSales = document.getElementById('ps-filter-sales')?.value || '';
+  const currentTeacher = document.getElementById('ps-filter-teacher')?.value || '';
+  const currentType = document.getElementById('ps-filter-type')?.value || '';
+  const currentTier = document.getElementById('ps-filter-tier')?.value || '';
+  const currentOpp = document.getElementById('ps-filter-opportunity')?.value || '';
+
+  const nr = {
+    id: 'ps_new_row',
+    date: new Date().toISOString().split('T')[0],
+    region: '',
+    sales: currentSales,
+    company: '',
+    contact: '',
+    type: currentType,
+    tier: currentTier,
+    teacher: currentTeacher,
+    opportunity: currentOpp || '',
+    opptyInfo: '',
+    amount: '',
+    channelIn: '',
+    note: '',
+    _isNew: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  // 插入到数组开头
+  presalesRecords.unshift(nr);
+  savePresalesData();
+  renderPresalesList();
+  // 自动聚焦新行的第一列
+  setTimeout(() => {
+    const firstTd = document.querySelector(`#ps-row-ps_new_row td[data-field="date"]`);
+    if (firstTd) firstTd.dblclick();
+  }, 50);
+}
+
+function savePsField(rowId, field, value) {
+  const r = presalesRecords.find(r => r.id === rowId);
+  if (!r) return;
+  r[field] = value;
+  r.updatedAt = new Date().toISOString();
+
+  // 新行首次编辑时分配正式ID并保存
+  if (r._isNew) {
+    const realId = 'ps_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    delete r._isNew;
+    // 更新DOM中的ID
+    const tr = document.getElementById('ps-row-' + rowId);
+    if (tr) tr.id = 'ps-row-' + realId;
+    // 更新数组中的记录ID
+    const idx = presalesRecords.indexOf(r);
+    if (idx >= 0) presalesRecords[idx].id = realId;
+    r.id = realId;
+  }
+
+  savePresalesData();
+}
+
+// 保存数据到localStorage
+function savePresalesData() {
+  localStorage.setItem('mcm_presales_records', JSON.stringify(presalesRecords));
+}
+
+function updatePsDatalists() {
+  const companies = [...new Set(presalesRecords.map(r=>r.company).filter(Boolean))];
+  const teachers = [...new Set(presalesRecords.map(r=>r.teacher).filter(Boolean))];
+  const compDl = document.getElementById('ps-company-list');
+  const teachDl = document.getElementById('ps-teacher-list');
+  if (compDl) compDl.innerHTML = companies.map(c=>`<option value="${c}">`).join('');
+  if (teachDl) teachDl.innerHTML = teachers.map(t=>`<option value="${t}">`).join('');
+}
+
+function deletePsRecord(id) {
+  if (!confirm('确定要删除这条记录吗？')) return;
+  presalesRecords = presalesRecords.filter(r => r.id !== id);
+  savePresalesData();
+  renderPresalesList();
+}
+
+// 获取某公司的售前讲师记录数（用于渠道名单历史推广记录联动）
+function getPsRecordCountByCompany(companyName) {
+  if (!companyName) return 0;
+  return presalesRecords.filter(r =>
+    r.company === companyName || (companyName && r.company && r.company.includes(companyName))
+  ).length;
+}
+function downloadPresalesTemplate() {
+  const headers = ['始出日期','地市','销售','公司','对接人','类型','层级','售前','商机','商机信息补充','落地金额','入校渠道','特别备注'];
+  const examples = [
+    ['2026/03/23','梧州','希捷讯','广西博远教育科 杨惠玲','','城市展厅','竞品渠道','黄建宝','无商机','','','',''],
+    ['2026/03/23','梧州','希捷讯','明哲科技','陈龙发','城市展厅','零散','黄建宝','无商机','','','',''],
+    ['2026/03/24','梧州','希捷讯','金飞鸿','陈总','城市展厅','一般','黄建宝','无机','','','',''],
+    ['2026/03/25','梧州','希捷讯','鸿达','龚 ','城市展厅','零散','黄建宝','有商机','大坡镇给校累计大概11套1台一体机,4龙其中学ai体育','','',''],
+    ['（请在此行开始填写数据，可删除上方示例行）','','','','','','','','','','','',''],
+  ];
+  const escape = v => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; };
+  const csv = '\uFEFF' + [headers.map(escape).join(','), ...examples.map(row => row.map(escape).join(','))].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '广西售前讲师工作表_模板.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ===== 售前讲师：导出CSV =====
+function exportPresalesCsv() {
+  if (!presalesRecords.length) { alert('暂无数据可导出'); return; }
+  const headers = ['始出日期','地市','销售','公司','对接人','类型','层级','售前','商机','商机信息补充','落地金额','入校渠道','特别备注'];
+  const escape = v => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; };
+  const rows = presalesRecords.map(r => [
+    r.date, r.region, r.sales, r.company, r.contact,
+    r.type, r.tier, r.teacher, (r.opportunity||'有商机'),
+    r.opptyInfo, r.amount||'', r.channelIn, r.note
+  ].map(escape).join(','));
+  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '售前讲师记录_' + new Date().toLocaleDateString('zh-CN').replace(/\//g,'-') + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ===== 售前讲师：导入Excel/CSV =====
+async function importPresalesExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  try {
+    let rows = [];
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      rows = await parseCsvFile(file);
+    } else if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+      rows = await parseXlsxFile(file);
+    } else {
+      throw new Error('仅支持 .xlsx / .xls / .csv 格式');
+    }
+
+    if (!rows.length || rows.length < 2) { alert('文件为空或只有表头'); return; }
+
+    // 列映射（按用户Excel列名）
+    const headers = rows[0].map(h => String(h || '').trim().replace(/\s+/g, ''));
+    const colMap = {};
+    const fieldMap = {
+      '始出日期':'date', '日期':'date', '时间':'date',
+      '地市':'region', '区域':'region',
+      '销售':'sales',
+      '公司':'company', '公司名称':'company', '学校':'company', '单位':'company', '项目/用户':'company',
+      '对接人':'contact', '联系人':'contact', '关键联系人':'contact',
+      '类型':'type', '需求分类':'type',
+      '层级':'tier', '分层':'tier', '等级':'tier',
+      '售前':'teacher', '售前讲师':'teacher', '负责人':'teacher', '讲师':'teacher',
+      '商机':'opportunity', '有无商机':'opportunity',
+      '商机信息补充':'opptyInfo', '商机补充':'opptyInfo', '补充说明':'opptyInfo',
+      '落地金额':'amount', '金额':'amount', '预算金额':'amount',
+      '入校渠道':'channelIn', '渠道':'channelIn',
+      '特别备注':'note', '备注':'note'
+    };
+
+    // 精确匹配 + 模糊匹配
+    const usedIdx = new Set();
+    Object.entries(fieldMap).forEach(([label, field]) => {
+      if (colMap[field] !== undefined) return;
+      const exactIdx = headers.findIndex((h,i) => !usedIdx.has(i) && h === label);
+      if (exactIdx !== -1) { colMap[field] = exactIdx; usedIdx.add(exactIdx); return; }
+      const fuzzyIdx = headers.findIndex((h,i) => !usedIdx.has(i) && (h.includes(label) || label.includes(h)));
+      if (fuzzyIdx !== -1) { colMap[field] = fuzzyIdx; usedIdx.add(fuzzyIdx); }
+    });
+
+    console.log('[presales import] headers:', headers, 'colMap:', colMap);
+
+    const get = (row, field) => {
+      const idx = colMap[field];
+      return idx !== undefined ? String(row[idx] || '').trim() : '';
+    };
+
+    const validTypes = ['城市展厅','展厅接待','常规拜访','产品培训','标书支持','项目对接','学校演示'];
+    const validTiers = ['核心','重要','一般','零散','竞品渠道'];
+
+    let imported = 0, skipped = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const company = get(row, 'company');
+
+      // 跳过完全空行或提示行
+      if (!company && !row.every(c => c)) { skipped++; continue; }
+      if (company.startsWith('(') || company.startsWith('（')) { skipped++; continue; }
+
+      // 类型标准化
+      let type = get(row, 'type');
+      if (type && !validTypes.includes(type)) {
+        const mapped = validTypes.find(vt => vt.includes(type) || type.includes(vt));
+        if (mapped) type = mapped;
+      }
+
+      // 层级标准化
+      let tier = get(row, 'tier');
+      if (tier && !validTiers.includes(tier)) {
+        const mappedT = validTiers.find(vt => vt.includes(tier) || tier.includes(vt));
+        if (mappedT) tier = mappedT;
+      }
+
+      // 商机标准化
+      let opportunity = get(row, 'opportunity') || '无商机';
+      if (opportunity !== '无商机') opportunity = '有商机';
+
+      // 落地金额清理
+      let amount = get(row, 'amount').replace(/[^\d.]/g, '');
+
+      const nr = {
+        id: 'ps_' + Date.now() + '_' + i,
+        date: get(row, 'date'),
+        region: get(row, 'region'),
+        sales: get(row, 'sales'),
+        company: company,
+        contact: get(row, 'contact'),
+        type: type,
+        tier: tier,
+        teacher: get(row, 'teacher'),
+        opportunity: opportunity,
+        opptyInfo: get(row, 'opptyInfo'),
+        amount: amount,
+        channelIn: get(row, 'channelIn'),
+        note: get(row, 'note'),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      presalesRecords.push(nr);
+      imported++;
+    }
+
+    savePresalesData();
+    renderPresalesList();
+
+    const tipEl = document.getElementById('ps-import-result') ||
+      (() => {
+        const el = document.createElement('div');
+        el.id = 'ps-import-result';
+        el.style.cssText = 'margin-bottom:12px;padding:12px 16px;border-radius:10px;font-size:13px;display:none;';
+        document.getElementById('page-presales').querySelector('.card').after(el);
+        return el;
+      })();
+    tipEl.style.display = 'block';
+    tipEl.style.background = '#d1fae5';
+    tipEl.style.color = '#065f46';
+    tipEl.textContent = `✅ 导入完成！成功 ${imported} 条，跳过空行/提示 ${skipped} 条`;
+    setTimeout(() => { tipEl.style.display = 'none'; }, 4000);
+
+  } catch(err) {
+    alert('导入失败：' + err.message);
+    console.error(err);
+  }
+}
+
+// 获取某公司的售前讲师记录数（用于渠道名单历史推广记录联动）
+function getPsRecordCountByCompany(companyName) {
+  if (!companyName) return 0;
+  return presalesRecords.filter(r =>
+    r.company === companyName || (companyName && r.company && r.company.includes(companyName))
+  ).length;
+}
+
+// 获取某公司最近的售前记录摘要（用于渠道名单展示）
+function getPsRecentByCompany(companyName, limit=3) {
+  if (!companyName) return [];
+  return presalesRecords
+    .filter(r => r.company === companyName)
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''))
+    .slice(0, limit);
+}
+
+
 // ===== 渠道表格拖拽调整列宽 =====
 let channelIsResizing = false;
 let channelCurrentCol = null;
@@ -9587,28 +10521,48 @@ function getChannelActivityCount(channelId) {
     onclick="showChannelActivities('${channelId}')">${acts.length} 个活动</span>`;
 }
 
-// 渲染历史推广记录（用于列表展示）
+// 渲染历史推广记录（用于列表展示）—— 联动售前讲师运营记录
 function renderChannelHistory(c) {
   const history = c.history || [];
-  if (!history.length) return '<span style="color:var(--text-muted)">-</span>';
-  // 最多显示3条，超出显示「+N条」并支持展开
-  const MAX = 3;
-  const shown = history.slice(0, MAX);
-  const rest = history.length - MAX;
-  const typeColor = { '产品发布':'#4f46e5','培训活动':'#0891b2','渠道推广':'#059669','客户拜访':'#d97706','线上活动':'#7c3aed' };
-  const rows = shown.map(h => {
-    const tc = typeColor[h.type] || '#64748b';
-    return `<div style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;border-bottom:1px dashed #f0f0f0;line-height:1.4">
-      <span style="flex-shrink:0;font-size:11px;color:#94a3b8;white-space:nowrap;padding-top:1px">${h.date||''}</span>
-      <span style="flex-shrink:0;font-size:11px;padding:1px 6px;border-radius:10px;background:${tc}18;color:${tc};font-weight:600;white-space:nowrap">${h.type||''}</span>
-      <span style="font-size:12px;color:var(--text-muted);word-break:break-all">${h.content||''}</span>
-    </div>`;
-  }).join('');
-  const moreBtn = rest > 0
-    ? `<div style="font-size:11px;color:var(--primary);cursor:pointer;padding-top:4px;text-align:right" 
-        onclick="openEditChannelModal('${c.id}')">+${rest} 条，点击查看全部</div>`
-    : '';
-  return `<div style="display:flex;flex-direction:column">${rows}${moreBtn}</div>`;
+  const parts = [];
+
+  // 1. 渠道自身的历史推广记录
+  if (history.length) {
+    const MAX = 2;
+    const shown = history.slice(0, MAX);
+    const rest = history.length - MAX;
+    const typeColor = { '产品发布':'#4f46e5','培训活动':'#0891b2','渠道推广':'#059669','客户拜访':'#d97706','线上活动':'#7c3aed' };
+    shown.forEach(h => {
+      const tc = typeColor[h.type] || '#64748b';
+      parts.push(`<div style="display:flex;align-items:flex-start;gap:5px;padding:3px 0;border-bottom:1px dashed #f0f0f0;line-height:1.35">
+        <span style="flex-shrink:0;font-size:10px;color:#94a3b8;white-space:nowrap">${h.date||''}</span>
+        <span style="flex-shrink:0;font-size:10px;padding:1px 5px;border-radius:8px;background:${tc}18;color:${tc};font-weight:600">${h.type||''}</span>
+        <span style="font-size:11px;color:var(--text-muted);word-break:break-all">${(h.content||'').substring(0,25)}${(h.content||'').length>25?'…':''}</span>
+      </div>`);
+    });
+    if (rest > 0) parts.push(`<div style="font-size:11px;color:var(--primary);cursor:pointer;padding-top:2px" onclick="openEditChannelModal('${c.id}')">+${rest} 条更多</div>`);
+  }
+
+  // 2. 联动售前讲师运营记录（按公司名称匹配）
+  loadPresalesRecords();
+  const psRecords = getPsRecentByCompany(c.name, 2);
+  if (psRecords.length) {
+    if (parts.length) parts.push('<div style="border-top:1px solid #e8e0ff;margin:4px 0"></div>');
+    psRecords.forEach(r => {
+      const [tBg,tC] = Array.isArray(psTypeColor(r.type)) ? psTypeColor(r.type) : ['#e0e2ff','#4338ca'];
+      const oppIcon = r.opportunity === '有商机' ? '💰' : '📋';
+      parts.push(`<div style="display:flex;align-items:flex-start;gap:4px;padding:3px 0;line-height:1.35">
+        <span style="font-size:10px;color:#94a3b8;white-space:nowrap">${oppIcon} ${(r.date||'').split(' ')[0]}</span>
+        <span style="font-size:10px;padding:1px 5px;border-radius:8px;background:${tBg};color:${tC};font-weight:600">${r.type||''}</span>
+        <span style="font-size:11px;color:#6366f1;word-break:break-all;cursor:default" title="${escHtml(r.content||'')}">${(r.content||'').substring(0,20)}${(r.content||'').length>20?'…':''}</span>
+      </div>`);
+    });
+    const totalPs = getPsRecordCountByCompany(c.name);
+    if (totalPs > 2) parts.push(`<div style="font-size:11px;color:#6366f1;cursor:pointer;padding-top:2px" onclick="goto('presales')">+${totalPs-2} 条售前记录 →</div>`);
+  }
+
+  if (!parts.length) return '<span style="color:var(--text-muted)">-</span>';
+  return `<div style="display:flex;flex-direction:column">${parts.join('')}</div>`;
 }
 
 // 弹出渠道关联活动列表
