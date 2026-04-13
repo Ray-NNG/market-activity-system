@@ -26,7 +26,7 @@
     }
   })();
 </script>
-<title>市场活动全流程管理系统 v2026.04.13-02</title>
+<title>市场活动全流程管理系统 v2026.04.13-03</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
@@ -1832,6 +1832,9 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('owner')">
         <span class="icon">👤</span> 负责人分析
       </div>
+      <div class="nav-item" onclick="goto('ai')">
+        <span class="icon">🤖</span> AI 分析助手
+      </div>
     </div>
     <div class="nav-section" id="nav-section-channel">
       <div class="nav-section-title">渠道管理</div>
@@ -1847,9 +1850,6 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
       <div class="nav-item" onclick="goto('channelOps')">
         <span class="icon">🏢</span> 分销渠道运营中心
       </div>
-    </div>
-    <div class="nav-item" onclick="goto('ai')">
-      <span class="icon">🤖</span> AI 分析助手
     </div>
     <div class="nav-section" id="nav-admin-section">
       <div class="nav-section-title">系统管理</div>
@@ -3365,7 +3365,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.13-02';
+const APP_VERSION = 'v2026.04.13-03';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
