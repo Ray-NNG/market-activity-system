@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户运维系统 - 市场活动管理</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f8fafc;
+      color: #334155;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    
+    .header {
+      padding: 24px 32px;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: white;
+      color: #4f46e5;
+    }
+    
+    .btn-primary:hover {
+      background: #f8fafc;
+    }
+    
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .main-content {
+      padding: 32px;
+    }
+    
+    .filters {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .filter-label {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 500;
+    }
+    
+    .filter-select, .filter-input {
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+    }
+    
+    .filter-select:focus, .filter-input:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    
+    .table-container {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    
+    .table-header {
+      padding: 20px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .table-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    
+    .user-ops-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    
+    .user-ops-table th {
+      background: #f8fafc;
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #475569;
+      font-size: 14px;
+      border-bottom: 2px solid #e2e8f0;
+      position: relative;
+      min-width: 120px;
+    }
+    
+    .user-ops-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 14px;
+    }
+    
+    .user-ops-table tbody tr:hover {
+      background: #f8fafc;
+    }
+    
+    .user-ops-table tbody tr.selected {
+      background: #f0f9ff;
+    }
+    
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: #64748b;
+    }
+    
+    .batch-bar {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      display: none;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+    
+    .batch-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .tier-important { color: #dc2626; font-weight: 600; }
+    .tier-core { color: #7c3aed; font-weight: 700; }
+    .opportunity-yes { color: #059669; font-weight: 600; }
+    
+    /* 列宽拖拽手柄 */
+    .resize-handle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 8px;
+      height: 100%;
+      cursor: col-resize;
+      background: transparent;
+      z-index: 10;
+    }
+    
+    .resize-handle:hover {
+      background: #4f46e5;
+    }
+    
+    @keyframes highlight-row {
+      0% { background: #fffbeb; }
+      50% { background: #fef3c7; }
+      100% { background: transparent; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>
+        <span>👥</span>
+        用户运维系统
+      </h1>
+      <div class="header-actions">
+        <button class="btn btn-secondary" onclick="downloadUoTemplate()">
+          📋 下载模板
+        </button>
+        <button class="btn btn-primary" onclick="addUoNewRow()">
+          ➕ 新增记录
+        </button>
+      </div>
+    </header>
+    
+    <main class="main-content">
+      <div class="filters">
+        <div class="filter-group">
+          <label class="filter-label">类型筛选</label>
+          <select class="filter-select" id="uo-filter-type">
+            <option value="">全部类型</option>
+            <option value="城市展厅">城市展厅</option>
+            <option value="城市接待">城市接待</option>
+            <option value="产品培训">产品培训</option>
+            <option value="项目对接">项目对接</option>
+            <option value="渠道对接">渠道对接</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-label">层级筛选</label>
+          <select class="filter-select" id="uo-filter-tier">
+            <option value="">全部层级</option>
+            <option value="一般">一般</option>
+            <option value="普通">普通</option>
+            <option value="重要">重要</option>
+            <option value="核心">核心</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-label">商机筛选</label>
+          <select class="filter-select" id="uo-filter-opportunity">
+            <option value="">全部</option>
+            <option value="有商机">有商机</option>
+            <option value="无商机">无商机</option>
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-label">地市</label>
+          <select class="filter-select" id="uo-filter-city">
+            <option value="">全部地市</option>
+            <!-- 动态填充 -->
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-label">对接人</label>
+          <select class="filter-select" id="uo-filter-contact">
+            <option value="">全部对接人</option>
+            <!-- 动态填充 -->
+          </select>
+        </div>
+        
+        <div class="filter-group">
+          <label class="filter-label">关键词搜索</label>
+          <input type="text" class="filter-input" id="uo-filter-keyword" placeholder="公司/对接人/职位...">
+        </div>
+      </div>
+      
+      <div class="stats-grid" id="uo-stats">
+        <!-- 动态填充统计数据 -->
+      </div>
+      
+      <div class="table-container" id="uo-table-card">
+        <div class="table-header">
+          <h3>用户运维记录</h3>
+          <div class="table-actions">
+            <button class="btn btn-secondary" onclick="uoExportAll()">📥 导出全部</button>
+            <button class="btn btn-secondary" onclick="uoImportExcel()">📤 导入Excel</button>
+          </div>
+        </div>
+        
+        <div class="table-wrapper">
+          <table class="user-ops-table" id="uo-table">
+            <thead id="uo-thead">
+              <tr>
+                <th style="width: 60px; text-align: center">
+                  <input type="checkbox" id="uo-select-all" onchange="uoSelectAllRows(this.checked)">
+                </th>
+                <th data-column="0">培训日期 <div class="resize-handle" data-column="0"></div></th>
+                <th data-column="1">地市 <div class="resize-handle" data-column="1"></div></th>
+                <th data-column="2">销售 <div class="resize-handle" data-column="2"></div></th>
+                <th data-column="3">公司 <div class="resize-handle" data-column="3"></div></th>
+                <th data-column="4">对接人 <div class="resize-handle" data-column="4"></div></th>
+                <th data-column="5">职位 <div class="resize-handle" data-column="5"></div></th>
+                <th data-column="6">类型 <div class="resize-handle" data-column="6"></div></th>
+                <th data-column="7">层级 <div class="resize-handle" data-column="7"></div></th>
+                <th data-column="8">售前 <div class="resize-handle" data-column="8"></div></th>
+                <th data-column="9">商机 <div class="resize-handle" data-column="9"></div></th>
+              </tr>
+            </thead>
+            <tbody id="uo-tbody">
+              <!-- 动态填充表格数据 -->
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="empty-state" id="uo-empty-tip">
+          <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+          <h3 style="margin-bottom: 8px; color: #64748b;">暂无用户运维记录</h3>
+          <p style="color: #94a3b8;">点击右上角「新增记录」或导入Excel开始添加</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- 批量操作栏 -->
+  <div class="batch-bar" id="uo-batch-bar">
+    <div>
+      <span id="uo-batch-count">已选 0 条</span>
+    </div>
+    <div class="batch-actions">
+      <div class="filter-group" style="display: flex; align-items: center; gap: 8px;">
+        <label style="font-size: 12px;">修改类型：</label>
+        <select style="padding: 6px 10px; border-radius: 6px; font-size: 12px;" id="uo-batch-type-select">
+          <option value="">选择类型</option>
+          <option value="城市展厅">城市展厅</option>
+          <option value="城市接待">城市接待</option>
+          <option value="产品培训">产品培训</option>
+          <option value="项目对接">项目对接</option>
+          <option value="渠道对接">渠道对接</option>
+        </select>
+      </div>
+      
+      <div class="filter-group" style="display: flex; align-items: center; gap: 8px;">
+        <label style="font-size: 12px;">修改层级：</label>
+        <select style="padding: 6px 10px; border-radius: 6px; font-size: 12px;" id="uo-batch-tier-select">
+          <option value="">选择层级</option>
+          <option value="一般">一般</option>
+          <option value="普通">普通</option>
+          <option value="重要">重要</option>
+          <option value="核心">核心</option>
+        </select>
+      </div>
+      
+      <button class="btn" style="padding: 6px 12px; font-size: 12px;" onclick="uoBatchExport()">
+        📥 导出选中
+      </button>
+      <button class="btn" style="padding: 6px 12px; font-size: 12px; background: #dc2626; color: white;" onclick="uoBatchDelete()">
+        🗑️ 删除选中
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ===== 用户运维系统核心功能 =====
+    let uoRecords = [];
+    
+    // 初始化
+    function initUoSystem() {
+      loadUoRecords();
+      renderUoTable();
+      setupFilters();
+    }
+    
+    // 加载记录
+    function loadUoRecords() {
+      try {
+        const raw = localStorage.getItem('mcm_user_ops_records');
+        uoRecords = raw ? JSON.parse(raw) : [];
+      } catch(e) { 
+        uoRecords = [];
+      }
+    }
+    
+    // 保存记录
+    function saveUoRecords() {
+      localStorage.setItem('mcm_user_ops_records', JSON.stringify(uoRecords));
+    }
+    
+    // 渲染表格
+    function renderUoTable() {
+      const tbody = document.getElementById('uo-tbody');
+      const emptyTip = document.getElementById('uo-empty-tip');
+      const statsEl = document.getElementById('uo-stats');
+      
+      if (!tbody) return;
+      
+      const filtered = getFilteredUoRecords();
+      
+      // 更新统计信息
+      if (statsEl) {
+        const total = filtered.length;
+        const withOpp = filtered.filter(r => r.opportunity === '有商机').length;
+        const cities = new Set(filtered.map(r => r.city).filter(Boolean));
+        const contacts = new Set(filtered.map(r => r.contact).filter(Boolean));
+        
+        statsEl.innerHTML = `
+          <div class="stat-card">
+            <div class="stat-label">总记录数</div>
+            <div class="stat-value">${total}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">有商机</div>
+            <div class="stat-value opportunity-yes">${withOpp}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">覆盖地市</div>
+            <div class="stat-value">${cities.size}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">对接人数量</div>
+            <div class="stat-value">${contacts.size}</div>
+          </div>
+        `;
+      }
+      
+      // 检查是否有数据
+      if (!filtered.length) {
+        tbody.innerHTML = '';
+        if (emptyTip) emptyTip.style.display = 'block';
+        return;
+      }
+      
+      if (emptyTip) emptyTip.style.display = 'none';
+      
+      // 生成表格行
+      const rowsHtml = filtered.map((record, idx) => {
+        const date = record.trainingDate ? new Date(record.trainingDate).toLocaleDateString('zh-CN') : '';
+        const tierClass = {
+          '重要': 'tier-important',
+          '核心': 'tier-core'
+        }[record.tier] || '';
+        
+        const oppClass = record.opportunity === '有商机' ? 'opportunity-yes' : '';
+        
+        return `
+          <tr data-id="${record.id}" class="${record.selected ? 'selected' : ''}" onclick="uoToggleRowSelect(${idx}, event)">
+            <td style="text-align: center">
+              <input type="checkbox" data-row="${idx}" onchange="uoToggleSelect(${idx}, this.checked, event)" ${record.selected ? 'checked' : ''}>
+            </td>
+            <td ondblclick="uoEditCell(${idx}, 'trainingDate')">${date}</td>
+            <td ondblclick="uoEditCell(${idx}, 'city')">${escapeHtml(record.city || '')}</td>
+            <td ondblclick="uoEditCell(${idx}, 'sales')">${escapeHtml(record.sales || '')}</td>
+            <td ondblclick="uoEditCell(${idx}, 'company')">${escapeHtml(record.company || '')}</td>
+            <td ondblclick="uoEditCell(${idx}, 'contact')">${escapeHtml(record.contact || '')}</td>
+            <td ondblclick="uoEditCell(${idx}, 'position')">${escapeHtml(record.position || '')}</td>
+            <td ondblclick="uoEditCell(${idx}, 'type')" class="${tierClass}">${escapeHtml(record.type || '')}</td>
+            <td ondblclick="uoEditCell(${idx}, 'tier')" class="${tierClass}">${escapeHtml(record.tier || '')}</td>
+            <td ondblclick="uoEditCell(${idx}, 'teacher')">${escapeHtml(record.teacher || '')}</td>
+            <td ondblclick="uoEditCell(${idx}, 'opportunity')" class="${oppClass}">${escapeHtml(record.opportunity || '')}</td>
+          </tr>
+        `;
+      }).join('');
+      
+      tbody.innerHTML = rowsHtml;
+      
+      // 初始化列宽拖拽
+      initUoColumnResize();
+      
+      // 更新批量操作栏
+      updateUoBatchBar();
+    }
+    
+    // 获取筛选后的记录
+    function getFilteredUoRecords() {
+      const type = document.getElementById('uo-filter-type')?.value || '';
+      const tier = document.getElementById('uo-filter-tier')?.value || '';
+      const opp = document.getElementById('uo-filter-opportunity')?.value || '';
+      const city = document.getElementById('uo-filter-city')?.value || '';
+      const contact = document.getElementById('uo-filter-contact')?.value || '';
+      const keyword = document.getElementById('uo-filter-keyword')?.value.toLowerCase().trim() || '';
+      
+      return uoRecords.filter(r => {
+        if (type && r.type !== type) return false;
+        if (tier && r.tier !== tier) return false;
+        if (opp && r.opportunity !== opp) return false;
+        if (city && r.city !== city) return false;
+        if (contact && r.contact !== contact) return false;
+        if (keyword) {
+          const searchText = [r.company, r.contact, r.position, r.sales, r.teacher].join(' ').toLowerCase();
+          if (!searchText.includes(keyword)) return false;
+        }
+        return true;
+      });
+    }
+    
+    // 设置筛选器
+    function setupFilters() {
+      // 填充地市筛选器
+      const cities = [...new Set(uoRecords.map(r => r.city).filter(Boolean))].sort();
+      const citySelect = document.getElementById('uo-filter-city');
+      if (citySelect && cities.length > 0) {
+        citySelect.innerHTML = '<option value="">全部地市</option>' + 
+          cities.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      }
+      
+      // 填充对接人筛选器
+      const contacts = [...new Set(uoRecords.map(r => r.contact).filter(Boolean))].sort();
+      const contactSelect = document.getElementById('uo-filter-contact');
+      if (contactSelect && contacts.length > 0) {
+        contactSelect.innerHTML = '<option value="">全部对接人</option>' + 
+          contacts.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      }
+      
+      // 监听筛选器变化
+      document.querySelectorAll('.filter-select, .filter-input').forEach(el => {
+        el.addEventListener('change', renderUoTable);
+      });
+      
+      document.getElementById('uo-filter-keyword')?.addEventListener('input', renderUoTable);
+    }
+    
+    // 列宽拖拽功能
+    function initUoColumnResize() {
+      const handles = document.querySelectorAll('#uo-table .resize-handle');
+      handles.forEach(handle => {
+        handle.addEventListener('mousedown', startUoResize);
+      });
+      
+      // 恢复保存的列宽
+      restoreUoColumnWidths();
+    }
+    
+    function startUoResize(e) {
+      const handle = e.target;
+      const columnIndex = parseInt(handle.getAttribute('data-column'));
+      const table = document.getElementById('uo-table');
+      const th = handle.closest('th');
+      
+      if (!table || !th) return;
+      
+      const startX = e.clientX;
+      const startWidth = th.offsetWidth;
+      
+      function doDrag(e) {
+        const diff = e.clientX - startX;
+        const newWidth = Math.max(80, startWidth + diff);
+        th.style.width = newWidth + 'px';
+        
+        // 同步更新所有行的列宽
+        const allRows = table.querySelectorAll('tr');
+        allRows.forEach(row => {
+          const cell = row.cells[columnIndex + 1]; // +1因为第一列是复选框
+          if (cell) cell.style.width = newWidth + 'px';
+        });
+        
+        e.preventDefault();
+      }
+      
+      function stopDrag() {
+        document.documentElement.removeEventListener('mousemove', doDrag);
+        document.documentElement.removeEventListener('mouseup', stopDrag);
+        saveUoColumnWidths();
+        handle.style.backgroundColor = 'transparent';
+      }
+      
+      document.documentElement.addEventListener('mousemove', doDrag);
+      document.documentElement.addEventListener('mouseup', stopDrag);
+      
+      handle.style.backgroundColor = '#4f46e5';
+    }
+    
+    function saveUoColumnWidths() {
+      const widths = {};
+      const headers = document.querySelectorAll('#uo-thead th');
+      headers.forEach((th, index) => {
+        if (index > 0) { // 跳过复选框列
+          widths[index - 1] = th.offsetWidth;
+        }
+      });
+      localStorage.setItem('uoColumnWidths', JSON.stringify(widths));
+    }
+    
+    function restoreUoColumnWidths() {
+      const saved = localStorage.getItem('uoColumnWidths');
+      if (!saved) return;
+      
+      const widths = JSON.parse(saved);
+      const table = document.getElementById('uo-table');
+      const headers = document.querySelectorAll('#uo-thead th');
+      
+      headers.forEach((th, index) => {
+        if (index > 0 && widths[index - 1]) {
+          const newWidth = widths[index - 1];
+          th.style.width = newWidth + 'px';
+          
+          const allRows = table.querySelectorAll('tr');
+          allRows.forEach(row => {
+            const cell = row.cells[index];
+            if (cell) cell.style.width = newWidth + 'px';
+          });
+        }
+      });
+    }
+    
+    // 添加新记录
+    function addUoNewRow() {
+      const newRecord = {
+        id: 'uo_' + Date.now(),
+        trainingDate: new Date().toISOString().split('T')[0],
+        city: '',
+        sales: '',
+        company: '',
+        contact: '',
+        position: '',
+        type: '城市展厅',
+        tier: '一般',
+        teacher: '',
+        opportunity: '无商机',
+        selected: false,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString()
+      };
+      
+      uoRecords.unshift(newRecord);
+      saveUoRecords();
+      renderUoTable();
+      
+      // 滚动到顶部并高亮
+      setTimeout(() => {
+        const tableCard = document.getElementById('uo-table-card');
+        if (tableCard) tableCard.scrollTop = 0;
+        const firstRow = document.querySelector('#uo-tbody tr:first-child');
+        if (firstRow) {
+          firstRow.style.animation = 'highlight-row 2s ease';
+          setTimeout(() => firstRow.style.animation = '', 2000);
+        }
+      }, 100);
+    }
+    
+    // 选择记录
+    function uoToggleSelect(idx, checked, event) {
+      if (event) event.stopPropagation();
+      const filtered = getFilteredUoRecords();
+      const record = filtered[idx];
+      if (record) {
+        const originalRecord = uoRecords.find(r => r.id === record.id);
+        if (originalRecord) {
+          originalRecord.selected = checked;
+          saveUoRecords();
+          renderUoTable();
+        }
+      }
+    }
+    
+    function uoToggleRowSelect(idx, event) {
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT') return;
+      const filtered = getFilteredUoRecords();
+      const record = filtered[idx];
+      if (record) {
+        const originalRecord = uoRecords.find(r => r.id === record.id);
+        if (originalRecord) {
+          originalRecord.selected = !originalRecord.selected;
+          saveUoRecords();
+          renderUoTable();
+        }
+      }
+    }
+    
+    function uoSelectAllRows(checked) {
+      const filtered = getFilteredUoRecords();
+      filtered.forEach(record => {
+        const originalRecord = uoRecords.find(r => r.id === record.id);
+        if (originalRecord) {
+          originalRecord.selected = checked;
+        }
+      });
+      saveUoRecords();
+      renderUoTable();
+    }
+    
+    // 更新批量操作栏
+    function updateUoBatchBar() {
+      const selectedCount = uoRecords.filter(r => r.selected).length;
+      const batchBar = document.getElementById('uo-batch-bar');
+      const countEl = document.getElementById('uo-batch-count');
+      
+      if (selectedCount > 0) {
+        if (batchBar) batchBar.style.display = 'flex';
+        if (countEl) countEl.textContent = `已选 ${selectedCount} 条`;
+      } else {
+        if (batchBar) batchBar.style.display = 'none';
+      }
+    }
+    
+    // 批量操作
+    function uoBatchExport() {
+      const selected = uoRecords.filter(r => r.selected);
+      if (selected.length === 0) {
+        alert('请先选择记录');
+        return;
+      }
+      
+      const headers = ['培训日期', '地市', '销售', '公司', '对接人', '职位', '类型', '层级', '售前', '商机'];
+      const escape = v => { 
+        const s = String(v ?? ''); 
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; 
+      };
+      
+      const rows = selected.map(r => [
+        r.trainingDate || '',
+        r.city || '',
+        r.sales || '',
+        r.company || '',
+        r.contact || '',
+        r.position || '',
+        r.type || '',
+        r.tier || '',
+        r.teacher || '',
+        r.opportunity || ''
+      ].map(escape).join(','));
+      
+      const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `用户运维记录_已选${selected.length}条_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    
+    function uoBatchDelete() {
+      const selected = uoRecords.filter(r => r.selected);
+      if (selected.length === 0) {
+        alert('请先选择记录');
+        return;
+      }
+      
+      if (!confirm(`确定要删除选中的 ${selected.length} 条记录吗？此操作不可撤销。`)) {
+        return;
+      }
+      
+      uoRecords = uoRecords.filter(r => !r.selected);
+      saveUoRecords();
+      renderUoTable();
+      alert(`已删除 ${selected.length} 条记录`);
+    }
+    
+    // 模板下载
+    function downloadUoTemplate() {
+      const headers = ['培训日期', '地市', '销售', '公司', '对接人', '职位', '类型', '层级', '售前', '商机'];
+      const examples = [
+        ['2026-04-15', '南宁', '李小明', '南宁市XX学校', '王老师', '信息部主任', '城市展厅', '重要', '张讲师', '有商机'],
+        ['2026-04-16', '柳州', '张三', '柳州市XX公司', '李经理', '项目经理', '项目对接', '核心', '李讲师', '无商机'],
+        ['2026-04-17', '桂林', '王五', '桂林市XX单位', '赵主任', '培训主任', '产品培训', '普通', '王讲师', '有商机']
+      ];
+      
+      const escape = v => { 
+        const s = String(v ?? ''); 
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; 
+      };
+      
+      const rows = examples.map(row => row.map(escape).join(','));
+      const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '用户运维系统_模板.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    
+    // 导出全部
+    function uoExportAll() {
+      const headers = ['培训日期', '地市', '销售', '公司', '对接人', '职位', '类型', '层级', '售前', '商机'];
+      const escape = v => { 
+        const s = String(v ?? ''); 
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; 
+      };
+      
+      const rows = uoRecords.map(r => [
+        r.trainingDate || '',
+        r.city || '',
+        r.sales || '',
+        r.company || '',
+        r.contact || '',
+        r.position || '',
+        r.type || '',
+        r.tier || '',
+        r.teacher || '',
+        r.opportunity || ''
+      ].map(escape).join(','));
+      
+      const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `用户运维记录_全部${uoRecords.length}条_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    
+    // 导入Excel（模拟）
+    function uoImportExcel() {
+      alert('导入功能开发中...\n\n请使用下载的模板填写数据后，直接复制粘贴到表格中。');
+    }
+    
+    // 工具函数
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // 初始化
+    window.addEventListener('load', initUoSystem);
+  </script>
+</body>
+</html>

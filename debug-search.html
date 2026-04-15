@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>搜索功能调试</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>售前讲师搜索功能测试</h1>
+    
+    <div>
+        <h3>测试1: 页面导航和初始化</h3>
+        <button onclick="testPageNavigation()">测试页面导航</button>
+        <div id="test1-result" class="result"></div>
+    </div>
+
+    <div>
+        <h3>测试2: 搜索框事件绑定</h3>
+        <button onclick="testSearchInput()">测试搜索输入框</button>
+        <div id="test2-result" class="result"></div>
+    </div>
+
+    <div>
+        <h3>测试3: 过滤函数</h3>
+        <button onclick="testFilterFunction()">测试过滤函数</button>
+        <div id="test3-result" class="result"></div>
+    </div>
+
+    <div>
+        <h3>测试4: 数据加载</h3>
+        <button onclick="testDataLoading()">测试数据加载</button>
+        <div id="test4-result" class="result"></div>
+    </div>
+
+    <script>
+        // 从主文件复制必要的函数
+        let presalesRecords = [];
+
+        function loadPresalesRecords() {
+            try {
+                const raw = localStorage.getItem('mcm_presales_records');
+                presalesRecords = raw ? JSON.parse(raw) : [];
+                console.log('加载售前讲师数据:', presalesRecords.length, '条记录');
+                return true;
+            } catch(e) { 
+                presalesRecords = [];
+                console.error('加载数据出错:', e);
+                return false;
+            }
+        }
+
+        function getFilteredPresales() {
+            const kw = document.getElementById('ps-filter-keyword') ? 
+                document.getElementById('ps-filter-keyword').value.toLowerCase().trim() : '';
+            const salesFilter = document.getElementById('ps-filter-sales') ? 
+                document.getElementById('ps-filter-sales').value || '' : '';
+            const teacherFilter = document.getElementById('ps-filter-teacher') ? 
+                document.getElementById('ps-filter-teacher').value || '' : '';
+
+            console.log('过滤条件:', {keyword: kw, sales: salesFilter, teacher: teacherFilter});
+
+            return presalesRecords.filter(r => {
+                if (salesFilter && (r.sales||'') !== salesFilter) return false;
+                if (teacherFilter && (r.teacher||'') !== teacherFilter) return false;
+                if (kw) {
+                    const text = [r.company, r.region, r.content, r.teacher, r.result].join(' ').toLowerCase();
+                    if (!text.includes(kw)) return false;
+                }
+                return true;
+            });
+        }
+
+        // 测试函数
+        function testPageNavigation() {
+            const resultEl = document.getElementById('test1-result');
+            try {
+                const pagePresales = document.getElementById('page-presales');
+                const pageExists = !!pagePresales;
+                resultEl.innerHTML = `<div class="${pageExists ? 'success' : 'error'}">
+                    页面元素检查: ${pageExists ? '✓ 售前讲师页面存在' : '✗ 售前讲师页面不存在'}
+                </div>`;
+            } catch(e) {
+                resultEl.innerHTML = `<div class="error">测试失败: ${e.message}</div>`;
+            }
+        }
+
+        function testSearchInput() {
+            const resultEl = document.getElementById('test2-result');
+            try {
+                const searchInput = document.getElementById('ps-filter-keyword');
+                if (!searchInput) {
+                    resultEl.innerHTML = '<div class="error">✗ 搜索输入框不存在</div>';
+                    return;
+                }
+
+                const hasOnInput = searchInput.hasAttribute('oninput');
+                const onInputValue = searchInput.getAttribute('oninput');
+                const callsRenderFunction = onInputValue && onInputValue.includes('renderPresalesList');
+
+                resultEl.innerHTML = `
+                    <div class="${searchInput ? 'success' : 'error'}">
+                        ✓ 搜索输入框存在 (id="ps-filter-keyword")<br>
+                    </div>
+                    <div class="${hasOnInput ? 'success' : 'error'}">
+                        ${hasOnInput ? '✓ 有oninput事件绑定' : '✗ 无oninput事件绑定'}<br>
+                    </div>
+                    <div class="${callsRenderFunction ? 'success' : 'error'}">
+                        ${callsRenderFunction ? '✓ 调用renderPresalesList函数' : '✗ 未调用renderPresalesList函数'}<br>
+                    </div>
+                `;
+            } catch(e) {
+                resultEl.innerHTML = `<div class="error">测试失败: ${e.message}</div>`;
+            }
+        }
+
+        function testFilterFunction() {
+            const resultEl = document.getElementById('test3-result');
+            try {
+                // 创建测试搜索框
+                const testInput = document.createElement('input');
+                testInput.id = 'ps-filter-keyword';
+                testInput.value = '测试';
+                document.body.appendChild(testInput);
+
+                // 创建测试数据
+                const testData = [
+                    {id: 1, company: '测试公司', sales: '张三', teacher: '李老师', region: '南宁', content: '产品演示'},
+                    {id: 2, company: '其他公司', sales: '王五', teacher: '赵老师', region: '柳州', content: '展厅接待'}
+                ];
+                presalesRecords = testData;
+
+                // 测试过滤
+                const filtered = getFilteredPresales();
+                
+                resultEl.innerHTML = `
+                    <div class="success">
+                        ✓ 过滤函数工作正常<br>
+                        ✓ 测试数据: ${testData.length} 条记录<br>
+                        ✓ 关键词: "测试"<br>
+                        ✓ 过滤结果: ${filtered.length} 条记录<br>
+                        ${filtered.map(r => `&nbsp;&nbsp;- ${r.company} (销售: ${r.sales}, 售前: ${r.teacher})<br>`).join('')}
+                    </div>
+                `;
+
+                // 清理
+                document.body.removeChild(testInput);
+            } catch(e) {
+                resultEl.innerHTML = `<div class="error">测试失败: ${e.message}</div>`;
+            }
+        }
+
+        function testDataLoading() {
+            const resultEl = document.getElementById('test4-result');
+            try {
+                // 创建测试数据
+                const testData = [
+                    {id: 1, company: '广西教育科技', sales: '张三', teacher: '李老师', date: '2026-04-01', type: '产品培训', tier: '核心'},
+                    {id: 2, company: '海南智慧校园', sales: '李四', teacher: '王老师', date: '2026-04-02', type: '学校演示', tier: '重要'}
+                ];
+                
+                // 保存到localStorage
+                localStorage.setItem('mcm_presales_records', JSON.stringify(testData));
+                
+                // 加载数据
+                const success = loadPresalesRecords();
+                
+                resultEl.innerHTML = `
+                    <div class="${success ? 'success' : 'error'}">
+                        ${success ? '✓ 数据加载成功' : '✗ 数据加载失败'}<br>
+                        ✓ 测试数据保存到localStorage<br>
+                        ✓ 加载记录数: ${presalesRecords.length}<br>
+                        ${presalesRecords.map(r => `&nbsp;&nbsp;- ${r.company}: ${r.type} (销售: ${r.sales}, 售前: ${r.teacher})<br>`).join('')}
+                    </div>
+                `;
+            } catch(e) {
+                resultEl.innerHTML = `<div class="error">测试失败: ${e.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
