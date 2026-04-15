@@ -1822,14 +1822,11 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
   <!-- 当前登录角色标识 -->
   <div id="sidebar-role-bar" style="padding:8px 16px 0;"></div>
   <nav class="sidebar-nav" id="sidebar-nav">
-    <div class="nav-section" id="nav-section-dashboard">
-      <div class="nav-section-title">总览</div>
-      <div class="nav-item active" onclick="goto('dashboard')">
-        <span class="icon">🏠</span> 仪表盘
-      </div>
-    </div>
     <div class="nav-section" id="nav-section-activity">
       <div class="nav-section-title">活动管理</div>
+      <div class="nav-item active" onclick="goto('dashboard')">
+        <span class="icon">📊</span> 活动仪表盘
+      </div>
       <div class="nav-item" onclick="goto('plan')">
         <span class="icon">📋</span> 前期策划
       </div>
@@ -1897,7 +1894,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 <main class="main">
   <div class="topbar">
     <div class="topbar-left">
-      <h2 id="page-title">仪表盘</h2>
+      <h2 id="page-title">活动仪表盘</h2>
       <p id="page-sub">市场活动全流程监控与管理</p>
     </div>
     <div class="topbar-right">
@@ -3806,7 +3803,7 @@ if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
 
 <script>
 // ===== 版本号（每次发布更新此处）=====
-const APP_VERSION = 'v2026.04.15-03';
+const APP_VERSION = 'v2026.04.15-04';
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('app-version-label');
   if (el) el.textContent = APP_VERSION;
@@ -4539,7 +4536,7 @@ function renderAnalysis() {
 
 // ===== 路由 =====
 const pageTitles = {
-  dashboard: ['仪表盘','市场活动全流程监控与管理'],
+  dashboard: ['活动仪表盘','市场活动全流程监控与管理'],
   plan: ['前期策划','活动方案规划与目标设定'],
   exec: ['中期执行','任务追踪与进度实时监控'],
   review: ['后期复盘','活动效果总结与问题归因'],
